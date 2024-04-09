@@ -48,19 +48,3 @@ pub enum FerryType {
     Num,
     String,
 }
-
-trait TypeCheckable {
-    fn check(&self, other: &FerryType) -> bool;
-}
-
-impl TypeCheckable for Expr {
-    fn check(&self, other: &FerryType) -> bool {
-        match self {
-            Expr::Literal(l) => match l {
-                Literal::Number { value, expr_type } => expr_type == other,
-            },
-            Expr::Binary(b) => &b.expr_type == other,
-            Expr::Variable(v) => &v.expr_type == other,
-        }
-    }
-}
