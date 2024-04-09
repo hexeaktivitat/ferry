@@ -17,6 +17,10 @@ impl FerryToken {
     pub fn get_type(&self) -> &TokenType {
         &self.token_type
     }
+
+    pub fn get_span(&self) -> &SourceSpan {
+        &self.span
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

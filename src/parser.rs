@@ -2,7 +2,7 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::state::FerryState;
-use crate::syntax::{Binary, Expr, Literal as SLit, Variable};
+use crate::syntax::{Binary, Expr, FerryType, Literal as SLit, Variable};
 use crate::token::{FerryToken, Literal as TLit, Op, TokenType as TT, TokenType::Identifier};
 
 #[derive(Error, Diagnostic, Debug)]
@@ -66,6 +66,7 @@ impl FerryParser {
                 token: self.previous().clone(),
                 name: name.clone(),
                 value: None,
+                expr_type: FerryType::Untyped,
             });
         }
 
@@ -82,6 +83,7 @@ impl FerryParser {
                 lhs: Box::new(expr),
                 operator: op,
                 rhs: Box::new(rhs),
+                expr_type: FerryType::Untyped,
             });
         }
 
@@ -98,6 +100,7 @@ impl FerryParser {
                 lhs: Box::new(expr),
                 operator: op,
                 rhs: Box::new(rhs),
+                expr_type: FerryType::Untyped,
             });
         }
 
@@ -109,7 +112,10 @@ impl FerryParser {
 
         match self.previous().get_type() {
             TT::Value(l) => Ok(match l {
-                TLit::Num(n) => Expr::Literal(SLit::Number { value: *n }),
+                TLit::Num(n) => Expr::Literal(SLit::Number {
+                    value: *n,
+                    expr_type: FerryType::Untyped,
+                }),
                 _ => unreachable!(),
             }),
             _ => unreachable!(),

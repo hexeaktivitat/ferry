@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::{
     state::{FerryState, FerryValue},
-    syntax::{walk_expr, Binary, Expr, ExprVisitor, Literal, Variable},
+    syntax::{walk_expr, Binary, Expr, ExprVisitor, Literal as SLit, Variable},
     token::{Op, TokenType as TT},
 };
 
@@ -44,13 +44,9 @@ impl FerryInterpreter {
 }
 
 impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter {
-    fn visit_literal(
-        &mut self,
-        literal: &mut Literal,
-        state: &mut FerryState,
-    ) -> Option<FerryValue> {
+    fn visit_literal(&mut self, literal: &mut SLit, state: &mut FerryState) -> Option<FerryValue> {
         match literal {
-            crate::syntax::Literal::Number { value } => Some(FerryValue::Number(*value)),
+            SLit::Number { value, expr_type } => Some(FerryValue::Number(*value)),
         }
     }
 

@@ -2,6 +2,7 @@ use lexer::FerryLexError;
 use miette::{Diagnostic, Result, SourceSpan};
 use parser::{FerryParseError, FerryParser};
 use thiserror::Error;
+use typecheck::FerryTypechecker;
 
 mod interpreter;
 mod lexer;
@@ -9,6 +10,7 @@ mod parser;
 mod state;
 mod syntax;
 mod token;
+mod typecheck;
 
 use crate::interpreter::FerryInterpreter;
 use crate::lexer::FerryLexer;
@@ -48,7 +50,10 @@ impl<'source> Ferry<'source> {
         })?;
         self.state = ferry_parser.state.clone();
 
-        let mut interpreter = FerryInterpreter::new(ast);
+        let mut typechecker = FerryTypechecker::new(ast.clone());
+        let typed_ast = typechecker.typecheck(&mut self.state).unwrap();
+
+        let mut interpreter = FerryInterpreter::new(typed_ast);
         result = format!("{:?}", interpreter.interpret(&mut self.state));
 
         Ok(result)
