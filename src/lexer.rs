@@ -92,7 +92,7 @@ impl<'source> FerryLexer<'source> {
                     _ => Some(TT::Identifier(id)),
                 })
             }
-            b' ' | b'\n' => Ok(None),
+            b' ' | b'\n' | b'\r' => Ok(None),
             _ => Err(FerryLexError::UnexpectedCharacter {
                 advice: "Expected literally anything else".into(),
                 bad_char: (self.start, self.current - self.start).into(),
