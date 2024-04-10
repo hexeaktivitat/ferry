@@ -15,7 +15,8 @@ fn main() {
         Some(f) => println!("{f}"),
         None => {
             let mut program = Ferry::new("1 + 1".as_bytes());
-            println!("{:?}", program.run());
+            let result = program.run().unwrap();
+            println!("{}", result);
         }
     }
 }

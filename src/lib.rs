@@ -1,12 +1,15 @@
 use lexer::FerryLexError;
 use miette::{Diagnostic, Result, SourceSpan};
 use parser::{FerryParseError, FerryParser};
+use riscv::FerryRiscVAssembler;
+use state::FerryValue;
 use thiserror::Error;
 use typecheck::FerryTypechecker;
 
 mod interpreter;
 mod lexer;
 mod parser;
+mod riscv;
 mod state;
 mod syntax;
 mod token;
@@ -33,8 +36,7 @@ impl<'source> Ferry<'source> {
         }
     }
 
-    pub fn run(&mut self) -> Result<String> {
-        let mut result = String::new();
+    pub fn run(&mut self) -> Result<FerryValue> {
         let mut ferry_lexer = FerryLexer::new(self.source_code);
 
         self.tokens = ferry_lexer.lex().map_err(|err_list| FerryLexErrors {
@@ -53,8 +55,11 @@ impl<'source> Ferry<'source> {
         let mut typechecker = FerryTypechecker::new(ast.clone());
         let typed_ast = typechecker.typecheck(&mut self.state).unwrap();
 
-        let mut interpreter = FerryInterpreter::new(typed_ast);
-        result = format!("{:?}", interpreter.interpret(&mut self.state));
+        let mut interpreter = FerryInterpreter::new(typed_ast.clone());
+        let result = interpreter.interpret(&mut self.state)?.unwrap();
+
+        let mut assembler = FerryRiscVAssembler::new();
+        let asm = assembler.assemble(typed_ast.clone(), &mut self.state);
 
         Ok(result)
     }
