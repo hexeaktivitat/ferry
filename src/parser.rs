@@ -94,7 +94,7 @@ impl FerryParser {
         let mut expr = self.target()?;
 
         if self.matches(&[TT::Operator(Op::Multiply), TT::Operator(Op::Divide)]) {
-            let op = self.advance();
+            let op = self.previous();
             let rhs = self.s_expression()?;
             expr = Expr::Binary(Binary {
                 lhs: Box::new(expr),

@@ -1,10 +1,11 @@
+use interpreter::FerryInterpreterError;
 use lexer::FerryLexError;
 use miette::{Diagnostic, Result, SourceSpan};
 use parser::{FerryParseError, FerryParser};
 use riscv::FerryRiscVAssembler;
 use state::FerryValue;
 use thiserror::Error;
-use typecheck::FerryTypechecker;
+use typecheck::{FerryTypeError, FerryTypechecker};
 
 mod interpreter;
 mod lexer;
@@ -21,14 +22,14 @@ use crate::state::FerryState;
 use crate::token::FerryToken;
 
 // 'source lifetime: entire length of code compilation / execution
-pub struct Ferry<'source> {
-    source_code: &'source [u8],
+pub struct Ferry {
+    source_code: String,
     tokens: Vec<FerryToken>,
     state: FerryState,
 }
 
-impl<'source> Ferry<'source> {
-    pub fn new(source_code: &'source [u8]) -> Self {
+impl<'source> Ferry {
+    pub fn new(source_code: String) -> Self {
         Self {
             source_code,
             tokens: Vec::new(),
@@ -36,18 +37,23 @@ impl<'source> Ferry<'source> {
         }
     }
 
+    pub fn update_source(&mut self, source_code: String) {
+        println!("{}", source_code);
+        self.source_code = source_code;
+    }
+
     pub fn run(&mut self) -> Result<FerryValue> {
-        let mut ferry_lexer = FerryLexer::new(self.source_code);
+        let mut ferry_lexer = FerryLexer::new(self.source_code.as_bytes());
 
         self.tokens = ferry_lexer.lex().map_err(|err_list| FerryLexErrors {
-            source_code: String::from_utf8(self.source_code.to_vec()).unwrap(),
+            source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
             related: err_list,
         })?;
 
         let mut ferry_parser = FerryParser::new(self.tokens.clone());
 
         let ast = ferry_parser.parse().map_err(|err_list| FerryParseErrors {
-            source_code: String::from_utf8(self.source_code.to_vec()).unwrap(),
+            source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
             related: err_list,
         })?;
         self.state = ferry_parser.state.clone();
@@ -85,4 +91,14 @@ struct FerryParseErrors {
     source_code: String,
     #[related]
     related: Vec<FerryParseError>,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("Encountered type errors")]
+#[diagnostic()]
+struct FerryInterpreterErrors {
+    #[source_code]
+    source_code: String,
+    #[related]
+    related: Vec<FerryInterpreterError>,
 }

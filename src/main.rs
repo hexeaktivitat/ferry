@@ -1,3 +1,5 @@
+use std::io::{stdin, stdout, Write};
+
 use clap::{Args, Parser, Subcommand};
 
 use ferry::Ferry;
@@ -14,9 +16,37 @@ fn main() {
     match ferry_args.file {
         Some(f) => println!("{f}"),
         None => {
-            let mut program = Ferry::new("1 + 1".as_bytes());
-            let result = program.run().unwrap();
-            println!("{}", result);
+            // run interpreter
+            repl();
         }
+    }
+}
+
+fn repl() {
+    print!("Fwee...> ");
+    stdout().flush().expect("stdout didn't flush");
+    let mut input = String::new();
+    stdin()
+        .read_line(&mut input)
+        .expect("Unable to read from stdin");
+    if input == "quit\n" || input == "exit\n" {
+        println!("Exiting...");
+        return;
+    }
+    let mut program = Ferry::new(input.clone());
+    let mut result = program.run().unwrap();
+    println!("{}", result);
+    loop {
+        input = "".into();
+        print!("Fwee...> ");
+        stdout().flush().expect("stdout didn't flush");
+        stdin().read_line(&mut input).expect("unable to read stdin");
+        if input == "quit\n" || input == "exit\n" {
+            println!("Exiting...");
+            return;
+        }
+        program.update_source(input.clone());
+        result = program.run().unwrap();
+        println!("{}", result);
     }
 }

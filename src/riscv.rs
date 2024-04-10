@@ -35,6 +35,9 @@ impl FerryRiscVAssembler {
             }
         }
 
+        println!("RISC-V ASM");
+        println!("==========\n");
+
         for op in operations.clone() {
             println!("{}", op);
         }
@@ -85,6 +88,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
             s: Register::FP,
             imm: -12,
         });
+
         let result_instr = match binary.operator.get_type() {
             crate::token::TokenType::Operator(o) => match o {
                 crate::token::Op::Add => Instruction::Add {
@@ -92,8 +96,16 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                     s1: Register::T0,
                     s2: Register::A0,
                 },
-                crate::token::Op::Subtract => todo!(),
-                crate::token::Op::Multiply => todo!(),
+                crate::token::Op::Subtract => Instruction::Sub {
+                    d: Register::A0,
+                    s1: Register::T0,
+                    s2: Register::A0,
+                },
+                crate::token::Op::Multiply => Instruction::Mul {
+                    d: Register::A0,
+                    s1: Register::T0,
+                    s2: Register::A0,
+                },
                 crate::token::Op::Divide => todo!(),
             },
             _ => unreachable!(),
@@ -132,6 +144,16 @@ pub enum Instruction {
         s: Register, // data register
         imm: i16,    // immediate
     },
+    Sub {
+        d: Register,
+        s1: Register,
+        s2: Register,
+    },
+    Mul {
+        d: Register,
+        s1: Register,
+        s2: Register,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -149,6 +171,8 @@ impl std::fmt::Display for Instruction {
             Instruction::Addi { d, s, imm } => write!(f, "addi {}, {}, {}", d, s, imm),
             Instruction::Sw { s1, s2, imm } => write!(f, "sw {} {}({})", s2, imm, s1),
             Instruction::Lw { d, s, imm } => write!(f, "lw {} {}({})", d, imm, s),
+            Instruction::Sub { d, s1, s2 } => write!(f, "sub {}, {}, {}", d, s1, s2),
+            Instruction::Mul { d, s1, s2 } => write!(f, "mul {}, {}, {}", d, s1, s2),
         }
     }
 }
