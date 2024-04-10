@@ -38,7 +38,6 @@ impl<'source> Ferry {
     }
 
     pub fn update_source(&mut self, source_code: String) {
-        println!("{}", source_code);
         self.source_code = source_code;
     }
 
@@ -65,7 +64,9 @@ impl<'source> Ferry {
         let result = interpreter.interpret(&mut self.state)?.unwrap();
 
         let mut assembler = FerryRiscVAssembler::new();
-        let asm = assembler.assemble(typed_ast.clone(), &mut self.state);
+        let asm = assembler
+            .assemble(typed_ast.clone(), &mut self.state)
+            .unwrap();
 
         Ok(result)
     }

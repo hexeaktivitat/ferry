@@ -106,7 +106,13 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                     s1: Register::T0,
                     s2: Register::A0,
                 },
-                crate::token::Op::Divide => todo!(),
+                // do NOT divide by zero!!!!!!!!!!!! you WILL regret this!!!!!!
+                // division handling needs different care and more robust instructions
+                crate::token::Op::Divide => Instruction::Div {
+                    d: Register::A0,
+                    s1: Register::T0,
+                    s2: Register::A0,
+                },
             },
             _ => unreachable!(),
         };
@@ -122,6 +128,12 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
     }
 }
 
+/// `Instruction`
+///
+/// General nomenclature
+/// d - Destination register for the opcode
+/// s - Saved / Source register
+/// imm - immediate value
 #[derive(Clone, Debug)]
 pub enum Instruction {
     Add {
@@ -130,19 +142,19 @@ pub enum Instruction {
         s2: Register,
     },
     Addi {
-        d: Register, // dest register
-        s: Register, // saved register
-        imm: i16,    // immediate value
+        d: Register,
+        s: Register,
+        imm: i16,
     },
     Sw {
-        s1: Register, // dest register
-        s2: Register, // data register
-        imm: i16,     // immediate
+        s1: Register,
+        s2: Register,
+        imm: i16,
     },
     Lw {
-        d: Register, // dest register
-        s: Register, // data register
-        imm: i16,    // immediate
+        d: Register,
+        s: Register,
+        imm: i16,
     },
     Sub {
         d: Register,
@@ -150,6 +162,11 @@ pub enum Instruction {
         s2: Register,
     },
     Mul {
+        d: Register,
+        s1: Register,
+        s2: Register,
+    },
+    Div {
         d: Register,
         s1: Register,
         s2: Register,
@@ -173,6 +190,7 @@ impl std::fmt::Display for Instruction {
             Instruction::Lw { d, s, imm } => write!(f, "lw {} {}({})", d, imm, s),
             Instruction::Sub { d, s1, s2 } => write!(f, "sub {}, {}, {}", d, s1, s2),
             Instruction::Mul { d, s1, s2 } => write!(f, "mul {}, {}, {}", d, s1, s2),
+            Instruction::Div { d, s1, s2 } => write!(f, "div {}, {}, {}", d, s1, s2),
         }
     }
 }
