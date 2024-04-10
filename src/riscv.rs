@@ -35,13 +35,6 @@ impl FerryRiscVAssembler {
             }
         }
 
-        println!("RISC-V ASM");
-        println!("==========\n");
-
-        for op in operations.clone() {
-            println!("{}", op);
-        }
-
         Ok(operations)
     }
 

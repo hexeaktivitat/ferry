@@ -1,6 +1,7 @@
 use std::io::{stdin, stdout, Write};
 
-use clap::{Args, Parser, Subcommand};
+use clap::{Args, Error, Parser, Subcommand};
+use thiserror::Error;
 
 use ferry::Ferry;
 
@@ -17,36 +18,37 @@ fn main() {
         Some(f) => println!("{f}"),
         None => {
             // run interpreter
-            repl();
+            repl().unwrap();
         }
     }
 }
 
-fn repl() {
+fn repl() -> Result<(), Error> {
     print!("Fwee...> ");
     stdout().flush().expect("stdout didn't flush");
     let mut input = String::new();
     stdin()
         .read_line(&mut input)
         .expect("Unable to read from stdin");
-    if input == "quit\n" || input == "exit\n" {
+    if input.trim_end() == "quit" || input.trim_end() == "exit" {
         println!("Exiting...");
-        return;
+        return Ok(());
     }
     let mut program = Ferry::new(input.clone());
     let mut result = program.run().unwrap();
-    println!("{}", result);
+    println!("\n{}", result);
     loop {
         input = "".into();
         print!("Fwee...> ");
         stdout().flush().expect("stdout didn't flush");
         stdin().read_line(&mut input).expect("unable to read stdin");
-        if input == "quit\n" || input == "exit\n" {
+        if input.trim_end() == "quit" || input.trim_end() == "exit" {
             println!("Exiting...");
-            return;
+            return Ok(());
         }
         program.update_source(input.clone());
         result = program.run().unwrap();
-        println!("{}", result);
+        println!("\n{}\n", result);
     }
+    Ok(())
 }

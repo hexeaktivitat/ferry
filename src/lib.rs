@@ -68,6 +68,13 @@ impl<'source> Ferry {
             .assemble(typed_ast.clone(), &mut self.state)
             .unwrap();
 
+        println!("\nRISC-V ASM");
+        println!("==========\n");
+
+        for op in asm {
+            println!("{}", op);
+        }
+
         Ok(result)
     }
 }
