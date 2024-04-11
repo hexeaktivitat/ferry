@@ -70,16 +70,16 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         let left = self.generate_asm(&mut binary.lhs, state)?;
         state.push(left);
         state.push(Instruction::Sw {
-            s1: Register::A0,
-            s2: Register::FP,
-            imm: -12,
+            s1: Register::FP,
+            s2: Register::A0,
+            imm: 0,
         });
         let right = self.generate_asm(&mut binary.rhs, state)?;
         state.push(right);
         state.push(Instruction::Lw {
             d: Register::T0,
             s: Register::FP,
-            imm: -12,
+            imm: 0,
         });
 
         let result_instr = match binary.operator.get_type() {
@@ -142,7 +142,7 @@ pub enum Instruction {
     Sw {
         s1: Register,
         s2: Register,
-        imm: i16,
+        imm: i16, // bit offset for operation
     },
     Lw {
         d: Register,
@@ -179,8 +179,8 @@ impl std::fmt::Display for Instruction {
         match self {
             Instruction::Add { d, s1, s2 } => write!(f, "add {}, {}, {}", d, s1, s2),
             Instruction::Addi { d, s, imm } => write!(f, "addi {}, {}, {}", d, s, imm),
-            Instruction::Sw { s1, s2, imm } => write!(f, "sw {} {}({})", s2, imm, s1),
-            Instruction::Lw { d, s, imm } => write!(f, "lw {} {}({})", d, imm, s),
+            Instruction::Sw { s1, s2, imm } => write!(f, "sw {}, {}({})", s2, imm, s1),
+            Instruction::Lw { d, s, imm } => write!(f, "lw {}, {}({})", d, imm, s),
             Instruction::Sub { d, s1, s2 } => write!(f, "sub {}, {}, {}", d, s1, s2),
             Instruction::Mul { d, s1, s2 } => write!(f, "mul {}, {}, {}", d, s1, s2),
             Instruction::Div { d, s1, s2 } => write!(f, "div {}, {}, {}", d, s1, s2),
@@ -191,10 +191,10 @@ impl std::fmt::Display for Instruction {
 impl std::fmt::Display for Register {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Register::R0 => f.write_str("r0"),
-            Register::T0 => f.write_str("t0"),
-            Register::FP => f.write_str("fp"),
-            Register::A0 => f.write_str("a0"),
+            Register::R0 => f.write_str("x0"),
+            Register::T0 => f.write_str("x5"),
+            Register::FP => f.write_str("x8"),
+            Register::A0 => f.write_str("x10"),
         }
     }
 }
