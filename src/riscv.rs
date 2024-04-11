@@ -54,10 +54,9 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         match literal {
-            SLit::Number { value, expr_type } => Ok(Instruction::Addi {
+            SLit::Number { value, expr_type } => Ok(Instruction::Li {
                 d: Register::A0,
-                s: Register::R0,
-                imm: value.clone() as i16,
+                imm: value.clone() as i32,
             }),
         }
     }
@@ -164,6 +163,11 @@ pub enum Instruction {
         s1: Register,
         s2: Register,
     },
+    // Pseudo-instructions
+    Li {
+        d: Register,
+        imm: i32, // 32-bit RISC set
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -184,6 +188,7 @@ impl std::fmt::Display for Instruction {
             Instruction::Sub { d, s1, s2 } => write!(f, "sub {}, {}, {}", d, s1, s2),
             Instruction::Mul { d, s1, s2 } => write!(f, "mul {}, {}, {}", d, s1, s2),
             Instruction::Div { d, s1, s2 } => write!(f, "div {}, {}, {}", d, s1, s2),
+            Instruction::Li { d, imm } => write!(f, "li {}, {}", d, imm),
         }
     }
 }
