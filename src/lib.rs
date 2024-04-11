@@ -1,6 +1,6 @@
 use interpreter::FerryInterpreterError;
 use lexer::FerryLexError;
-use miette::{Diagnostic, Result, SourceSpan};
+use miette::{Diagnostic, Result};
 use parser::{FerryParseError, FerryParser};
 use riscv::FerryRiscVAssembler;
 use state::FerryValue;
@@ -58,7 +58,13 @@ impl<'source> Ferry {
         self.state = ferry_parser.state.clone();
 
         let mut typechecker = FerryTypechecker::new(ast.clone());
-        let typed_ast = typechecker.typecheck(&mut self.state).unwrap();
+        let typed_ast =
+            typechecker
+                .typecheck(&mut self.state)
+                .map_err(|err_list| FerryTypeErrors {
+                    source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
+                    related: err_list,
+                })?;
 
         let mut interpreter = FerryInterpreter::new(typed_ast.clone());
         let result = interpreter.interpret(&mut self.state)?.unwrap();
@@ -99,6 +105,16 @@ struct FerryParseErrors {
     source_code: String,
     #[related]
     related: Vec<FerryParseError>,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("Encountered typecheck errors")]
+#[diagnostic()]
+struct FerryTypeErrors {
+    #[source_code]
+    source_code: String,
+    #[related]
+    related: Vec<FerryTypeError>,
 }
 
 #[derive(Error, Debug, Diagnostic)]

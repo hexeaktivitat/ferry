@@ -1,6 +1,6 @@
 use std::io::{stdin, stdout, Write};
 
-use clap::{Args, Error, Parser, Subcommand};
+use clap::{Error, Parser, Subcommand};
 use thiserror::Error;
 
 use ferry::Ferry;
@@ -50,5 +50,4 @@ fn repl() -> Result<(), Error> {
         result = program.run().unwrap();
         println!("\n{}\n", result);
     }
-    Ok(())
 }
