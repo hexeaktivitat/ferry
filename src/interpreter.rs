@@ -91,6 +91,7 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
                     (None, Some(_)) => todo!(),
                     (Some(_), None) => todo!(),
                 },
+                Op::RightArrow => todo!(),
             },
             _ => None,
         }
@@ -102,5 +103,13 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
         state: &mut FerryState,
     ) -> Option<FerryValue> {
         state.get_symbol_value(&variable.name)
+    }
+
+    fn visit_assign(
+        &mut self,
+        assign: &mut crate::syntax::Assign,
+        state: &mut FerryState,
+    ) -> Option<FerryValue> {
+        todo!()
     }
 }

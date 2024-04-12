@@ -82,7 +82,13 @@ impl<'source> FerryLexer<'source> {
 
         match self.advance() {
             b'+' => Ok(Some(TT::Operator(Op::Add))),
-            b'-' => Ok(Some(TT::Operator(Op::Subtract))),
+            b'-' => {
+                if self.peek() == b'>' {
+                    Ok(Some(TT::Operator(Op::RightArrow)))
+                } else {
+                    Ok(Some(TT::Operator(Op::Subtract)))
+                }
+            }
             b'*' => Ok(Some(TT::Operator(Op::Multiply))),
             b'/' => Ok(Some(TT::Operator(Op::Divide))),
 
@@ -155,7 +161,7 @@ impl<'source> FerryLexer<'source> {
 
         self.advance();
 
-        Ok(TT::Value(Literal::String(
+        Ok(TT::Value(Val::String(
             self.substring(self.start + 1, self.current - 1)?,
         )))
     }
@@ -191,7 +197,7 @@ impl<'source> FerryLexer<'source> {
             }
         }
 
-        Ok(TokenType::Value(Literal::Num(
+        Ok(TokenType::Value(Val::Num(
             self.substring(self.start, self.current)?
                 .parse::<f64>()
                 .expect("that was not an f64? how"),

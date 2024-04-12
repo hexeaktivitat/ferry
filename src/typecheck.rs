@@ -91,6 +91,14 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     ) -> FerryResult<Expr> {
         todo!()
     }
+
+    fn visit_assign(
+        &mut self,
+        assign: &mut crate::syntax::Assign,
+        state: &mut FerryState,
+    ) -> FerryResult<Expr> {
+        todo!()
+    }
 }
 
 trait TypeCheckable {
@@ -105,6 +113,7 @@ impl TypeCheckable for Expr {
             },
             Expr::Binary(b) => &b.expr_type,
             Expr::Variable(v) => &v.expr_type,
+            Expr::Assign(_) => todo!(),
         }
     }
 }

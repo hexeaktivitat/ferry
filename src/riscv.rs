@@ -105,6 +105,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                     s1: Register::T0,
                     s2: Register::A0,
                 },
+                crate::token::Op::RightArrow => todo!(),
             },
             _ => unreachable!(),
         };
@@ -117,6 +118,14 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         todo!();
+    }
+
+    fn visit_assign(
+        &mut self,
+        assign: &mut crate::syntax::Assign,
+        state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        todo!()
     }
 }
 

@@ -26,16 +26,16 @@ impl FerryToken {
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     // Literal value
-    Value(Literal),
+    Value(Val),
     Operator(Op),
-    Control,
+    Control(Ctrl),
     Keyword,
     Identifier(String),
     End,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Literal {
+pub enum Val {
     Num(f64),
     String(String),
     Boolean(bool),
@@ -48,4 +48,10 @@ pub enum Op {
     Subtract,
     Multiply,
     Divide,
+    RightArrow,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Ctrl {
+    Semicolon,
 }

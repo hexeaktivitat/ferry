@@ -2,8 +2,8 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::state::FerryState;
-use crate::syntax::{Binary, Expr, FerryType, Literal as SLit, Variable};
-use crate::token::{FerryToken, Literal as TLit, Op, TokenType as TT, TokenType::Identifier};
+use crate::syntax::{Assign, Binary, Expr, FerryType, Literal as SLit, Variable};
+use crate::token::{FerryToken, Op, TokenType as TT, TokenType::Identifier, Val as TLit};
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryParseError {}
@@ -54,6 +54,23 @@ impl FerryParser {
     // pratt parsing starts here
     fn s_expression(&mut self) -> FerryResult<Expr> {
         let mut expr = self.identifier()?;
+
+        Ok(expr)
+    }
+
+    fn assignment(&mut self) -> FerryResult<Expr> {
+        let mut expr = self.identifier()?;
+
+        if let TT::Operator(op) = self.previous().get_type() {
+            let value = self.s_expression()?;
+            if op == &Op::RightArrow {
+                expr = Expr::Assign(Assign {
+                    var: Box::new(expr),
+                    value: Some(Box::new(value)),
+                    expr_type: FerryType::Untyped,
+                });
+            }
+        }
 
         Ok(expr)
     }
