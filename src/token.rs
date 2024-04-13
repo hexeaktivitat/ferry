@@ -48,6 +48,7 @@ pub enum Op {
     Subtract,
     Multiply,
     Divide,
+    Equals,
     RightArrow,
 }
 

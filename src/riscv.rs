@@ -106,6 +106,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                     s2: Register::A0,
                 },
                 crate::token::Op::RightArrow => todo!(),
+                crate::token::Op::Equals => todo!(),
             },
             _ => unreachable!(),
         };
@@ -117,7 +118,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         variable: &mut Variable,
         state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
-        todo!();
+        Ok(Instruction::Lazy)
     }
 
     fn visit_assign(
@@ -125,7 +126,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         assign: &mut crate::syntax::Assign,
         state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
-        todo!()
+        Ok(Instruction::Lazy)
     }
 }
 
@@ -177,6 +178,8 @@ pub enum Instruction {
         d: Register,
         imm: i32, // 32-bit RISC set
     },
+    // Dummy instruction for lazy
+    Lazy,
 }
 
 #[derive(Clone, Debug)]
@@ -198,6 +201,7 @@ impl std::fmt::Display for Instruction {
             Instruction::Mul { d, s1, s2 } => write!(f, "mul {}, {}, {}", d, s1, s2),
             Instruction::Div { d, s1, s2 } => write!(f, "div {}, {}, {}", d, s1, s2),
             Instruction::Li { d, imm } => write!(f, "li {}, {}", d, imm),
+            Instruction::Lazy => write!(f, "too lazy for this atm"),
         }
     }
 }

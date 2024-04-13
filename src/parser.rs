@@ -6,7 +6,15 @@ use crate::syntax::{Assign, Binary, Expr, FerryType, Literal as SLit, Variable};
 use crate::token::{FerryToken, Op, TokenType as TT, TokenType::Identifier, Val as TLit};
 
 #[derive(Error, Diagnostic, Debug)]
-pub enum FerryParseError {}
+pub enum FerryParseError {
+    #[error("Unexpected token encountered")]
+    AlternateToken {
+        #[help]
+        help: String,
+        #[label]
+        span: SourceSpan,
+    },
+}
 
 type FerryResult<T> = Result<T, FerryParseError>;
 type FerryParseResult<T> = Result<Vec<T>, Vec<FerryParseError>>;
@@ -15,24 +23,19 @@ type FerryParseResult<T> = Result<Vec<T>, Vec<FerryParseError>>;
 pub struct FerryParser {
     tokens: Vec<FerryToken>,
     current: usize,
-    pub state: FerryState,
 }
 
 impl FerryParser {
     pub fn new(tokens: Vec<FerryToken>) -> Self {
-        Self {
-            tokens,
-            current: 0,
-            state: FerryState::new(),
-        }
+        Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> FerryParseResult<Expr> {
+    pub fn parse(&mut self, state: &mut FerryState) -> FerryParseResult<Expr> {
         let mut statements = Vec::new();
         let mut errors = Vec::new();
 
         while !self.end_of_program() {
-            match self.start() {
+            match self.start(state) {
                 Ok(s) => statements.push(s),
                 Err(e) => errors.push(e),
             }
@@ -45,27 +48,29 @@ impl FerryParser {
         }
     }
 
-    fn start(&mut self) -> FerryResult<Expr> {
-        let mut expr = self.s_expression()?;
+    fn start(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.s_expression(state)?;
 
         Ok(expr)
     }
 
     // pratt parsing starts here
-    fn s_expression(&mut self) -> FerryResult<Expr> {
-        let mut expr = self.identifier()?;
+    fn s_expression(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.assignment(state)?;
 
         Ok(expr)
     }
 
-    fn assignment(&mut self) -> FerryResult<Expr> {
-        let mut expr = self.identifier()?;
+    fn assignment(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.sum(state)?;
 
-        if let TT::Operator(op) = self.previous().get_type() {
-            let value = self.s_expression()?;
-            if op == &Op::RightArrow {
+        if self.matches(&[TT::Operator(Op::Equals)]) {
+            let _operator = self.previous();
+            let value = self.s_expression(state)?;
+            if let Expr::Variable(v) = &expr {
                 expr = Expr::Assign(Assign {
-                    var: Box::new(expr),
+                    var: Box::new(expr.clone()),
+                    name: v.name.clone(),
                     value: Some(Box::new(value)),
                     expr_type: FerryType::Untyped,
                 });
@@ -75,27 +80,12 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn identifier(&mut self) -> FerryResult<Expr> {
-        let mut expr = self.sum()?;
-
-        if let Identifier(name) = self.previous().get_type() {
-            expr = Expr::Variable(Variable {
-                token: self.previous().clone(),
-                name: name.clone(),
-                value: None,
-                expr_type: FerryType::Untyped,
-            });
-        }
-
-        Ok(expr)
-    }
-
-    fn sum(&mut self) -> FerryResult<Expr> {
-        let mut expr = self.factor()?;
+    fn sum(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.factor(state)?;
 
         if self.matches(&[TT::Operator(Op::Add), TT::Operator(Op::Subtract)]) {
             let op = self.previous();
-            let rhs = self.s_expression()?;
+            let rhs = self.s_expression(state)?;
             expr = Expr::Binary(Binary {
                 lhs: Box::new(expr),
                 operator: op,
@@ -107,12 +97,12 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn factor(&mut self) -> FerryResult<Expr> {
-        let mut expr = self.target()?;
+    fn factor(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.target(state)?;
 
         if self.matches(&[TT::Operator(Op::Multiply), TT::Operator(Op::Divide)]) {
             let op = self.previous();
-            let rhs = self.s_expression()?;
+            let rhs = self.s_expression(state)?;
             expr = Expr::Binary(Binary {
                 lhs: Box::new(expr),
                 operator: op,
@@ -124,7 +114,7 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn target(&mut self) -> FerryResult<Expr> {
+    fn target(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         self.advance();
 
         match self.previous().get_type() {
@@ -135,6 +125,11 @@ impl FerryParser {
                 }),
                 _ => unreachable!(),
             }),
+            TT::Identifier(id) => Ok(Expr::Variable(Variable {
+                token: self.previous().clone(),
+                name: id.clone(),
+                expr_type: FerryType::Untyped,
+            })),
             _ => unreachable!(),
         }
     }
@@ -160,6 +155,21 @@ impl FerryParser {
             false
         } else {
             t.matches(&self.peek())
+        }
+    }
+
+    fn consume(
+        &mut self,
+        token_type: &impl MatchToken,
+        message: &str,
+    ) -> Result<FerryToken, FerryParseError> {
+        if self.check(token_type) {
+            Ok(self.advance())
+        } else {
+            Err(FerryParseError::AlternateToken {
+                help: message.into(),
+                span: *self.tokens[self.current].get_span(),
+            })
         }
     }
 

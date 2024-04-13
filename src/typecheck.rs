@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::{
     state::FerryState,
-    syntax::{walk_expr, Binary, Expr, ExprVisitor, FerryType, Literal as SLit, Variable},
+    syntax::{walk_expr, Assign, Binary, Expr, ExprVisitor, FerryType, Literal as SLit, Variable},
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -57,7 +57,10 @@ impl FerryTypechecker {
 impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     fn visit_literal(&mut self, literal: &mut SLit, state: &mut FerryState) -> FerryResult<Expr> {
         match literal {
-            SLit::Number { value, expr_type } => Ok(Expr::Literal(SLit::Number {
+            SLit::Number {
+                value,
+                expr_type: _,
+            } => Ok(Expr::Literal(SLit::Number {
                 value: *value,
                 expr_type: FerryType::Num,
             })),
@@ -89,19 +92,53 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         variable: &mut Variable,
         state: &mut FerryState,
     ) -> FerryResult<Expr> {
-        todo!()
+        // we expect that the variable has been declared in some scope prior to being referenced
+        if let (Some(derived_type), assigned_type) =
+            (state.get_symbol_value(&variable.name), &variable.expr_type)
+        {
+            if derived_type.verify_type(assigned_type) {
+                Ok(Expr::Variable(variable.clone()))
+            } else if assigned_type == &FerryType::Untyped {
+                // type inference: if derived_type is valid, update the type
+                Ok(Expr::Variable(Variable {
+                    token: variable.token.clone(),
+                    name: variable.name.clone(),
+                    expr_type: derived_type.get_type().clone(),
+                }))
+            } else {
+                Err(FerryTypeError::A {
+                    advice: "mismatched type:".into(),
+                    span: variable.token.get_span().clone(),
+                })
+            }
+        } else {
+            Err(FerryTypeError::A {
+                advice: "variable of unknown type".into(),
+                span: variable.token.get_span().clone(),
+            })
+        }
     }
 
-    fn visit_assign(
-        &mut self,
-        assign: &mut crate::syntax::Assign,
-        state: &mut FerryState,
-    ) -> FerryResult<Expr> {
-        todo!()
+    fn visit_assign(&mut self, assign: &mut Assign, state: &mut FerryState) -> FerryResult<Expr> {
+        // type inference first
+        if let Some(value) = &mut assign.value {
+            if let Ok(value_check) = self.check_types(value, state) {
+                return Ok(Expr::Assign(Assign {
+                    var: assign.var.clone(),
+                    name: assign.name.clone(),
+                    value: Some(Box::new(value_check.clone())),
+                    expr_type: value_check.get_type().clone(),
+                }));
+            }
+        }
+        Err(FerryTypeError::A {
+            advice: "???".into(),
+            span: (0, 1).into(),
+        })
     }
 }
 
-trait TypeCheckable {
+pub trait TypeCheckable {
     fn get_type(&self) -> &FerryType;
 }
 
@@ -113,7 +150,7 @@ impl TypeCheckable for Expr {
             },
             Expr::Binary(b) => &b.expr_type,
             Expr::Variable(v) => &v.expr_type,
-            Expr::Assign(_) => todo!(),
+            Expr::Assign(a) => &a.expr_type,
         }
     }
 }

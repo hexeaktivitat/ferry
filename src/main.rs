@@ -1,7 +1,7 @@
 use std::io::{stdin, stdout, Write};
 
 use clap::{Error, Parser, Subcommand};
-use thiserror::Error;
+use miette::Result;
 
 use ferry::Ferry;
 
@@ -35,8 +35,10 @@ fn repl() -> Result<(), Error> {
         return Ok(());
     }
     let mut program = Ferry::new(input.clone());
-    let mut result = program.run().unwrap();
-    println!("\n{}", result);
+    match program.run() {
+        Ok(r) => println!("\n{}\n", r),
+        Err(e) => eprintln!("\n{:?}\n", e),
+    };
     loop {
         input = "".into();
         print!("Fwee...> ");
@@ -47,7 +49,9 @@ fn repl() -> Result<(), Error> {
             return Ok(());
         }
         program.update_source(input.clone());
-        result = program.run().unwrap();
-        println!("\n{}\n", result);
+        match program.run() {
+            Ok(r) => println!("\n{}\n", r),
+            Err(e) => eprintln!("\n{:?}\n", e),
+        };
     }
 }

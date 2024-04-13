@@ -51,11 +51,12 @@ impl<'source> Ferry {
 
         let mut ferry_parser = FerryParser::new(self.tokens.clone());
 
-        let ast = ferry_parser.parse().map_err(|err_list| FerryParseErrors {
-            source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
-            related: err_list,
-        })?;
-        self.state = ferry_parser.state.clone();
+        let ast = ferry_parser
+            .parse(&mut self.state)
+            .map_err(|err_list| FerryParseErrors {
+                source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
+                related: err_list,
+            })?;
 
         let mut typechecker = FerryTypechecker::new(ast.clone());
         let typed_ast =
@@ -80,6 +81,11 @@ impl<'source> Ferry {
         for op in asm {
             println!("{}", op);
         }
+
+        println!("\n\nSTATE\n");
+        println!("=====");
+
+        println!("\n{}", self.state);
 
         Ok(result)
     }

@@ -92,6 +92,7 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
                     (Some(_), None) => todo!(),
                 },
                 Op::RightArrow => todo!(),
+                Op::Equals => todo!(),
             },
             _ => None,
         }
@@ -110,6 +111,12 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
         assign: &mut crate::syntax::Assign,
         state: &mut FerryState,
     ) -> Option<FerryValue> {
-        todo!()
+        if let Some(v) = &mut assign.value {
+            let value = self.evaluate(v, state).unwrap();
+            state.add_symbol(&assign.name, value.clone());
+            value
+        } else {
+            Some(FerryValue::Number(0.))
+        }
     }
 }

@@ -91,6 +91,7 @@ impl<'source> FerryLexer<'source> {
             }
             b'*' => Ok(Some(TT::Operator(Op::Multiply))),
             b'/' => Ok(Some(TT::Operator(Op::Divide))),
+            b'=' => Ok(Some(TT::Operator(Op::Equals))),
 
             c if c.is_ascii_digit() => self.number().map(Some),
             c @ b'_' | c if c.is_ascii_alphabetic() => {

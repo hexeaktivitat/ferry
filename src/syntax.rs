@@ -1,3 +1,5 @@
+use miette::SourceSpan;
+
 use crate::{state::FerryValue, token::FerryToken};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,6 +26,7 @@ pub struct Binary {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Assign {
     pub var: Box<Expr>,
+    pub name: String,
     pub value: Option<Box<Expr>>,
     pub expr_type: FerryType,
 }
@@ -32,7 +35,6 @@ pub struct Assign {
 pub struct Variable {
     pub token: FerryToken,
     pub name: String,
-    pub value: Option<FerryValue>,
     pub expr_type: FerryType,
 }
 
@@ -49,6 +51,19 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::Binary(binary) => visitor.visit_binary(binary, state),
         Expr::Variable(variable) => visitor.visit_variable(variable, state),
         Expr::Assign(assign) => visitor.visit_assign(assign, state),
+    }
+}
+
+impl Expr {
+    pub fn get_span(&self) -> Option<SourceSpan> {
+        match self {
+            Expr::Literal(l) => match l {
+                Literal::Number { value, expr_type } => None,
+            },
+            Expr::Binary(b) => Some(b.operator.get_span().clone()),
+            Expr::Variable(v) => Some(v.token.get_span().clone()),
+            Expr::Assign(a) => None,
+        }
     }
 }
 
