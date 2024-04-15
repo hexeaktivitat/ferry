@@ -3,7 +3,7 @@ use std::io::{stdin, stdout, Write};
 use clap::{Error, Parser, Subcommand};
 use miette::Result;
 
-use ferry::Ferry;
+use ferry::{Ferry, PrintReq};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -47,11 +47,21 @@ fn repl() -> Result<(), Error> {
         if input.trim_end() == "quit" || input.trim_end() == "exit" {
             println!("Exiting...");
             return Ok(());
+        } else if input.starts_with("!") {
+            match input.trim_end() {
+                "!token" => program.print_data(PrintReq::Tokens),
+                "!state" => program.print_data(PrintReq::State),
+                "!ast" => program.print_data(PrintReq::Ast),
+                "!type" => program.print_data(PrintReq::TypedAst),
+                "!asm" => program.print_data(PrintReq::Asm),
+                _ => println!("Unrecognized special command {}", input),
+            }
+        } else {
+            program.update_source(input.clone());
+            match program.run() {
+                Ok(r) => println!("\n{}\n", r),
+                Err(e) => eprintln!("\n{:?}\n", e),
+            };
         }
-        program.update_source(input.clone());
-        match program.run() {
-            Ok(r) => println!("\n{}\n", r),
-            Err(e) => eprintln!("\n{:?}\n", e),
-        };
     }
 }

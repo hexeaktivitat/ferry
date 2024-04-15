@@ -2,8 +2,9 @@ use interpreter::FerryInterpreterError;
 use lexer::FerryLexError;
 use miette::{Diagnostic, Result};
 use parser::{FerryParseError, FerryParser};
-use riscv::FerryRiscVAssembler;
+use riscv::{FerryRiscVAssembler, Instruction};
 use state::FerryValue;
+use syntax::Expr;
 use thiserror::Error;
 use typecheck::{FerryTypeError, FerryTypechecker};
 
@@ -25,6 +26,17 @@ pub struct Ferry {
     source_code: String,
     tokens: Vec<FerryToken>,
     state: FerryState,
+    ast: Vec<Expr>,
+    typed_ast: Vec<Expr>,
+    riscv_asm: Vec<Instruction>,
+}
+
+pub enum PrintReq {
+    Tokens,
+    State,
+    Ast,
+    TypedAst,
+    Asm,
 }
 
 impl<'source> Ferry {
@@ -33,6 +45,9 @@ impl<'source> Ferry {
             source_code,
             tokens: Vec::new(),
             state: FerryState::new(),
+            ast: Vec::new(),
+            typed_ast: Vec::new(),
+            riscv_asm: Vec::new(),
         }
     }
 
@@ -50,15 +65,15 @@ impl<'source> Ferry {
 
         let mut ferry_parser = FerryParser::new(self.tokens.clone());
 
-        let ast = ferry_parser
+        self.ast = ferry_parser
             .parse(&mut self.state)
             .map_err(|err_list| FerryParseErrors {
                 source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
                 related: err_list,
             })?;
 
-        let mut typechecker = FerryTypechecker::new(ast.clone());
-        let typed_ast =
+        let mut typechecker = FerryTypechecker::new(self.ast.clone());
+        self.typed_ast =
             typechecker
                 .typecheck(&mut self.state)
                 .map_err(|err_list| FerryTypeErrors {
@@ -66,27 +81,64 @@ impl<'source> Ferry {
                     related: err_list,
                 })?;
 
-        let mut interpreter = FerryInterpreter::new(typed_ast.clone());
+        let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
         let result = interpreter.interpret(&mut self.state)?.unwrap();
 
         let mut assembler = FerryRiscVAssembler::new();
-        let asm = assembler
-            .assemble(typed_ast.clone(), &mut self.state)
+        self.riscv_asm = assembler
+            .assemble(self.typed_ast.clone(), &mut self.state)
             .unwrap();
 
-        println!("\nRISC-V ASM");
-        println!("==========\n");
+        // println!("\n\nSTATE");
+        // println!("=====");
 
-        for op in asm {
-            println!("{}", op);
-        }
-
-        println!("\n\nSTATE\n");
-        println!("=====");
-
-        println!("\n{}", self.state);
+        // println!("\n{}", self.state);
 
         Ok(result)
+    }
+
+    pub fn print_data(&self, req: PrintReq) {
+        match req {
+            PrintReq::Tokens => {
+                println!("\nTOKENS");
+                println!("======\n");
+
+                for t in &self.tokens {
+                    println!("{t}");
+                }
+            }
+            PrintReq::State => {
+                println!("\nSTATE");
+                println!("=====\n");
+
+                println!("{}", self.state);
+            }
+            PrintReq::Ast => {
+                println!("\nAST");
+                println!("===\n");
+
+                for e in &self.ast {
+                    println!("{:?}", e);
+                }
+            }
+            PrintReq::TypedAst => {
+                println!("\nTOKENS");
+                println!("======\n");
+
+                for t in &self.typed_ast {
+                    println!("{:?}", t);
+                }
+            }
+            PrintReq::Asm => {
+                println!("\nRISC-V ASM");
+                println!("==========\n");
+
+                for op in &self.riscv_asm {
+                    println!("{}", op);
+                }
+            }
+        }
+        println!("");
     }
 }
 
