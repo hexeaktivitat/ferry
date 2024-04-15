@@ -12,11 +12,13 @@ pub enum FerryAsmError {}
 type FerryResult<T> = Result<T, FerryAsmError>;
 type FerryAsmResult<T> = Result<Vec<T>, Vec<FerryAsmError>>;
 
-pub struct FerryRiscVAssembler {}
+pub struct FerryRiscVAssembler {
+    offset: i16,
+}
 
 impl FerryRiscVAssembler {
     pub fn new() -> Self {
-        Self {}
+        Self { offset: 0 }
     }
 
     pub fn assemble(
@@ -71,14 +73,14 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         state.push(Instruction::Sw {
             s1: Register::FP,
             s2: Register::A0,
-            imm: 0,
+            imm: self.offset,
         });
         let right = self.generate_asm(&mut binary.rhs, state)?;
         state.push(right);
         state.push(Instruction::Lw {
             d: Register::T0,
             s: Register::FP,
-            imm: 0,
+            imm: self.offset,
         });
 
         let result_instr = match binary.operator.get_type() {
@@ -118,7 +120,11 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         variable: &mut Variable,
         state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
-        Ok(Instruction::Lazy)
+        let globl = &variable.name;
+        Ok(Instruction::LwGlobl {
+            d: Register::A0,
+            s: Register::Globl(globl.clone()),
+        })
     }
 
     fn visit_assign(
@@ -126,7 +132,23 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         assign: &mut crate::syntax::Assign,
         state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
-        Ok(Instruction::Lazy)
+        let globl = assign.name.clone();
+        let var = self.generate_asm(&mut assign.var, state)?;
+        state.push(var);
+        state.push(Instruction::Sw {
+            s1: Register::FP,
+            s2: Register::A0,
+            imm: self.offset,
+        });
+        if let Some(v) = &mut assign.value {
+            let value = self.generate_asm(v, state)?;
+            state.push(value);
+        }
+        Ok(Instruction::SwGlobl {
+            s1: Register::Globl(globl.clone()),
+            s2: Register::T0,
+            d: Register::A0,
+        })
     }
 }
 
@@ -153,10 +175,19 @@ pub enum Instruction {
         s2: Register,
         imm: i16, // bit offset for operation
     },
+    SwGlobl {
+        s1: Register,
+        s2: Register,
+        d: Register,
+    },
     Lw {
         d: Register,
         s: Register,
         imm: i16,
+    },
+    LwGlobl {
+        d: Register,
+        s: Register,
     },
     Sub {
         d: Register,
@@ -178,30 +209,35 @@ pub enum Instruction {
         d: Register,
         imm: i32, // 32-bit RISC set
     },
+    Nop,
     // Dummy instruction for lazy
     Lazy,
 }
 
 #[derive(Clone, Debug)]
 pub enum Register {
-    R0, // Zero / x0
-    T0, // Temporary / x5
-    FP, // Frame pointer / x8
-    A0, // Function arg / x10
+    Globl(String), // $-labeled global vals
+    R0,            // Zero / x0
+    T0,            // Temporary / x5
+    FP,            // Frame pointer / x8
+    A0,            // Function arg / x10
 }
 
 impl std::fmt::Display for Instruction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Instruction::Add { d, s1, s2 } => write!(f, "add {}, {}, {}", d, s1, s2),
-            Instruction::Addi { d, s, imm } => write!(f, "addi {}, {}, {}", d, s, imm),
-            Instruction::Sw { s1, s2, imm } => write!(f, "sw {}, {}({})", s2, imm, s1),
-            Instruction::Lw { d, s, imm } => write!(f, "lw {}, {}({})", d, imm, s),
-            Instruction::Sub { d, s1, s2 } => write!(f, "sub {}, {}, {}", d, s1, s2),
-            Instruction::Mul { d, s1, s2 } => write!(f, "mul {}, {}, {}", d, s1, s2),
-            Instruction::Div { d, s1, s2 } => write!(f, "div {}, {}, {}", d, s1, s2),
-            Instruction::Li { d, imm } => write!(f, "li {}, {}", d, imm),
+            Instruction::Add { d, s1, s2 } => write!(f, "add {d}, {s1}, {s2}"),
+            Instruction::Addi { d, s, imm } => write!(f, "addi {d}, {s}, {imm}"),
+            Instruction::Sw { s1, s2, imm } => write!(f, "sw {s2}, {imm}({s1})"),
+            Instruction::Lw { d, s, imm } => write!(f, "lw {d}, {imm}({s})"),
+            Instruction::Sub { d, s1, s2 } => write!(f, "sub {d}, {s1}, {s2}"),
+            Instruction::Mul { d, s1, s2 } => write!(f, "mul {d}, {s1}, {s2}"),
+            Instruction::Div { d, s1, s2 } => write!(f, "div {d}, {s1}, {s2}"),
+            Instruction::Li { d, imm } => write!(f, "li {d}, {imm}"),
             Instruction::Lazy => write!(f, "too lazy for this atm"),
+            Instruction::SwGlobl { s1, s2, d } => write!(f, "sw {d}, {s1}, {s2}"),
+            Instruction::LwGlobl { d, s } => write!(f, "lw {d} {s}"),
+            Instruction::Nop => todo!(),
         }
     }
 }
@@ -209,10 +245,11 @@ impl std::fmt::Display for Instruction {
 impl std::fmt::Display for Register {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Register::R0 => f.write_str("x0"),
-            Register::T0 => f.write_str("x5"),
-            Register::FP => f.write_str("x8"),
-            Register::A0 => f.write_str("x10"),
+            Register::R0 => f.write_str("r0"),
+            Register::T0 => f.write_str("t0"),
+            Register::FP => f.write_str("fp"),
+            Register::A0 => f.write_str("a0"),
+            Register::Globl(g) => write!(f, "${g}"),
         }
     }
 }

@@ -64,7 +64,7 @@ pub enum Kwd {
 
 impl std::fmt::Display for FerryToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}", self.token_type)
+        write!(f, "{}", self.token_type)
     }
 }
 

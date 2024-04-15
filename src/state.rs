@@ -47,9 +47,9 @@ impl std::fmt::Display for FerryState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for k in self.symbols.keys() {
             if let Some(v) = self.symbols.get(k).unwrap() {
-                write!(f, "{}: {}", k, v)?;
+                write!(f, "{}: {}\n", k, v)?;
             } else {
-                write!(f, "{}: undefined", k)?;
+                write!(f, "{}: undefined\n", k)?;
             }
         }
 
