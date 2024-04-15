@@ -39,7 +39,6 @@ pub struct FerryLexer<'source> {
     source: &'source [u8],
     start: usize,
     current: usize,
-    line: usize,
 }
 
 impl<'source> FerryLexer<'source> {
@@ -48,7 +47,6 @@ impl<'source> FerryLexer<'source> {
             source,
             start: 0,
             current: 0,
-            line: 1,
         }
     }
 
@@ -81,6 +79,7 @@ impl<'source> FerryLexer<'source> {
         self.start = self.current;
 
         match self.advance() {
+            b';' => Ok(Some(TT::Control(Ctrl::Semicolon))),
             b'+' => Ok(Some(TT::Operator(Op::Add))),
             b'-' => {
                 if self.peek() == b'>' {
@@ -148,9 +147,9 @@ impl<'source> FerryLexer<'source> {
     /// creates a string value from the bytestream
     fn string(&mut self) -> FerryResult<TT> {
         while self.peek() != b'"' && !self.end_of_code() {
-            if self.peek() == b'\n' {
-                self.line += 1;
-            }
+            // if self.peek() == b'\n' {
+            //     self.line += 1;
+            // }
             self.advance();
         }
         if self.end_of_code() {

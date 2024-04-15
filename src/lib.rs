@@ -21,7 +21,6 @@ use crate::lexer::FerryLexer;
 use crate::state::FerryState;
 use crate::token::FerryToken;
 
-// 'source lifetime: entire length of code compilation / execution
 pub struct Ferry {
     source_code: String,
     tokens: Vec<FerryToken>,
