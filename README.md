@@ -10,10 +10,20 @@ A toy programming language for learning and exhibiting.
 
 ## Usage
 
+During the REPL session, you can invoke commands to print compiler/interpreter states with `!`. Recognized commands:
+
+```bash
+!tokens
+!state
+!ast
+!type
+!asm
+```
+
 Currently only features an interactive REPL for language testing. Planned and expected features include:
 
 - [ ] Flags to enable/disable diagnostic print as standard
-- [ ] Commands recognized by the REPL to print a diagnostic
+- [x] Commands recognized by the REPL to print a diagnostic
 - [ ] `ferry compile` subcommand to explicitly invoke a mock compilation process
 
 ## Language features
