@@ -10,7 +10,7 @@ A toy programming language for learning and exhibiting.
 
 ## Usage
 
-During the REPL session, you can invoke commands to print compiler/interpreter states with `!`. Recognized commands:
+Currently only features an interactive REPL for language testing. During the REPL session, you can invoke commands to print compiler/interpreter states with `!`. Recognized commands:
 
 ```bash
 !tokens
@@ -20,7 +20,7 @@ During the REPL session, you can invoke commands to print compiler/interpreter s
 !asm
 ```
 
-Currently only features an interactive REPL for language testing. Planned and expected features include:
+Planned and expected features include:
 
 - [ ] Flags to enable/disable diagnostic print as standard
 - [x] Commands recognized by the REPL to print a diagnostic
