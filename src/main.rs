@@ -49,7 +49,7 @@ fn repl() -> Result<(), Error> {
             return Ok(());
         } else if input.starts_with("!") {
             match input.trim_end() {
-                "!token" => program.print_data(PrintReq::Tokens),
+                "!tokens" => program.print_data(PrintReq::Tokens),
                 "!state" => program.print_data(PrintReq::State),
                 "!ast" => program.print_data(PrintReq::Ast),
                 "!type" => program.print_data(PrintReq::TypedAst),
