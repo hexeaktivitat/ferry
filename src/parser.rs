@@ -122,8 +122,20 @@ impl FerryParser {
                 TLit::Num(n) => Expr::Literal(SLit::Number {
                     value: *n,
                     expr_type: FerryType::Untyped,
+                    span: *self.previous().get_span(),
                 }),
-                _ => unreachable!(),
+                TLit::String(s) => Expr::Literal(SLit::Str {
+                    value: s.clone(),
+                    expr_type: FerryType::Untyped,
+                    span: *self.previous().get_span(),
+                }),
+                TLit::Boolean(b) => Expr::Literal(SLit::Bool {
+                    value: *b,
+                    expr_type: FerryType::Untyped,
+                    span: *self.previous().get_span(),
+                }),
+                TLit::None => todo!(),
+                // _ => unreachable!(),
             }),
             TT::Identifier(id) => Ok(Expr::Variable(Variable {
                 token: self.previous().clone(),

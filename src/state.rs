@@ -11,6 +11,8 @@ pub struct FerryState {
 #[derive(Debug, Clone, PartialEq)]
 pub enum FerryValue {
     Number(f64),
+    Str(String),
+    Boolean(bool),
 }
 
 impl FerryState {
@@ -59,10 +61,7 @@ impl std::fmt::Display for FerryState {
 
 impl FerryValue {
     pub fn verify_type(&self, t: &FerryType) -> bool {
-        let state_type = match self {
-            FerryValue::Number(_) => &FerryType::Num,
-        };
-        state_type == t
+        self.get_type() == t
     }
 }
 
@@ -70,6 +69,8 @@ impl TypeCheckable for FerryValue {
     fn get_type(&self) -> &FerryType {
         match self {
             FerryValue::Number(_) => &FerryType::Num,
+            FerryValue::Str(_) => &FerryType::String,
+            FerryValue::Boolean(_) => &FerryType::Boolean,
         }
     }
 }
@@ -78,6 +79,8 @@ impl std::fmt::Display for FerryValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             FerryValue::Number(n) => write!(f, "{}", n),
+            FerryValue::Str(s) => write!(f, "{s}"),
+            FerryValue::Boolean(b) => write!(f, "{b}"),
         }
     }
 }

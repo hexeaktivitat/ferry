@@ -92,9 +92,16 @@ impl<'source> FerryLexer<'source> {
             b'/' => Ok(Some(TT::Operator(Op::Divide))),
             b'=' => Ok(Some(TT::Operator(Op::Equals))),
 
+            b'"' => self.string().map(Some),
+
             c if c.is_ascii_digit() => self.number().map(Some),
             c @ b'_' | c if c.is_ascii_alphabetic() => {
                 self.identifier().map(|id| match id.as_str() {
+                    // keywords
+
+                    // reserved boolean keywords
+                    "true" => Some(TT::Value(Val::Boolean(true))),
+                    "false" => Some(TT::Value(Val::Boolean(false))),
                     _ => Some(TT::Identifier(id)),
                 })
             }

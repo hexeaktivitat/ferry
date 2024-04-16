@@ -12,7 +12,21 @@ pub enum Expr {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
-    Number { value: f64, expr_type: FerryType },
+    Number {
+        value: f64,
+        expr_type: FerryType,
+        span: SourceSpan,
+    },
+    Str {
+        value: String,
+        expr_type: FerryType,
+        span: SourceSpan,
+    },
+    Bool {
+        value: bool,
+        expr_type: FerryType,
+        span: SourceSpan,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -58,7 +72,21 @@ impl Expr {
     pub fn get_span(&self) -> Option<SourceSpan> {
         match self {
             Expr::Literal(l) => match l {
-                Literal::Number { value, expr_type } => None,
+                Literal::Number {
+                    value,
+                    expr_type,
+                    span,
+                } => Some(*span),
+                Literal::Str {
+                    value,
+                    expr_type,
+                    span,
+                } => Some(*span),
+                Literal::Bool {
+                    value,
+                    expr_type,
+                    span,
+                } => Some(*span),
             },
             Expr::Binary(b) => Some(b.operator.get_span().clone()),
             Expr::Variable(v) => Some(v.token.get_span().clone()),
@@ -72,4 +100,5 @@ pub enum FerryType {
     Untyped,
     Num,
     String,
+    Boolean,
 }

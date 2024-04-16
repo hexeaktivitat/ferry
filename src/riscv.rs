@@ -56,10 +56,40 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         match literal {
-            SLit::Number { value, expr_type } => Ok(Instruction::Li {
+            SLit::Number {
+                value,
+                expr_type,
+                span,
+            } => Ok(Instruction::Li {
                 d: Register::A0,
                 imm: value.clone() as i32,
             }),
+            // not a functional instruction!
+            SLit::Str {
+                value,
+                expr_type,
+                span,
+            } => Ok(Instruction::Li {
+                d: Register::A0,
+                imm: 0,
+            }),
+            SLit::Bool {
+                value,
+                expr_type,
+                span,
+            } => {
+                if *value {
+                    Ok(Instruction::Li {
+                        d: Register::A0,
+                        imm: 1,
+                    })
+                } else {
+                    Ok(Instruction::Li {
+                        d: Register::A0,
+                        imm: 0,
+                    })
+                }
+            }
         }
     }
 
