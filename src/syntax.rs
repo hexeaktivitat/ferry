@@ -1,6 +1,9 @@
 use miette::SourceSpan;
 
-use crate::{state::FerryValue, token::FerryToken};
+use crate::{
+    state::FerryValue,
+    token::{FerryToken, TokenType as TT},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
@@ -101,4 +104,47 @@ pub enum FerryType {
     Num,
     String,
     Boolean,
+}
+
+impl std::fmt::Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Expr::Literal(l) => match l {
+                Literal::Number {
+                    value,
+                    expr_type,
+                    span,
+                } => write!(f, "{value}"),
+                Literal::Str {
+                    value,
+                    expr_type,
+                    span,
+                } => write!(f, "{value}"),
+                Literal::Bool {
+                    value,
+                    expr_type,
+                    span,
+                } => write!(f, "{value}"),
+            },
+            Expr::Binary(b) => match b.operator.get_type() {
+                TT::Operator(o) => match o {
+                    crate::token::Op::Add => write!(f, "Add {} {}", b.lhs, b.rhs),
+                    crate::token::Op::Subtract => write!(f, "Subtract {} {}", b.lhs, b.rhs),
+                    crate::token::Op::Multiply => write!(f, "Multiply {} {}", b.lhs, b.rhs),
+                    crate::token::Op::Divide => write!(f, "Divide {} {}", b.lhs, b.rhs),
+                    crate::token::Op::Equals => write!(f, "{} equals {}", b.lhs, b.rhs),
+                    crate::token::Op::RightArrow => todo!(),
+                },
+                _ => unreachable!(),
+            },
+            Expr::Variable(v) => write!(f, "{}", v.name),
+            Expr::Assign(a) => {
+                if a.value.is_some() {
+                    write!(f, "{} is {}", a.var, a.value.clone().unwrap())
+                } else {
+                    write!(f, "{} is NULL", a.var)
+                }
+            }
+        }
+    }
 }

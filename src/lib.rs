@@ -118,15 +118,15 @@ impl<'source> Ferry {
                 println!("===\n");
 
                 for e in &self.ast {
-                    println!("{:?}", e);
+                    println!("{}", e);
                 }
             }
             PrintReq::TypedAst => {
-                println!("\nTOKENS");
+                println!("\nTYPED AST");
                 println!("======\n");
 
                 for t in &self.typed_ast {
-                    println!("{:?}", t);
+                    println!("{}", t);
                 }
             }
             PrintReq::Asm => {
