@@ -4,6 +4,11 @@
 
 A toy programming language for learning and exhibiting.
 
+Long-term plans:
+- [ ] LLVM backend for actual compilation (self-written RISC-V support is intended to be minimal and learning-focused)
+- [ ] Typeclasses
+- [ ] ???
+
 ## Building
 
 `cargo run --release`
@@ -12,7 +17,7 @@ A toy programming language for learning and exhibiting.
 
 Currently only features an interactive REPL for language testing. During the REPL session, you can invoke commands to print compiler/interpreter states with `!`. Recognized commands:
 
-```bash
+```
 !tokens
 !state
 !ast
@@ -23,6 +28,7 @@ Currently only features an interactive REPL for language testing. During the REP
 Planned and expected features include:
 
 - [ ] Flags to enable/disable diagnostic print as standard
+  - May not implement; use case covered by below
 - [x] Commands recognized by the REPL to print a diagnostic
 - [ ] `ferry compile` subcommand to explicitly invoke a mock compilation process
 
@@ -36,6 +42,6 @@ Small roadmap:
 - [x] Variable assignment `five = 5`
 - [ ] Type assignment
   - Syntax options include: `Integer -> five = 5`, `five: Integer = 5` & `five := 5` for assigned vs inferred type
-- [ ] Booleans
+- [x] Booleans
 - [ ] `if`/`then`/`else` expressions
 - [ ] loop structures `loop`/`while`/`for`
