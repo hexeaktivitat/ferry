@@ -1,9 +1,6 @@
 use miette::SourceSpan;
 
-use crate::{
-    state::FerryValue,
-    token::{FerryToken, TokenType as TT},
-};
+use crate::token::{FerryToken, TokenType as TT};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
@@ -71,33 +68,6 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
     }
 }
 
-impl Expr {
-    pub fn get_span(&self) -> Option<SourceSpan> {
-        match self {
-            Expr::Literal(l) => match l {
-                Literal::Number {
-                    value,
-                    expr_type,
-                    span,
-                } => Some(*span),
-                Literal::Str {
-                    value,
-                    expr_type,
-                    span,
-                } => Some(*span),
-                Literal::Bool {
-                    value,
-                    expr_type,
-                    span,
-                } => Some(*span),
-            },
-            Expr::Binary(b) => Some(b.operator.get_span().clone()),
-            Expr::Variable(v) => Some(v.token.get_span().clone()),
-            Expr::Assign(a) => None,
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum FerryType {
     Untyped,
@@ -112,18 +82,18 @@ impl std::fmt::Display for Expr {
             Expr::Literal(l) => match l {
                 Literal::Number {
                     value,
-                    expr_type,
-                    span,
+                    expr_type: _,
+                    span: _,
                 } => write!(f, "{value}"),
                 Literal::Str {
                     value,
-                    expr_type,
-                    span,
+                    expr_type: _,
+                    span: _,
                 } => write!(f, "{value}"),
                 Literal::Bool {
                     value,
-                    expr_type,
-                    span,
+                    expr_type: _,
+                    span: _,
                 } => write!(f, "{value}"),
             },
             Expr::Binary(b) => match b.operator.get_type() {

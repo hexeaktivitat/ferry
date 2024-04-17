@@ -68,7 +68,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             })),
             SLit::Str {
                 value,
-                expr_type,
+                expr_type: _,
                 span,
             } => Ok(Expr::Literal(SLit::Str {
                 value: value.clone(),
@@ -77,7 +77,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             })),
             SLit::Bool {
                 value,
-                expr_type,
+                expr_type: _,
                 span,
             } => Ok(Expr::Literal(SLit::Bool {
                 value: *value,
@@ -167,19 +167,19 @@ impl TypeCheckable for Expr {
         match self {
             Expr::Literal(l) => match l {
                 SLit::Number {
-                    value,
+                    value: _,
                     expr_type,
-                    span,
+                    span: _,
                 } => expr_type,
                 SLit::Str {
-                    value,
+                    value: _,
                     expr_type,
-                    span,
+                    span: _,
                 } => expr_type,
                 SLit::Bool {
-                    value,
+                    value: _,
                     expr_type,
-                    span,
+                    span: _,
                 } => expr_type,
             },
             Expr::Binary(b) => &b.expr_type,

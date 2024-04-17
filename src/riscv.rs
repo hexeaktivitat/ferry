@@ -24,7 +24,7 @@ impl FerryRiscVAssembler {
     pub fn assemble(
         &mut self,
         source: Vec<Expr>,
-        state: &mut FerryState,
+        _state: &mut FerryState,
     ) -> FerryAsmResult<Instruction> {
         // let mut results = Vec::new();
         let mut operations = Vec::new();
@@ -33,7 +33,7 @@ impl FerryRiscVAssembler {
             match self.generate_asm(code, &mut operations) {
                 Ok(a) => operations.push(a),
 
-                Err(e) => println!("o no"),
+                Err(e) => println!("o no {}", e),
             }
         }
 
@@ -53,30 +53,30 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
     fn visit_literal(
         &mut self,
         literal: &mut SLit,
-        state: &mut Vec<Instruction>,
+        _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         match literal {
             SLit::Number {
                 value,
-                expr_type,
-                span,
+                expr_type: _,
+                span: _,
             } => Ok(Instruction::Li {
                 d: Register::A0,
                 imm: value.clone() as i32,
             }),
             // not a functional instruction!
             SLit::Str {
-                value,
-                expr_type,
-                span,
+                value: _,
+                expr_type: _,
+                span: _,
             } => Ok(Instruction::Li {
                 d: Register::A0,
                 imm: 0,
             }),
             SLit::Bool {
                 value,
-                expr_type,
-                span,
+                expr_type: _,
+                span: _,
             } => {
                 if *value {
                     Ok(Instruction::Li {
@@ -148,7 +148,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
     fn visit_variable(
         &mut self,
         variable: &mut Variable,
-        state: &mut Vec<Instruction>,
+        _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         let globl = &variable.name;
         Ok(Instruction::LwGlobl {

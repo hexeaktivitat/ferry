@@ -114,7 +114,7 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn target(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn target(&mut self, _state: &mut FerryState) -> FerryResult<Expr> {
         self.advance();
 
         match self.previous().get_type() {
@@ -198,23 +198,6 @@ impl FerryParser {
     fn end_of_program(&self) -> bool {
         self.tokens[self.current].get_type() == &TT::End
     }
-}
-
-// helper classes and types
-#[derive(Debug, Clone, Copy, PartialOrd, Ord, PartialEq, Eq)]
-enum Associative {
-    Neither,
-    Left,
-    Right,
-}
-
-#[derive(Debug, Copy, PartialEq, Eq, Ord, PartialOrd, Clone)]
-enum Precedence {
-    Start,
-    Assign,
-    Sum,
-    Product,
-    Call,
 }
 
 trait MatchToken {

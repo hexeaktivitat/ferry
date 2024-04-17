@@ -16,6 +16,13 @@ pub enum FerryInterpreterError {
         #[label]
         span: SourceSpan,
     },
+    #[error("Invalid operation")]
+    InvalidOperation {
+        #[help]
+        help: String,
+        #[label]
+        span: SourceSpan,
+    },
 }
 
 type FerryResult<T> = Result<Option<T>, FerryInterpreterError>;
@@ -44,23 +51,23 @@ impl FerryInterpreter {
 }
 
 impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter {
-    fn visit_literal(&mut self, literal: &mut SLit, state: &mut FerryState) -> Option<FerryValue> {
+    fn visit_literal(&mut self, literal: &mut SLit, _state: &mut FerryState) -> Option<FerryValue> {
         match literal {
             SLit::Number {
                 value,
-                expr_type,
-                span,
+                expr_type: _,
+                span: _,
             } => Some(FerryValue::Number(*value)),
             SLit::Str {
                 value,
-                expr_type,
-                span,
+                expr_type: _,
+                span: _,
             } => Some(FerryValue::Str(value.clone())),
             SLit::Bool {
                 value,
-                expr_type,
-                span,
-            } => todo!(),
+                expr_type: _,
+                span: _,
+            } => Some(FerryValue::Boolean(*value)),
         }
     }
 
@@ -76,18 +83,12 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
                         Some(FerryValue::Number(l + r))
                     }
-                    (None, None) => todo!(),
-                    (None, Some(_)) => todo!(),
-                    (Some(_), None) => todo!(),
-                    _ => unimplemented!(),
+                    _ => unreachable!(),
                 },
                 Op::Subtract => match (left, right) {
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
                         Some(FerryValue::Number(l - r))
                     }
-                    (None, None) => todo!(),
-                    (None, Some(_)) => todo!(),
-                    (Some(_), None) => todo!(),
                     _ => unimplemented!(),
                 },
 
