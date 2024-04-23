@@ -84,10 +84,10 @@ impl<'source> Ferry {
         let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
         let result = interpreter.interpret(&mut self.state)?.unwrap();
 
-        let mut assembler = FerryRiscVAssembler::new();
-        self.riscv_asm = assembler
-            .assemble(self.typed_ast.clone(), &mut self.state)
-            .unwrap();
+        // let mut assembler = FerryRiscVAssembler::new();
+        // self.riscv_asm = assembler
+        //     .assemble(self.typed_ast.clone(), &mut self.state)
+        //     .unwrap();
 
         // println!("\n\nSTATE");
         // println!("=====");
