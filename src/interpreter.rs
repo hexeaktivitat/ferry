@@ -112,7 +112,7 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
                     (Some(_), None) => todo!(),
                     _ => unimplemented!(),
                 },
-                Op::RightArrow => todo!(),
+                // Op::RightArrow => todo!(),
                 Op::Equals => todo!(),
             },
             _ => None,

@@ -49,12 +49,12 @@ pub enum Op {
     Multiply,
     Divide,
     Equals,
-    RightArrow,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Ctrl {
     Semicolon,
+    Colon,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -85,10 +85,10 @@ impl std::fmt::Display for TokenType {
                 Op::Multiply => write!(f, "Operator<Multiply>"),
                 Op::Divide => write!(f, "Operator<Divide>"),
                 Op::Equals => write!(f, "Operator<Equals>"),
-                Op::RightArrow => write!(f, "Operator<RightArrow>"),
             },
             TokenType::Control(c) => match c {
                 Ctrl::Semicolon => write!(f, "Control<Semicolon>"),
+                Ctrl::Colon => write!(f, "Control<Colon>"),
             },
             TokenType::Keyword(k) => match k {
                 Kwd::If => write!(f, "Keyword<If>"),

@@ -138,7 +138,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                     s1: Register::T0,
                     s2: Register::A0,
                 },
-                crate::token::Op::RightArrow => todo!(),
+                // crate::token::Op::RightArrow => todo!(),
                 crate::token::Op::Equals => todo!(),
             },
             _ => unreachable!(),

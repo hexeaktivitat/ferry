@@ -2,7 +2,8 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::state::FerryState;
-use crate::syntax::{Assign, Binary, Expr, FerryType, Lit as SLit, Variable};
+use crate::syntax::{Assign, Binary, Expr, FerryType, If, Lit as SLit, Variable};
+use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, TokenType::Identifier, Val as TLit};
 
 #[derive(Error, Diagnostic, Debug)]
@@ -56,12 +57,56 @@ impl FerryParser {
     }
 
     fn start(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let mut expr = self.s_expression(state)?;
+        let mut expr = self.keywords(state)?;
 
         Ok(expr)
     }
 
     // pratt parsing starts here
+
+    fn keywords(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let expr = if self.matches(&[TT::Keyword(Kwd::If)]) {
+            self.if_expr(state)?
+        } else {
+            self.s_expression(state)?
+        };
+
+        Ok(expr)
+    }
+
+    fn if_expr(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let token = self.previous();
+        let condition = Box::new(self.s_expression(state)?);
+        self.consume(
+            &TT::Keyword(Kwd::Then),
+            "expected 'then' after 'if' conditional",
+        )?;
+        self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'then'")?;
+        let then_expr = Box::new(self.s_expression(state)?);
+        let else_expr = if self.peek().get_token_type() == &TT::Keyword(Kwd::Else) {
+            self.consume(&TT::Keyword(Kwd::Else), "idk how you got this")?;
+            if self.peek().get_token_type() == &TT::Control(Ctrl::Colon) {
+                self.consume(
+                    &TT::Control(crate::token::Ctrl::Colon),
+                    "colon not consumed",
+                )?;
+            }
+            Some(Box::new(self.s_expression(state)?))
+        } else {
+            None
+        };
+
+        let expr = Expr::If(If {
+            token,
+            condition,
+            then_expr,
+            else_expr,
+            expr_type: FerryType::Untyped,
+        });
+
+        Ok(expr)
+    }
+
     fn s_expression(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         let mut expr = self.assignment(state)?;
 

@@ -79,22 +79,30 @@ impl<'source> FerryLexer<'source> {
         self.start = self.current;
 
         match self.advance() {
+            // CONTROL CHARACTERS
             b';' => Ok(Some(TT::Control(Ctrl::Semicolon))),
+            b':' => Ok(Some(TT::Control(Ctrl::Colon))),
+
+            // OPERATORS
             b'+' => Ok(Some(TT::Operator(Op::Add))),
             b'-' => {
-                if self.peek() == b'>' {
-                    Ok(Some(TT::Operator(Op::RightArrow)))
-                } else {
-                    Ok(Some(TT::Operator(Op::Subtract)))
-                }
+                // if self.peek() == b'>' {
+                // Ok(Some(TT::Operator(Op::RightArrow)))
+                // } else {
+                Ok(Some(TT::Operator(Op::Subtract)))
+                // }
             }
             b'*' => Ok(Some(TT::Operator(Op::Multiply))),
             b'/' => Ok(Some(TT::Operator(Op::Divide))),
             b'=' => Ok(Some(TT::Operator(Op::Equals))),
 
+            // STRING LITERAL
             b'"' => self.string().map(Some),
 
+            // NUMERIC LITERAL
             c if c.is_ascii_digit() => self.number().map(Some),
+
+            // KEYWORDS AND IDENTIFIERS
             c @ b'_' | c if c.is_ascii_alphabetic() => {
                 self.identifier().map(|id| match id.as_str() {
                     // keywords
@@ -108,6 +116,8 @@ impl<'source> FerryLexer<'source> {
                     _ => Some(TT::Identifier(id)),
                 })
             }
+
+            // NON-SIGNIFICANT WHITESPACE
             b' ' | b'\n' | b'\r' => Ok(None),
             _ => Err(FerryLexError::UnexpectedCharacter {
                 advice: "Expected literally anything else".into(),

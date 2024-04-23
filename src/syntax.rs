@@ -121,7 +121,6 @@ impl std::fmt::Display for Expr {
                     crate::token::Op::Multiply => write!(f, "Multiply {} {}", b.lhs, b.rhs),
                     crate::token::Op::Divide => write!(f, "Divide {} {}", b.lhs, b.rhs),
                     crate::token::Op::Equals => write!(f, "{} equals {}", b.lhs, b.rhs),
-                    crate::token::Op::RightArrow => todo!(),
                 },
                 _ => unreachable!(),
             },
