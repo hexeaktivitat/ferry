@@ -149,6 +149,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     name: assign.name.clone(),
                     value: Some(Box::new(value_check.clone())),
                     expr_type: value_check.get_type().clone(),
+                    token: assign.token.clone(),
                 }));
             }
         }

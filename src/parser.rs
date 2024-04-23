@@ -72,7 +72,7 @@ impl FerryParser {
         let mut expr = self.sum(state)?;
 
         if self.matches(&[TT::Operator(Op::Equals)]) {
-            let _operator = self.previous();
+            let operator = self.previous();
             let value = self.s_expression(state)?;
             if let Expr::Variable(v) = &expr {
                 expr = Expr::Assign(Assign {
@@ -80,6 +80,7 @@ impl FerryParser {
                     name: v.name.clone(),
                     value: Some(Box::new(value)),
                     expr_type: FerryType::Untyped,
+                    token: operator,
                 });
             }
         }

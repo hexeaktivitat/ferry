@@ -8,6 +8,7 @@ pub enum Expr {
     Binary(Binary),
     Variable(Variable),
     Assign(Assign),
+    If(If),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -42,6 +43,7 @@ pub struct Binary {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Assign {
+    pub token: FerryToken,
     pub var: Box<Expr>,
     pub name: String,
     pub value: Option<Box<Expr>>,
@@ -52,6 +54,15 @@ pub struct Assign {
 pub struct Variable {
     pub token: FerryToken,
     pub name: String,
+    pub expr_type: FerryType,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct If {
+    pub token: FerryToken,
+    pub condition: Box<Expr>,
+    pub then_expr: Box<Expr>,
+    pub else_expr: Box<Expr>,
     pub expr_type: FerryType,
 }
 
