@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::{
     state::FerryState,
-    syntax::{walk_expr, Binary, Expr, ExprVisitor, Literal as SLit, Variable},
+    syntax::{walk_expr, Binary, Expr, ExprVisitor, Lit, Variable},
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -52,11 +52,11 @@ impl FerryRiscVAssembler {
 impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut FerryRiscVAssembler {
     fn visit_literal(
         &mut self,
-        literal: &mut SLit,
+        literal: &mut Lit,
         _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         match literal {
-            SLit::Number {
+            Lit::Number {
                 value,
                 expr_type: _,
                 span: _,
@@ -65,7 +65,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 imm: value.clone() as i32,
             }),
             // not a functional instruction!
-            SLit::Str {
+            Lit::Str {
                 value: _,
                 expr_type: _,
                 span: _,
@@ -73,7 +73,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 d: Register::A0,
                 imm: 0,
             }),
-            SLit::Bool {
+            Lit::Bool {
                 value,
                 expr_type: _,
                 span: _,
@@ -90,7 +90,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                     })
                 }
             }
-            SLit::Undefined { expr_type } => todo!(),
+            Lit::Undefined { expr_type } => todo!(),
         }
     }
 
@@ -114,7 +114,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
             imm: self.offset,
         });
 
-        let result_instr = match binary.operator.get_type() {
+        let result_instr = match binary.operator.get_token_type() {
             crate::token::TokenType::Operator(o) => match o {
                 crate::token::Op::Add => Instruction::Add {
                     d: Register::A0,
@@ -180,6 +180,14 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
             s2: Register::T0,
             d: Register::A0,
         })
+    }
+
+    fn visit_if_expr(
+        &mut self,
+        if_expr: &mut crate::syntax::If,
+        state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        todo!()
     }
 }
 

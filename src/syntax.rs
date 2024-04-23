@@ -4,7 +4,7 @@ use crate::token::{FerryToken, TokenType as TT};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    Literal(Literal),
+    Literal(Lit),
     Binary(Binary),
     Variable(Variable),
     Assign(Assign),
@@ -12,7 +12,7 @@ pub enum Expr {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Literal {
+pub enum Lit {
     Undefined {
         expr_type: FerryType,
     },
@@ -62,15 +62,16 @@ pub struct If {
     pub token: FerryToken,
     pub condition: Box<Expr>,
     pub then_expr: Box<Expr>,
-    pub else_expr: Box<Expr>,
+    pub else_expr: Option<Box<Expr>>,
     pub expr_type: FerryType,
 }
 
 pub trait ExprVisitor<T, S> {
-    fn visit_literal(&mut self, literal: &mut Literal, state: S) -> T;
+    fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
     fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
     fn visit_variable(&mut self, variable: &mut Variable, state: S) -> T;
     fn visit_assign(&mut self, assign: &mut Assign, state: S) -> T;
+    fn visit_if_expr(&mut self, if_expr: &mut If, state: S) -> T;
 }
 
 pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, state: S) -> T {
@@ -79,6 +80,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::Binary(binary) => visitor.visit_binary(binary, state),
         Expr::Variable(variable) => visitor.visit_variable(variable, state),
         Expr::Assign(assign) => visitor.visit_assign(assign, state),
+        Expr::If(if_expr) => visitor.visit_if_expr(if_expr, state),
     }
 }
 
@@ -95,24 +97,24 @@ impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Expr::Literal(l) => match l {
-                Literal::Number {
+                Lit::Number {
                     value,
                     expr_type: _,
                     span: _,
                 } => write!(f, "{value}"),
-                Literal::Str {
+                Lit::Str {
                     value,
                     expr_type: _,
                     span: _,
                 } => write!(f, "{value}"),
-                Literal::Bool {
+                Lit::Bool {
                     value,
                     expr_type: _,
                     span: _,
                 } => write!(f, "{value}"),
-                Literal::Undefined { expr_type } => write!(f, "{expr_type}"),
+                Lit::Undefined { expr_type } => write!(f, "{expr_type}"),
             },
-            Expr::Binary(b) => match b.operator.get_type() {
+            Expr::Binary(b) => match b.operator.get_token_type() {
                 TT::Operator(o) => match o {
                     crate::token::Op::Add => write!(f, "Add {} {}", b.lhs, b.rhs),
                     crate::token::Op::Subtract => write!(f, "Subtract {} {}", b.lhs, b.rhs),
@@ -129,6 +131,19 @@ impl std::fmt::Display for Expr {
                     write!(f, "{} is {}", a.var, a.value.clone().unwrap())
                 } else {
                     write!(f, "{} is NULL", a.var)
+                }
+            }
+            Expr::If(i) => {
+                if i.else_expr.is_some() {
+                    write!(
+                        f,
+                        "if {} then: {} else: {}",
+                        i.condition,
+                        i.then_expr,
+                        i.else_expr.clone().unwrap()
+                    )
+                } else {
+                    write!(f, "if {} then: {}", i.condition, i.then_expr)
                 }
             }
         }

@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::{
     state::FerryState,
-    syntax::{walk_expr, Assign, Binary, Expr, ExprVisitor, FerryType, Literal as SLit, Variable},
+    syntax::{walk_expr, Assign, Binary, Expr, ExprVisitor, FerryType, If, Lit, Variable},
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -11,6 +11,20 @@ use crate::{
 pub enum FerryTypeError {
     #[error("asdf")]
     A {
+        #[help]
+        advice: String,
+        #[label]
+        span: SourceSpan,
+    },
+    #[error("conditional statement was not boolean")]
+    ConditionalNotBool {
+        #[help]
+        advice: String,
+        #[label]
+        span: SourceSpan,
+    },
+    #[error("mismatched types")]
+    TypeMismatch {
         #[help]
         advice: String,
         #[label]
@@ -55,36 +69,38 @@ impl FerryTypechecker {
 }
 
 impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
-    fn visit_literal(&mut self, literal: &mut SLit, state: &mut FerryState) -> FerryResult<Expr> {
+    fn visit_literal(&mut self, literal: &mut Lit, state: &mut FerryState) -> FerryResult<Expr> {
         match literal {
-            SLit::Number {
+            Lit::Number {
                 value,
                 expr_type: _,
                 span,
-            } => Ok(Expr::Literal(SLit::Number {
-                value: *value,
+            } => Ok(Expr::Literal(Lit::Number {
+                value: value.clone(),
                 expr_type: FerryType::Num,
-                span: *span,
+                span: span.clone(),
             })),
-            SLit::Str {
+            Lit::Str {
                 value,
                 expr_type: _,
                 span,
-            } => Ok(Expr::Literal(SLit::Str {
+            } => Ok(Expr::Literal(Lit::Str {
                 value: value.clone(),
                 expr_type: FerryType::String,
-                span: *span,
+                span: span.clone(),
             })),
-            SLit::Bool {
+            Lit::Bool {
                 value,
                 expr_type: _,
                 span,
-            } => Ok(Expr::Literal(SLit::Bool {
-                value: *value,
+            } => Ok(Expr::Literal(Lit::Bool {
+                value: value.clone(),
                 expr_type: FerryType::Boolean,
-                span: *span,
+                span: span.clone(),
             })),
-            SLit::Undefined { expr_type } => todo!(),
+            Lit::Undefined { expr_type: _ } => Ok(Expr::Literal(Lit::Undefined {
+                expr_type: FerryType::Undefined,
+            })),
         }
     }
 
@@ -155,8 +171,40 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         }
         Err(FerryTypeError::A {
             advice: "???".into(),
-            span: (0, 1).into(),
+            span: assign.token.get_span().clone(),
         })
+    }
+
+    fn visit_if_expr(&mut self, if_expr: &mut If, state: &mut FerryState) -> FerryResult<Expr> {
+        let condition = self.check_types(&mut if_expr.condition, state)?;
+        if condition.get_type() != &FerryType::Boolean {
+            return Err(FerryTypeError::ConditionalNotBool {
+                advice: "expected conditional to if statement to be of type 'bool'".into(),
+                span: if_expr.token.get_span().clone(),
+            });
+        }
+        let then_expr = self.check_types(&mut if_expr.then_expr, state)?;
+        let else_expr = if let Some(else_expr_box) = &mut if_expr.else_expr {
+            let else_expr = self.check_types(else_expr_box, state)?;
+            if then_expr.get_type() != else_expr.get_type() {
+                return Err(FerryTypeError::TypeMismatch {
+                    advice: "type mismatch between two values".into(),
+                    span: if_expr.token.get_span().clone(),
+                });
+            } else {
+                Some(Box::new(else_expr))
+            }
+        } else {
+            None
+        };
+        let expr_type = then_expr.get_type().clone();
+        Ok(Expr::If(If {
+            token: if_expr.token.clone(),
+            condition: Box::new(condition),
+            then_expr: Box::new(then_expr),
+            else_expr,
+            expr_type,
+        }))
     }
 }
 
@@ -168,26 +216,27 @@ impl TypeCheckable for Expr {
     fn get_type(&self) -> &FerryType {
         match self {
             Expr::Literal(l) => match l {
-                SLit::Number {
+                Lit::Number {
                     value: _,
                     expr_type,
                     span: _,
                 } => expr_type,
-                SLit::Str {
+                Lit::Str {
                     value: _,
                     expr_type,
                     span: _,
                 } => expr_type,
-                SLit::Bool {
+                Lit::Bool {
                     value: _,
                     expr_type,
                     span: _,
                 } => expr_type,
-                SLit::Undefined { expr_type } => todo!(),
+                Lit::Undefined { expr_type } => &expr_type,
             },
             Expr::Binary(b) => &b.expr_type,
             Expr::Variable(v) => &v.expr_type,
             Expr::Assign(a) => &a.expr_type,
+            Expr::If(i) => &i.expr_type,
         }
     }
 }

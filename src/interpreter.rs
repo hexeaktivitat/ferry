@@ -3,8 +3,9 @@ use thiserror::Error;
 
 use crate::{
     state::{FerryState, FerryValue},
-    syntax::{walk_expr, Binary, Expr, ExprVisitor, Literal as SLit, Variable},
+    syntax::{walk_expr, Binary, Expr, ExprVisitor, FerryType, Lit as SLit, Variable},
     token::{Op, TokenType as TT},
+    typecheck::TypeCheckable,
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -78,7 +79,7 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
 
         let op = &binary.operator;
 
-        match &op.get_type() {
+        match &op.get_token_type() {
             TT::Operator(o) => match o {
                 Op::Add => match (left, right) {
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
@@ -137,6 +138,49 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
             value
         } else {
             Some(FerryValue::Number(0.))
+        }
+    }
+
+    fn visit_if_expr(
+        &mut self,
+        if_expr: &mut crate::syntax::If,
+        state: &mut FerryState,
+    ) -> Option<FerryValue> {
+        if let Some(conditional) = self.evaluate(&mut if_expr.condition, state).unwrap() {
+            let value = if conditional.truthiness() {
+                self.evaluate(&mut if_expr.then_expr, state).unwrap()
+            } else {
+                if let Some(else_expr) = &mut if_expr.else_expr {
+                    self.evaluate(else_expr, state).unwrap()
+                } else {
+                    None
+                }
+            };
+            return value;
+        } else {
+            None
+        }
+    }
+}
+
+impl FerryValue {
+    fn truthiness(&self) -> bool {
+        match self {
+            FerryValue::Number(n) => {
+                if n <= &0. {
+                    false
+                } else {
+                    true
+                }
+            }
+            FerryValue::Str(s) => {
+                if s.len() == 0 {
+                    false
+                } else {
+                    true
+                }
+            }
+            FerryValue::Boolean(b) => *b,
         }
     }
 }

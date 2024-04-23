@@ -2,7 +2,7 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::state::FerryState;
-use crate::syntax::{Assign, Binary, Expr, FerryType, Literal as SLit, Variable};
+use crate::syntax::{Assign, Binary, Expr, FerryType, Lit as SLit, Variable};
 use crate::token::{FerryToken, Op, TokenType as TT, TokenType::Identifier, Val as TLit};
 
 #[derive(Error, Diagnostic, Debug)]
@@ -125,7 +125,7 @@ impl FerryParser {
     fn target(&mut self, _state: &mut FerryState) -> FerryResult<Expr> {
         self.advance();
 
-        match self.previous().get_type() {
+        match self.previous().get_token_type() {
             TT::Value(l) => Ok(match l {
                 TLit::Num(n) => Expr::Literal(SLit::Number {
                     value: *n,
@@ -153,7 +153,7 @@ impl FerryParser {
                 expr_type: FerryType::Untyped,
             })),
             _ => Err(FerryParseError::UnexpectedToken {
-                msg: format!("Unexpected token: {}", self.previous().get_type()),
+                msg: format!("Unexpected token: {}", self.previous().get_token_type()),
                 span: self.previous().get_span().clone(),
             }),
         }
@@ -209,7 +209,7 @@ impl FerryParser {
     }
 
     fn end_of_program(&self) -> bool {
-        self.tokens[self.current].get_type() == &TT::End
+        self.tokens[self.current].get_token_type() == &TT::End
     }
 }
 
@@ -219,7 +219,7 @@ trait MatchToken {
 
 impl MatchToken for TT {
     fn matches(&self, token: &FerryToken) -> bool {
-        &token.get_type() == &self
+        &token.get_token_type() == &self
     }
 }
 
