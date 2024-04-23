@@ -68,6 +68,7 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
                 expr_type: _,
                 span: _,
             } => Some(FerryValue::Boolean(*value)),
+            SLit::Undefined { expr_type } => todo!(),
         }
     }
 

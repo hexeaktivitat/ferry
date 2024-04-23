@@ -12,6 +12,9 @@ pub enum Expr {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
+    Undefined {
+        expr_type: FerryType,
+    },
     Number {
         value: f64,
         expr_type: FerryType,
@@ -96,6 +99,7 @@ impl std::fmt::Display for Expr {
                     expr_type: _,
                     span: _,
                 } => write!(f, "{value}"),
+                Literal::Undefined { expr_type } => write!(f, "{expr_type}"),
             },
             Expr::Binary(b) => match b.operator.get_type() {
                 TT::Operator(o) => match o {
@@ -116,6 +120,18 @@ impl std::fmt::Display for Expr {
                     write!(f, "{} is NULL", a.var)
                 }
             }
+        }
+    }
+}
+
+impl std::fmt::Display for FerryType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FerryType::Untyped => write!(f, "Untyped"),
+            FerryType::Undefined => write!(f, "Undefined"),
+            FerryType::Num => write!(f, "Num"),
+            FerryType::String => write!(f, "String"),
+            FerryType::Boolean => write!(f, "Boolean"),
         }
     }
 }

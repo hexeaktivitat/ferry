@@ -141,7 +141,9 @@ impl FerryParser {
                     expr_type: FerryType::Untyped,
                     span: *self.previous().get_span(),
                 }),
-                TLit::None => todo!(),
+                TLit::None => Expr::Literal(SLit::Undefined {
+                    expr_type: FerryType::Undefined,
+                }),
                 // _ => unreachable!(),
             }),
             TT::Identifier(id) => Ok(Expr::Variable(Variable {

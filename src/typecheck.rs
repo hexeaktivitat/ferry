@@ -84,6 +84,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 expr_type: FerryType::Boolean,
                 span: *span,
             })),
+            SLit::Undefined { expr_type } => todo!(),
         }
     }
 
@@ -181,6 +182,7 @@ impl TypeCheckable for Expr {
                     expr_type,
                     span: _,
                 } => expr_type,
+                SLit::Undefined { expr_type } => todo!(),
             },
             Expr::Binary(b) => &b.expr_type,
             Expr::Variable(v) => &v.expr_type,

@@ -90,6 +90,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                     })
                 }
             }
+            SLit::Undefined { expr_type } => todo!(),
         }
     }
 
