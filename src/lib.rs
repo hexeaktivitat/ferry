@@ -97,7 +97,7 @@ impl<'source> Ferry {
         Ok(result)
     }
 
-    pub fn print_data(&self, req: PrintReq) {
+    pub fn print_data(&mut self, req: PrintReq) {
         match req {
             PrintReq::Tokens => {
                 println!("\nTOKENS");
@@ -132,6 +132,11 @@ impl<'source> Ferry {
             PrintReq::Asm => {
                 println!("\nRISC-V ASM");
                 println!("==========\n");
+
+                let mut assembler = FerryRiscVAssembler::new();
+                self.riscv_asm = assembler
+                    .assemble(self.typed_ast.clone(), &mut self.state)
+                    .unwrap();
 
                 for op in &self.riscv_asm {
                     println!("{}", op);
