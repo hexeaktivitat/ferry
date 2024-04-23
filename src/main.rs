@@ -54,6 +54,10 @@ fn repl() -> Result<(), Error> {
                 "!ast" => program.print_data(PrintReq::Ast),
                 "!type" => program.print_data(PrintReq::TypedAst),
                 "!asm" => program.print_data(PrintReq::Asm),
+                "!quit" | "!exit" => {
+                    println!("Exiting...");
+                    return Ok(());
+                }
                 _ => println!("Unrecognized special command {}", input),
             }
         } else {
