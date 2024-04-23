@@ -7,10 +7,17 @@ use crate::token::{FerryToken, Op, TokenType as TT, TokenType::Identifier, Val a
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryParseError {
-    #[error("Unexpected token encountered")]
+    #[error("Expected different token")]
     AlternateToken {
         #[help]
         help: String,
+        #[label]
+        span: SourceSpan,
+    },
+    #[error("Unexpected token")]
+    UnexpectedToken {
+        #[help]
+        msg: String,
         #[label]
         span: SourceSpan,
     },
@@ -142,7 +149,10 @@ impl FerryParser {
                 name: id.clone(),
                 expr_type: FerryType::Untyped,
             })),
-            _ => unreachable!(),
+            _ => Err(FerryParseError::UnexpectedToken {
+                msg: format!("Unexpected token: {}", self.previous().get_type()),
+                span: self.previous().get_span().clone(),
+            }),
         }
     }
 

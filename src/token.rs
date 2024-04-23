@@ -60,6 +60,8 @@ pub enum Ctrl {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Kwd {
     If,
+    Then,
+    Else,
 }
 
 impl std::fmt::Display for FerryToken {
@@ -90,6 +92,8 @@ impl std::fmt::Display for TokenType {
             },
             TokenType::Keyword(k) => match k {
                 Kwd::If => write!(f, "Keyword<If>"),
+                Kwd::Then => write!(f, "Keyword<Then>"),
+                Kwd::Else => write!(f, "Keyword<Else>"),
             },
             TokenType::Identifier(i) => write!(f, "Identifier {i}"),
             TokenType::End => write!(f, "END"),

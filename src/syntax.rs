@@ -71,6 +71,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
 #[derive(Debug, Clone, PartialEq)]
 pub enum FerryType {
     Untyped,
+    Undefined,
     Num,
     String,
     Boolean,

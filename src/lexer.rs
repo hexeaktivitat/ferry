@@ -98,6 +98,9 @@ impl<'source> FerryLexer<'source> {
             c @ b'_' | c if c.is_ascii_alphabetic() => {
                 self.identifier().map(|id| match id.as_str() {
                     // keywords
+                    "if" => Some(TT::Keyword(Kwd::If)),
+                    "then" => Some(TT::Keyword(Kwd::Then)),
+                    "else" => Some(TT::Keyword(Kwd::Else)),
 
                     // reserved boolean keywords
                     "true" => Some(TT::Value(Val::Boolean(true))),
