@@ -1,6 +1,6 @@
 use std::io::{stdin, stdout, Write};
 
-use clap::{Error, Parser, Subcommand};
+use clap::{Error, Parser};
 use miette::Result;
 
 use ferry::{Ferry, PrintReq};
