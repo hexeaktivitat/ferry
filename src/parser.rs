@@ -4,7 +4,7 @@ use thiserror::Error;
 use crate::state::FerryState;
 use crate::syntax::{Assign, Binary, Expr, FerryType, If, Lit as SLit, Variable};
 use crate::token::{Ctrl, Kwd};
-use crate::token::{FerryToken, Op, TokenType as TT, TokenType::Identifier, Val as TLit};
+use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryParseError {
@@ -57,7 +57,7 @@ impl FerryParser {
     }
 
     fn start(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let mut expr = self.keywords(state)?;
+        let expr = self.keywords(state)?;
 
         Ok(expr)
     }
@@ -108,7 +108,7 @@ impl FerryParser {
     }
 
     fn s_expression(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let mut expr = self.assignment(state)?;
+        let expr = self.assignment(state)?;
 
         Ok(expr)
     }

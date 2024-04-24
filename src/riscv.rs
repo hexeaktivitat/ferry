@@ -1,4 +1,4 @@
-use miette::{Diagnostic, Result, SourceSpan};
+use miette::{Diagnostic, Result};
 use thiserror::Error;
 
 use crate::{
@@ -90,7 +90,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                     })
                 }
             }
-            Lit::Undefined { expr_type } => todo!(),
+            Lit::Undefined { expr_type: _ } => todo!(),
         }
     }
 
@@ -184,8 +184,8 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
 
     fn visit_if_expr(
         &mut self,
-        if_expr: &mut crate::syntax::If,
-        state: &mut Vec<Instruction>,
+        _if_expr: &mut crate::syntax::If,
+        _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         todo!()
     }

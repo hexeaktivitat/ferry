@@ -69,7 +69,7 @@ impl FerryTypechecker {
 }
 
 impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
-    fn visit_literal(&mut self, literal: &mut Lit, state: &mut FerryState) -> FerryResult<Expr> {
+    fn visit_literal(&mut self, literal: &mut Lit, _state: &mut FerryState) -> FerryResult<Expr> {
         match literal {
             Lit::Number {
                 value,

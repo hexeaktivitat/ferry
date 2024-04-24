@@ -3,9 +3,8 @@ use thiserror::Error;
 
 use crate::{
     state::{FerryState, FerryValue},
-    syntax::{walk_expr, Binary, Expr, ExprVisitor, FerryType, Lit as SLit, Variable},
+    syntax::{walk_expr, Binary, Expr, ExprVisitor, Lit as SLit, Variable},
     token::{Op, TokenType as TT},
-    typecheck::TypeCheckable,
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -47,35 +46,43 @@ impl FerryInterpreter {
     }
 
     fn evaluate(&mut self, code: &mut Expr, state: &mut FerryState) -> FerryResult<FerryValue> {
-        Ok(walk_expr(&mut *self, code, state))
+        walk_expr(&mut *self, code, state)
     }
 }
 
-impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter {
-    fn visit_literal(&mut self, literal: &mut SLit, _state: &mut FerryState) -> Option<FerryValue> {
+impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpreter {
+    fn visit_literal(
+        &mut self,
+        literal: &mut SLit,
+        _state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
         match literal {
             SLit::Number {
                 value,
                 expr_type: _,
                 span: _,
-            } => Some(FerryValue::Number(*value)),
+            } => Ok(Some(FerryValue::Number(*value))),
             SLit::Str {
                 value,
                 expr_type: _,
                 span: _,
-            } => Some(FerryValue::Str(value.clone())),
+            } => Ok(Some(FerryValue::Str(value.clone()))),
             SLit::Bool {
                 value,
                 expr_type: _,
                 span: _,
-            } => Some(FerryValue::Boolean(*value)),
-            SLit::Undefined { expr_type } => todo!(),
+            } => Ok(Some(FerryValue::Boolean(*value))),
+            SLit::Undefined { expr_type: _ } => todo!(),
         }
     }
 
-    fn visit_binary(&mut self, binary: &mut Binary, state: &mut FerryState) -> Option<FerryValue> {
-        let left = self.evaluate(&mut binary.lhs, state).unwrap();
-        let right = self.evaluate(&mut binary.rhs, state).unwrap();
+    fn visit_binary(
+        &mut self,
+        binary: &mut Binary,
+        state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
+        let left = self.evaluate(&mut binary.lhs, state)?;
+        let right = self.evaluate(&mut binary.rhs, state)?;
 
         let op = &binary.operator;
 
@@ -83,39 +90,33 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
             TT::Operator(o) => match o {
                 Op::Add => match (left, right) {
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
-                        Some(FerryValue::Number(l + r))
+                        Ok(Some(FerryValue::Number(l + r)))
                     }
-                    _ => unreachable!(),
+                    _ => unimplemented!(),
                 },
                 Op::Subtract => match (left, right) {
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
-                        Some(FerryValue::Number(l - r))
+                        Ok(Some(FerryValue::Number(l - r)))
                     }
                     _ => unimplemented!(),
                 },
 
                 Op::Multiply => match (left, right) {
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
-                        Some(FerryValue::Number(l * r))
+                        Ok(Some(FerryValue::Number(l * r)))
                     }
-                    (None, None) => todo!(),
-                    (None, Some(_)) => todo!(),
-                    (Some(_), None) => todo!(),
                     _ => unimplemented!(),
                 },
                 Op::Divide => match (left, right) {
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
-                        Some(FerryValue::Number(l / r))
+                        Ok(Some(FerryValue::Number(l / r)))
                     }
-                    (None, None) => todo!(),
-                    (None, Some(_)) => todo!(),
-                    (Some(_), None) => todo!(),
                     _ => unimplemented!(),
                 },
                 // Op::RightArrow => todo!(),
                 Op::Equals => todo!(),
             },
-            _ => None,
+            _ => Ok(None),
         }
     }
 
@@ -123,21 +124,21 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
         &mut self,
         variable: &mut Variable,
         state: &mut FerryState,
-    ) -> Option<FerryValue> {
-        state.get_symbol_value(&variable.name)
+    ) -> FerryResult<FerryValue> {
+        Ok(state.get_symbol_value(&variable.name))
     }
 
     fn visit_assign(
         &mut self,
         assign: &mut crate::syntax::Assign,
         state: &mut FerryState,
-    ) -> Option<FerryValue> {
+    ) -> FerryResult<FerryValue> {
         if let Some(v) = &mut assign.value {
             let value = self.evaluate(v, state).unwrap();
             state.add_symbol(&assign.name, value.clone());
-            value
+            Ok(value)
         } else {
-            Some(FerryValue::Number(0.))
+            Ok(Some(FerryValue::Number(0.)))
         }
     }
 
@@ -145,20 +146,20 @@ impl ExprVisitor<Option<FerryValue>, &mut FerryState> for &mut FerryInterpreter 
         &mut self,
         if_expr: &mut crate::syntax::If,
         state: &mut FerryState,
-    ) -> Option<FerryValue> {
-        if let Some(conditional) = self.evaluate(&mut if_expr.condition, state).unwrap() {
+    ) -> FerryResult<FerryValue> {
+        if let Some(conditional) = self.evaluate(&mut if_expr.condition, state)? {
             let value = if conditional.truthiness() {
-                self.evaluate(&mut if_expr.then_expr, state).unwrap()
+                self.evaluate(&mut if_expr.then_expr, state)?
             } else {
                 if let Some(else_expr) = &mut if_expr.else_expr {
-                    self.evaluate(else_expr, state).unwrap()
+                    self.evaluate(else_expr, state)?
                 } else {
                     None
                 }
             };
-            return value;
+            return Ok(value);
         } else {
-            None
+            Ok(None)
         }
     }
 }
