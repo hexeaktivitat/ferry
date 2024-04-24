@@ -72,7 +72,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 expr_type: _,
                 span: _,
             } => Ok(Some(FerryValue::Boolean(*value))),
-            SLit::Undefined { expr_type: _ } => todo!(),
+            SLit::Undefined { expr_type: _ } => Ok(Some(FerryValue::Unit)),
         }
     }
 
@@ -182,6 +182,7 @@ impl FerryValue {
                 }
             }
             FerryValue::Boolean(b) => *b,
+            FerryValue::Unit => false,
         }
     }
 }

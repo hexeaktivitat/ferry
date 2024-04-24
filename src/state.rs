@@ -13,6 +13,7 @@ pub enum FerryValue {
     Number(f64),
     Str(String),
     Boolean(bool),
+    Unit,
 }
 
 impl FerryState {
@@ -71,6 +72,7 @@ impl TypeCheckable for FerryValue {
             FerryValue::Number(_) => &FerryType::Num,
             FerryValue::Str(_) => &FerryType::String,
             FerryValue::Boolean(_) => &FerryType::Boolean,
+            FerryValue::Unit => &FerryType::Undefined,
         }
     }
 }
@@ -81,6 +83,7 @@ impl std::fmt::Display for FerryValue {
             FerryValue::Number(n) => write!(f, "{}", n),
             FerryValue::Str(s) => write!(f, "{s}"),
             FerryValue::Boolean(b) => write!(f, "{b}"),
+            FerryValue::Unit => write!(f, "[unit]"),
         }
     }
 }
