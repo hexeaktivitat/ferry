@@ -44,7 +44,7 @@ fn main() -> ExitCode {
 
 fn repl() -> Result<(), Error> {
     let mut input = String::new();
-    let mut program = Ferry::new("".into());
+    let mut program = Ferry::new(input.clone());
 
     loop {
         print!("Fwee...> ");
@@ -77,7 +77,6 @@ fn repl() -> Result<(), Error> {
             Ok(r) => println!("\n{}\n", r),
             Err(e) => eprintln!("\n{:?}\n", e),
         }
-        input = String::new();
     }
 }
 
