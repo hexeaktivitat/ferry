@@ -1,24 +1,43 @@
-use std::io::{stdin, stdout, Write};
-
-use clap::{Error, Parser};
+use anyhow::Error;
+use clap::{Parser, Subcommand};
 use miette::Result;
+
+use std::io::{stdin, stdout, Write};
+use std::process::ExitCode;
 
 use ferry::{Ferry, PrintReq};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct FerryArgs {
-    file: Option<String>,
+    #[command(subcommand)]
+    command: Option<Commands>,
 }
 
-fn main() {
+#[derive(Subcommand)]
+enum Commands {
+    Compile { file: String },
+}
+
+fn main() -> ExitCode {
     let ferry_args = FerryArgs::parse();
 
-    match ferry_args.file {
-        Some(f) => println!("{f}"),
+    match ferry_args.command {
+        Some(f) => match f {
+            Commands::Compile { file } => {
+                println!("{file}");
+                ExitCode::SUCCESS
+            }
+        },
         None => {
             // run interpreter
-            repl().unwrap();
+            match repl() {
+                Ok(_) => ExitCode::SUCCESS,
+                Err(e) => {
+                    println!("Error: {}", e);
+                    ExitCode::FAILURE
+                }
+            }
         }
     }
 }
@@ -45,8 +64,7 @@ fn repl() -> Result<(), Error> {
         stdout().flush().expect("stdout didn't flush");
         stdin().read_line(&mut input).expect("unable to read stdin");
         if input.trim_end() == "quit" || input.trim_end() == "exit" {
-            println!("Exiting...");
-            return Ok(());
+            println!("Invalid command; commands start with ! (eg. !quit !exit)");
         } else if input.starts_with("!") {
             match input.trim_end() {
                 "!tokens" => program.print_data(PrintReq::Tokens),
