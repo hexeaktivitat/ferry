@@ -33,6 +33,9 @@ Planned and expected features include:
   - May not implement; use case covered by below
 - [x] Commands recognized by the REPL to print a diagnostic
 - [ ] `ferry compile` subcommand to explicitly invoke a mock compilation process
+  - [x] `ferry compile` subcommand framework established
+  - [ ] compilation actually performed
+  - [ ] `ferry [FILE]` to run as interpreted language
 
 ## Language features
 
