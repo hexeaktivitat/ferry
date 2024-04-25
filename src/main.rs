@@ -50,6 +50,7 @@ fn repl() -> Result<(), Error> {
         print!("Fwee...> ");
         stdout().flush().expect("stdout didn't flush");
 
+        input = "".into();
         stdin()
             .read_line(&mut input)
             .expect("Unable to read from stdin");
@@ -76,6 +77,7 @@ fn repl() -> Result<(), Error> {
             Ok(r) => println!("\n{}\n", r),
             Err(e) => eprintln!("\n{:?}\n", e),
         }
+        input = String::new();
     }
 }
 
@@ -90,10 +92,10 @@ enum FerryRepl {
 }
 
 fn repl_input_process(input: &str) -> Option<FerryRepl> {
-    let mut output = input.trim_end();
+    let output = input.trim_end();
 
     if output.starts_with("!") {
-        match output.trim_start().to_lowercase().as_str() {
+        match output.trim_start_matches("!").to_lowercase().as_str() {
             "exit" | "quit" => Some(FerryRepl::Exit),
             "token" | "tokens" => Some(FerryRepl::Tokens),
             "state" => Some(FerryRepl::State),
