@@ -43,47 +43,66 @@ fn main() -> ExitCode {
 }
 
 fn repl() -> Result<(), Error> {
-    print!("Fwee...> ");
-    stdout().flush().expect("stdout didn't flush");
     let mut input = String::new();
-    stdin()
-        .read_line(&mut input)
-        .expect("Unable to read from stdin");
-    if input.trim_end() == "quit" || input.trim_end() == "exit" {
-        println!("Exiting...");
-        return Ok(());
-    }
-    let mut program = Ferry::new(input.clone());
-    match program.run() {
-        Ok(r) => println!("\n{}\n", r),
-        Err(e) => eprintln!("\n{:?}\n", e),
-    };
+    let mut program = Ferry::new("".into());
+
     loop {
-        input = "".into();
         print!("Fwee...> ");
         stdout().flush().expect("stdout didn't flush");
-        stdin().read_line(&mut input).expect("unable to read stdin");
-        if input.trim_end() == "quit" || input.trim_end() == "exit" {
-            println!("Invalid command; commands start with ! (eg. !quit !exit)");
-        } else if input.starts_with("!") {
-            match input.trim_end() {
-                "!tokens" => program.print_data(PrintReq::Tokens),
-                "!state" => program.print_data(PrintReq::State),
-                "!ast" => program.print_data(PrintReq::Ast),
-                "!type" => program.print_data(PrintReq::TypedAst),
-                "!asm" => program.print_data(PrintReq::Asm),
-                "!quit" | "!exit" => {
+
+        stdin()
+            .read_line(&mut input)
+            .expect("Unable to read from stdin");
+
+        match repl_input_process(&input) {
+            Some(r) => match r {
+                FerryRepl::Run(code) => program.update_source(code),
+                FerryRepl::Exit => {
                     println!("Exiting...");
                     return Ok(());
                 }
-                _ => println!("Unrecognized special command {}", input),
+                FerryRepl::Tokens => program.print_data(PrintReq::Tokens),
+                FerryRepl::State => program.print_data(PrintReq::State),
+                FerryRepl::Ast => program.print_data(PrintReq::Ast),
+                FerryRepl::Type => program.print_data(PrintReq::TypedAst),
+                FerryRepl::Asm => program.print_data(PrintReq::Asm),
+            },
+            None => {
+                println!("invalid command {input}");
+                continue;
             }
-        } else {
-            program.update_source(input.clone());
-            match program.run() {
-                Ok(r) => println!("\n{}\n", r),
-                Err(e) => eprintln!("\n{:?}\n", e),
-            };
         }
+        match program.run() {
+            Ok(r) => println!("\n{}\n", r),
+            Err(e) => eprintln!("\n{:?}\n", e),
+        }
+    }
+}
+
+enum FerryRepl {
+    Run(String),
+    Exit,
+    Tokens,
+    State,
+    Ast,
+    Type,
+    Asm,
+}
+
+fn repl_input_process(input: &str) -> Option<FerryRepl> {
+    let mut output = input.trim_end();
+
+    if output.starts_with("!") {
+        match output.trim_start().to_lowercase().as_str() {
+            "exit" | "quit" => Some(FerryRepl::Exit),
+            "token" | "tokens" => Some(FerryRepl::Tokens),
+            "state" => Some(FerryRepl::State),
+            "ast" => Some(FerryRepl::Ast),
+            "type" => Some(FerryRepl::Type),
+            "asm" => Some(FerryRepl::Asm),
+            _ => None,
+        }
+    } else {
+        Some(FerryRepl::Run(output.into()))
     }
 }
