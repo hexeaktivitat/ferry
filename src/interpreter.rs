@@ -78,18 +78,24 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 value,
                 expr_type: _,
                 span: _,
+                token,
             } => Ok(Some(FerryValue::Number(*value))),
             SLit::Str {
                 value,
                 expr_type: _,
                 span: _,
+                token,
             } => Ok(Some(FerryValue::Str(value.clone()))),
             SLit::Bool {
                 value,
                 expr_type: _,
                 span: _,
+                token,
             } => Ok(Some(FerryValue::Boolean(*value))),
-            SLit::Undefined { expr_type: _ } => Ok(Some(FerryValue::Unit)),
+            SLit::Undefined {
+                expr_type: _,
+                token,
+            } => Ok(Some(FerryValue::Unit)),
         }
     }
 

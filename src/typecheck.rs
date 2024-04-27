@@ -28,6 +28,17 @@ pub enum FerryTypeError {
     TypeMismatch {
         #[help]
         advice: String,
+        #[label("operand")]
+        span: SourceSpan,
+        #[label("lhs")]
+        lhs_span: SourceSpan,
+        #[label("rhs")]
+        rhs_span: SourceSpan,
+    },
+    #[error("mistyped variable")]
+    MistypedVariable {
+        #[help]
+        advice: String,
         #[label]
         span: SourceSpan,
     },
@@ -83,30 +94,40 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 value,
                 expr_type: _,
                 span,
+                token,
             } => Ok(Expr::Literal(Lit::Number {
                 value: value.clone(),
                 expr_type: FerryTyping::Assigned(FerryType::Num),
                 span: span.clone(),
+                token: token.clone(),
             })),
             Lit::Str {
                 value,
                 expr_type: _,
                 span,
+                token,
             } => Ok(Expr::Literal(Lit::Str {
                 value: value.clone(),
                 expr_type: FerryTyping::Assigned(FerryType::String),
                 span: span.clone(),
+                token: token.clone(),
             })),
             Lit::Bool {
                 value,
                 expr_type: _,
                 span,
+                token,
             } => Ok(Expr::Literal(Lit::Bool {
                 value: value.clone(),
                 expr_type: FerryTyping::Assigned(FerryType::Boolean),
                 span: span.clone(),
+                token: token.clone(),
             })),
-            Lit::Undefined { expr_type: _ } => Ok(Expr::Literal(Lit::Undefined {
+            Lit::Undefined {
+                expr_type: _,
+                token,
+            } => Ok(Expr::Literal(Lit::Undefined {
+                token: token.clone(),
                 expr_type: FerryTyping::Undefined,
             })),
         }
@@ -128,6 +149,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             Err(FerryTypeError::TypeMismatch {
                 advice: "operands did not match types".into(),
                 span: *binary.operator.get_span(),
+                lhs_span: *left.get_token().get_span(),
+                rhs_span: *right.get_token().get_span(),
             })
         }
     }
@@ -151,7 +174,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     expr_type: FerryTyping::Inferred(derived_type.get_type().clone()),
                 }))
             } else {
-                Err(FerryTypeError::TypeMismatch {
+                Err(FerryTypeError::MistypedVariable {
                     advice: "mismatched type:".into(),
                     span: *variable.token.get_span(),
                 })
@@ -198,6 +221,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 return Err(FerryTypeError::TypeMismatch {
                     advice: "type mismatch between two values".into(),
                     span: if_expr.token.get_span().clone(),
+                    lhs_span: *then_expr.get_token().get_span(),
+                    rhs_span: *else_expr.get_token().get_span(),
                 });
             } else {
                 Some(Box::new(else_expr))

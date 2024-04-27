@@ -16,19 +16,23 @@ pub enum Expr {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Lit {
     Undefined {
+        token: FerryToken,
         expr_type: FerryTyping,
     },
     Number {
+        token: FerryToken,
         value: f64,
         expr_type: FerryTyping,
         span: SourceSpan,
     },
     Str {
+        token: FerryToken,
         value: String,
         expr_type: FerryTyping,
         span: SourceSpan,
     },
     Bool {
+        token: FerryToken,
         value: bool,
         expr_type: FerryTyping,
         span: SourceSpan,
@@ -95,6 +99,39 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
     }
 }
 
+impl Expr {
+    pub fn get_token(&self) -> &FerryToken {
+        match self {
+            Expr::Literal(l) => match l {
+                Lit::Undefined { token, expr_type } => &token,
+                Lit::Number {
+                    token,
+                    value,
+                    expr_type,
+                    span,
+                } => &token,
+                Lit::Str {
+                    token,
+                    value,
+                    expr_type,
+                    span,
+                } => &token,
+                Lit::Bool {
+                    token,
+                    value,
+                    expr_type,
+                    span,
+                } => &token,
+            },
+            Expr::Binary(b) => &b.operator,
+            Expr::Variable(v) => &v.token,
+            Expr::Assign(a) => &a.token,
+            Expr::If(i) => &i.token,
+            Expr::Group(g) => &g.token,
+        }
+    }
+}
+
 impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -103,18 +140,21 @@ impl std::fmt::Display for Expr {
                     value,
                     expr_type: _,
                     span: _,
+                    token,
                 } => write!(f, "{value}"),
                 Lit::Str {
                     value,
                     expr_type: _,
                     span: _,
+                    token,
                 } => write!(f, "{value}"),
                 Lit::Bool {
                     value,
                     expr_type: _,
                     span: _,
+                    token,
                 } => write!(f, "{value}"),
-                Lit::Undefined { expr_type } => write!(f, "{expr_type}"),
+                Lit::Undefined { expr_type, token } => write!(f, "{expr_type}"),
             },
             Expr::Binary(b) => match b.operator.get_token_type() {
                 TT::Operator(o) => match o {

@@ -60,6 +60,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 value,
                 expr_type: _,
                 span: _,
+                token,
             } => Ok(Instruction::Li {
                 d: Register::A0,
                 imm: value.clone() as i32,
@@ -69,6 +70,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 value: _,
                 expr_type: _,
                 span: _,
+                token,
             } => Ok(Instruction::Li {
                 d: Register::A0,
                 imm: 0,
@@ -77,6 +79,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 value,
                 expr_type: _,
                 span: _,
+                token,
             } => {
                 if *value {
                     Ok(Instruction::Li {
@@ -90,7 +93,10 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                     })
                 }
             }
-            Lit::Undefined { expr_type: _ } => todo!(),
+            Lit::Undefined {
+                expr_type: _,
+                token,
+            } => todo!(),
         }
     }
 

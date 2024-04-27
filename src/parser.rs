@@ -179,21 +179,25 @@ impl FerryParser {
         match self.previous().get_token_type() {
             TT::Value(l) => Ok(match l {
                 TLit::Num(n) => Expr::Literal(SLit::Number {
+                    token: self.previous().clone(),
                     value: *n,
                     expr_type: FerryTyping::Untyped,
                     span: *self.previous().get_span(),
                 }),
                 TLit::String(s) => Expr::Literal(SLit::Str {
+                    token: self.previous().clone(),
                     value: s.clone(),
                     expr_type: FerryTyping::Untyped,
                     span: *self.previous().get_span(),
                 }),
                 TLit::Boolean(b) => Expr::Literal(SLit::Bool {
+                    token: self.previous().clone(),
                     value: *b,
                     expr_type: FerryTyping::Untyped,
                     span: *self.previous().get_span(),
                 }),
                 TLit::None => Expr::Literal(SLit::Undefined {
+                    token: self.previous().clone(),
                     expr_type: FerryTyping::Undefined,
                 }),
                 // _ => unreachable!(),
