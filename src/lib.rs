@@ -16,6 +16,7 @@ mod state;
 mod syntax;
 mod token;
 mod typecheck;
+mod types;
 
 use crate::interpreter::FerryInterpreter;
 use crate::lexer::FerryLexer;

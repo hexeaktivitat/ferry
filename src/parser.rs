@@ -2,9 +2,10 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::state::FerryState;
-use crate::syntax::{Assign, Binary, Expr, FerryType, Group, If, Lit as SLit, Variable};
+use crate::syntax::{Assign, Binary, Expr, Group, If, Lit as SLit, Variable};
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
+use crate::types::{FerryType, FerryTyping};
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryParseError {

@@ -3,7 +3,8 @@ use thiserror::Error;
 
 use crate::{
     state::FerryState,
-    syntax::{walk_expr, Assign, Binary, Expr, ExprVisitor, FerryType, Group, If, Lit, Variable},
+    syntax::{walk_expr, Assign, Binary, Expr, ExprVisitor, Group, If, Lit, Variable},
+    types::{FerryType, FerryTyping, TypeCheckable},
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -223,39 +224,5 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             contents,
             expr_type,
         }))
-    }
-}
-
-pub trait TypeCheckable {
-    fn get_type(&self) -> &FerryType;
-}
-
-impl TypeCheckable for Expr {
-    fn get_type(&self) -> &FerryType {
-        match self {
-            Expr::Literal(l) => match l {
-                Lit::Number {
-                    value: _,
-                    expr_type,
-                    span: _,
-                } => expr_type,
-                Lit::Str {
-                    value: _,
-                    expr_type,
-                    span: _,
-                } => expr_type,
-                Lit::Bool {
-                    value: _,
-                    expr_type,
-                    span: _,
-                } => expr_type,
-                Lit::Undefined { expr_type } => &expr_type,
-            },
-            Expr::Binary(b) => &b.expr_type,
-            Expr::Variable(v) => &v.expr_type,
-            Expr::Assign(a) => &a.expr_type,
-            Expr::If(i) => &i.expr_type,
-            Expr::Group(g) => &g.expr_type,
-        }
     }
 }

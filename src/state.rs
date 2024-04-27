@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{syntax::FerryType, typecheck::TypeCheckable};
+use crate::types::{FerryType, FerryTyping, TypeCheckable};
 
 // placeholder for program state
 #[derive(Debug, Clone, PartialEq)]
@@ -74,6 +74,10 @@ impl TypeCheckable for FerryValue {
             FerryValue::Boolean(_) => &FerryType::Boolean,
             FerryValue::Unit => &FerryType::Undefined,
         }
+    }
+
+    fn check(&self, other: &FerryTyping) -> bool {
+        self.get_type() == other.get_type()
     }
 }
 

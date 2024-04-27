@@ -1,6 +1,7 @@
 use miette::SourceSpan;
 
 use crate::token::{FerryToken, TokenType as TT};
+use crate::types::{FerryType, FerryTyping};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
@@ -92,15 +93,6 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::If(if_expr) => visitor.visit_if_expr(if_expr, state),
         Expr::Group(group) => visitor.visit_group(group, state),
     }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum FerryType {
-    Untyped,
-    Undefined,
-    Num,
-    String,
-    Boolean,
 }
 
 impl std::fmt::Display for Expr {
