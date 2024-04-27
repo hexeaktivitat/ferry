@@ -57,7 +57,13 @@ fn repl() -> Result<(), Error> {
 
         match repl_input_process(&input) {
             Some(r) => match r {
-                FerryRepl::Run(code) => program.update_source(code),
+                FerryRepl::Run(code) => {
+                    program.update_source(code);
+                    match program.run() {
+                        Ok(r) => println!("\n{}\n", r),
+                        Err(e) => eprintln!("\n{:?}\n", e),
+                    }
+                }
                 FerryRepl::Exit => {
                     println!("Exiting...");
                     return Ok(());
@@ -72,10 +78,6 @@ fn repl() -> Result<(), Error> {
                 println!("invalid command {input}");
                 continue;
             }
-        }
-        match program.run() {
-            Ok(r) => println!("\n{}\n", r),
-            Err(e) => eprintln!("\n{:?}\n", e),
         }
     }
 }
