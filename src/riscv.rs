@@ -189,6 +189,14 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
     ) -> FerryResult<Instruction> {
         todo!()
     }
+
+    fn visit_group(
+        &mut self,
+        group: &mut crate::syntax::Group,
+        state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        todo!()
+    }
 }
 
 /// `Instruction`

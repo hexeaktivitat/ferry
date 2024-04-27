@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::{
     state::{FerryState, FerryValue},
-    syntax::{walk_expr, Binary, Expr, ExprVisitor, Lit as SLit, Variable},
+    syntax::{walk_expr, Binary, Expr, ExprVisitor, Group, Lit as SLit, Variable},
     token::{Op, TokenType as TT},
 };
 
@@ -18,6 +18,13 @@ pub enum FerryInterpreterError {
     },
     #[error("Invalid operation")]
     InvalidOperation {
+        #[help]
+        help: String,
+        #[label]
+        span: SourceSpan,
+    },
+    #[error("Unimplemented feature")]
+    Unimplemented {
         #[help]
         help: String,
         #[label]
@@ -161,6 +168,14 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         } else {
             Ok(None)
         }
+    }
+
+    fn visit_group(
+        &mut self,
+        group: &mut Group,
+        state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
+        self.evaluate(&mut group.contents, state)
     }
 }
 

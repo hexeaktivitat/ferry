@@ -9,6 +9,7 @@ pub enum Expr {
     Variable(Variable),
     Assign(Assign),
     If(If),
+    Group(Group),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -66,12 +67,20 @@ pub struct If {
     pub expr_type: FerryType,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Group {
+    pub token: FerryToken,
+    pub contents: Box<Expr>,
+    pub expr_type: FerryType,
+}
+
 pub trait ExprVisitor<T, S> {
     fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
     fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
     fn visit_variable(&mut self, variable: &mut Variable, state: S) -> T;
     fn visit_assign(&mut self, assign: &mut Assign, state: S) -> T;
     fn visit_if_expr(&mut self, if_expr: &mut If, state: S) -> T;
+    fn visit_group(&mut self, group: &mut Group, state: S) -> T;
 }
 
 pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, state: S) -> T {
@@ -81,6 +90,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::Variable(variable) => visitor.visit_variable(variable, state),
         Expr::Assign(assign) => visitor.visit_assign(assign, state),
         Expr::If(if_expr) => visitor.visit_if_expr(if_expr, state),
+        Expr::Group(group) => visitor.visit_group(group, state),
     }
 }
 
@@ -145,6 +155,7 @@ impl std::fmt::Display for Expr {
                     write!(f, "if {} then: {}", i.condition, i.then_expr)
                 }
             }
+            Expr::Group(g) => write!(f, "( {} )", g.contents),
         }
     }
 }

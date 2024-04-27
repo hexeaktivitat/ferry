@@ -2,7 +2,7 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::state::FerryState;
-use crate::syntax::{Assign, Binary, Expr, FerryType, If, Lit as SLit, Variable};
+use crate::syntax::{Assign, Binary, Expr, FerryType, Group, If, Lit as SLit, Variable};
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
 
@@ -167,7 +167,7 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn target(&mut self, _state: &mut FerryState) -> FerryResult<Expr> {
+    fn target(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         self.advance();
 
         match self.previous().get_token_type() {
@@ -197,6 +197,15 @@ impl FerryParser {
                 name: id.clone(),
                 expr_type: FerryType::Untyped,
             })),
+            TT::Control(Ctrl::LeftParen) => {
+                let contents = Box::new(self.s_expression(state)?);
+                self.consume(&TT::Control(Ctrl::RightParen), "Expected ')' after '('")?;
+                Ok(Expr::Group(Group {
+                    token: self.previous().clone(),
+                    contents,
+                    expr_type: FerryType::Untyped,
+                }))
+            }
             _ => Err(FerryParseError::UnexpectedToken {
                 msg: format!("Unexpected token: {}", self.previous().get_token_type()),
                 span: self.previous().get_span().clone(),

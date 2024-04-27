@@ -55,6 +55,8 @@ pub enum Op {
 pub enum Ctrl {
     Semicolon,
     Colon,
+    LeftParen,
+    RightParen,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -89,6 +91,8 @@ impl std::fmt::Display for TokenType {
             TokenType::Control(c) => match c {
                 Ctrl::Semicolon => write!(f, "Control<Semicolon>"),
                 Ctrl::Colon => write!(f, "Control<Colon>"),
+                Ctrl::LeftParen => write!(f, "Control<LeftParen>"),
+                Ctrl::RightParen => write!(f, "Control<RightParen>"),
             },
             TokenType::Keyword(k) => match k {
                 Kwd::If => write!(f, "Keyword<If>"),

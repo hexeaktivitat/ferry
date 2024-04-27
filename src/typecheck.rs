@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::{
     state::FerryState,
-    syntax::{walk_expr, Assign, Binary, Expr, ExprVisitor, FerryType, If, Lit, Variable},
+    syntax::{walk_expr, Assign, Binary, Expr, ExprVisitor, FerryType, Group, If, Lit, Variable},
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -25,6 +25,13 @@ pub enum FerryTypeError {
     },
     #[error("mismatched types")]
     TypeMismatch {
+        #[help]
+        advice: String,
+        #[label]
+        span: SourceSpan,
+    },
+    #[error("unknown type")]
+    UnknownType {
         #[help]
         advice: String,
         #[label]
@@ -117,8 +124,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 expr_type: expr_type.clone(),
             }))
         } else {
-            Err(FerryTypeError::A {
-                advice: "aa".into(),
+            Err(FerryTypeError::TypeMismatch {
+                advice: "operands did not match types".into(),
                 span: *binary.operator.get_span(),
             })
         }
@@ -143,15 +150,15 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     expr_type: derived_type.get_type().clone(),
                 }))
             } else {
-                Err(FerryTypeError::A {
+                Err(FerryTypeError::TypeMismatch {
                     advice: "mismatched type:".into(),
-                    span: variable.token.get_span().clone(),
+                    span: *variable.token.get_span(),
                 })
             }
         } else {
-            Err(FerryTypeError::A {
+            Err(FerryTypeError::UnknownType {
                 advice: "variable of unknown type".into(),
-                span: variable.token.get_span().clone(),
+                span: *variable.token.get_span(),
             })
         }
     }
@@ -171,7 +178,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         }
         Err(FerryTypeError::A {
             advice: "???".into(),
-            span: assign.token.get_span().clone(),
+            span: *assign.token.get_span(),
         })
     }
 
@@ -206,6 +213,17 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             expr_type,
         }))
     }
+
+    fn visit_group(&mut self, group: &mut Group, state: &mut FerryState) -> FerryResult<Expr> {
+        let contents = Box::new(self.check_types(&mut group.contents, state)?);
+        let expr_type = contents.get_type().clone();
+
+        Ok(Expr::Group(Group {
+            token: group.token.clone(),
+            contents,
+            expr_type,
+        }))
+    }
 }
 
 pub trait TypeCheckable {
@@ -237,6 +255,7 @@ impl TypeCheckable for Expr {
             Expr::Variable(v) => &v.expr_type,
             Expr::Assign(a) => &a.expr_type,
             Expr::If(i) => &i.expr_type,
+            Expr::Group(g) => &g.expr_type,
         }
     }
 }
