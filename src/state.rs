@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::types::{FerryType, FerryTyping, TypeCheckable};
+use crate::types::{FerryType, FerryTyping, TypeCheckable, Typing};
 
 // placeholder for program state
 #[derive(Debug, Clone, PartialEq)]
@@ -60,13 +60,7 @@ impl std::fmt::Display for FerryState {
     }
 }
 
-impl FerryValue {
-    pub fn verify_type(&self, t: &FerryType) -> bool {
-        self.get_type() == t
-    }
-}
-
-impl TypeCheckable for FerryValue {
+impl Typing for FerryValue {
     fn get_type(&self) -> &FerryType {
         match self {
             FerryValue::Number(_) => &FerryType::Num,
@@ -75,9 +69,11 @@ impl TypeCheckable for FerryValue {
             FerryValue::Unit => &FerryType::Undefined,
         }
     }
+}
 
-    fn check(&self, other: &FerryTyping) -> bool {
-        self.get_type() == other.get_type()
+impl TypeCheckable for FerryValue {
+    fn check(&self, other: &FerryType) -> bool {
+        self.get_type() == other
     }
 }
 

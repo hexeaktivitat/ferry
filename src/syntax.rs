@@ -16,21 +16,21 @@ pub enum Expr {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Lit {
     Undefined {
-        expr_type: FerryType,
+        expr_type: FerryTyping,
     },
     Number {
         value: f64,
-        expr_type: FerryType,
+        expr_type: FerryTyping,
         span: SourceSpan,
     },
     Str {
         value: String,
-        expr_type: FerryType,
+        expr_type: FerryTyping,
         span: SourceSpan,
     },
     Bool {
         value: bool,
-        expr_type: FerryType,
+        expr_type: FerryTyping,
         span: SourceSpan,
     },
 }
@@ -40,7 +40,7 @@ pub struct Binary {
     pub lhs: Box<Expr>,
     pub operator: FerryToken,
     pub rhs: Box<Expr>,
-    pub expr_type: FerryType,
+    pub expr_type: FerryTyping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -49,14 +49,14 @@ pub struct Assign {
     pub var: Box<Expr>,
     pub name: String,
     pub value: Option<Box<Expr>>,
-    pub expr_type: FerryType,
+    pub expr_type: FerryTyping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Variable {
     pub token: FerryToken,
     pub name: String,
-    pub expr_type: FerryType,
+    pub expr_type: FerryTyping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -65,14 +65,14 @@ pub struct If {
     pub condition: Box<Expr>,
     pub then_expr: Box<Expr>,
     pub else_expr: Option<Box<Expr>>,
-    pub expr_type: FerryType,
+    pub expr_type: FerryTyping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Group {
     pub token: FerryToken,
     pub contents: Box<Expr>,
-    pub expr_type: FerryType,
+    pub expr_type: FerryTyping,
 }
 
 pub trait ExprVisitor<T, S> {
@@ -148,18 +148,6 @@ impl std::fmt::Display for Expr {
                 }
             }
             Expr::Group(g) => write!(f, "( {} )", g.contents),
-        }
-    }
-}
-
-impl std::fmt::Display for FerryType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FerryType::Untyped => write!(f, "Untyped"),
-            FerryType::Undefined => write!(f, "Undefined"),
-            FerryType::Num => write!(f, "Num"),
-            FerryType::String => write!(f, "String"),
-            FerryType::Boolean => write!(f, "Boolean"),
         }
     }
 }

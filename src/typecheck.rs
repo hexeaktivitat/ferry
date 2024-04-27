@@ -4,7 +4,7 @@ use thiserror::Error;
 use crate::{
     state::FerryState,
     syntax::{walk_expr, Assign, Binary, Expr, ExprVisitor, Group, If, Lit, Variable},
-    types::{FerryType, FerryTyping, TypeCheckable},
+    types::{FerryType, FerryTyping, TypeCheckable, Typing},
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -85,7 +85,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 span,
             } => Ok(Expr::Literal(Lit::Number {
                 value: value.clone(),
-                expr_type: FerryType::Num,
+                expr_type: FerryTyping::Assigned(FerryType::Num),
                 span: span.clone(),
             })),
             Lit::Str {
@@ -94,7 +94,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 span,
             } => Ok(Expr::Literal(Lit::Str {
                 value: value.clone(),
-                expr_type: FerryType::String,
+                expr_type: FerryTyping::Assigned(FerryType::String),
                 span: span.clone(),
             })),
             Lit::Bool {
@@ -103,11 +103,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 span,
             } => Ok(Expr::Literal(Lit::Bool {
                 value: value.clone(),
-                expr_type: FerryType::Boolean,
+                expr_type: FerryTyping::Assigned(FerryType::Boolean),
                 span: span.clone(),
             })),
             Lit::Undefined { expr_type: _ } => Ok(Expr::Literal(Lit::Undefined {
-                expr_type: FerryType::Undefined,
+                expr_type: FerryTyping::Undefined,
             })),
         }
     }
@@ -116,8 +116,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         let left = self.check_types(&mut binary.lhs, state)?;
         let right = self.check_types(&mut binary.rhs, state)?;
 
-        if left.get_type() == right.get_type() {
-            let expr_type = left.get_type();
+        if left.check(right.get_type()) {
+            let expr_type = FerryTyping::Inferred(left.get_type().clone());
             Ok(Expr::Binary(Binary {
                 lhs: Box::new(left.clone()),
                 operator: binary.operator.clone(),
@@ -141,14 +141,14 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         if let (Some(derived_type), assigned_type) =
             (state.get_symbol_value(&variable.name), &variable.expr_type)
         {
-            if derived_type.verify_type(assigned_type) {
+            if derived_type.check(assigned_type.get_type()) {
                 Ok(Expr::Variable(variable.clone()))
-            } else if assigned_type == &FerryType::Untyped {
+            } else if assigned_type.check(&FerryType::Untyped) {
                 // type inference: if derived_type is valid, update the type
                 Ok(Expr::Variable(Variable {
                     token: variable.token.clone(),
                     name: variable.name.clone(),
-                    expr_type: derived_type.get_type().clone(),
+                    expr_type: FerryTyping::Inferred(derived_type.get_type().clone()),
                 }))
             } else {
                 Err(FerryTypeError::TypeMismatch {
@@ -172,7 +172,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     var: assign.var.clone(),
                     name: assign.name.clone(),
                     value: Some(Box::new(value_check.clone())),
-                    expr_type: value_check.get_type().clone(),
+                    expr_type: FerryTyping::Assigned(value_check.get_type().clone()),
                     token: assign.token.clone(),
                 }));
             }
@@ -185,7 +185,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
 
     fn visit_if_expr(&mut self, if_expr: &mut If, state: &mut FerryState) -> FerryResult<Expr> {
         let condition = self.check_types(&mut if_expr.condition, state)?;
-        if condition.get_type() != &FerryType::Boolean {
+        if condition.check(&FerryType::Boolean) {
             return Err(FerryTypeError::ConditionalNotBool {
                 advice: "expected conditional to if statement to be of type 'bool'".into(),
                 span: if_expr.token.get_span().clone(),
@@ -205,7 +205,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         } else {
             None
         };
-        let expr_type = then_expr.get_type().clone();
+        let expr_type = FerryTyping::Inferred(then_expr.get_type().clone());
         Ok(Expr::If(If {
             token: if_expr.token.clone(),
             condition: Box::new(condition),
@@ -217,7 +217,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
 
     fn visit_group(&mut self, group: &mut Group, state: &mut FerryState) -> FerryResult<Expr> {
         let contents = Box::new(self.check_types(&mut group.contents, state)?);
-        let expr_type = contents.get_type().clone();
+        let expr_type = FerryTyping::Inferred(contents.get_type().clone());
 
         Ok(Expr::Group(Group {
             token: group.token.clone(),

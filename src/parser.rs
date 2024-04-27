@@ -102,7 +102,7 @@ impl FerryParser {
             condition,
             then_expr,
             else_expr,
-            expr_type: FerryType::Untyped,
+            expr_type: FerryTyping::Untyped,
         });
 
         Ok(expr)
@@ -125,7 +125,7 @@ impl FerryParser {
                     var: Box::new(expr.clone()),
                     name: v.name.clone(),
                     value: Some(Box::new(value)),
-                    expr_type: FerryType::Untyped,
+                    expr_type: FerryTyping::Untyped,
                     token: operator,
                 });
             }
@@ -144,7 +144,7 @@ impl FerryParser {
                 lhs: Box::new(expr),
                 operator: op,
                 rhs: Box::new(rhs),
-                expr_type: FerryType::Untyped,
+                expr_type: FerryTyping::Untyped,
             });
         }
 
@@ -161,7 +161,7 @@ impl FerryParser {
                 lhs: Box::new(expr),
                 operator: op,
                 rhs: Box::new(rhs),
-                expr_type: FerryType::Untyped,
+                expr_type: FerryTyping::Untyped,
             });
         }
 
@@ -175,28 +175,28 @@ impl FerryParser {
             TT::Value(l) => Ok(match l {
                 TLit::Num(n) => Expr::Literal(SLit::Number {
                     value: *n,
-                    expr_type: FerryType::Untyped,
+                    expr_type: FerryTyping::Untyped,
                     span: *self.previous().get_span(),
                 }),
                 TLit::String(s) => Expr::Literal(SLit::Str {
                     value: s.clone(),
-                    expr_type: FerryType::Untyped,
+                    expr_type: FerryTyping::Untyped,
                     span: *self.previous().get_span(),
                 }),
                 TLit::Boolean(b) => Expr::Literal(SLit::Bool {
                     value: *b,
-                    expr_type: FerryType::Untyped,
+                    expr_type: FerryTyping::Untyped,
                     span: *self.previous().get_span(),
                 }),
                 TLit::None => Expr::Literal(SLit::Undefined {
-                    expr_type: FerryType::Undefined,
+                    expr_type: FerryTyping::Undefined,
                 }),
                 // _ => unreachable!(),
             }),
             TT::Identifier(id) => Ok(Expr::Variable(Variable {
                 token: self.previous().clone(),
                 name: id.clone(),
-                expr_type: FerryType::Untyped,
+                expr_type: FerryTyping::Untyped,
             })),
             TT::Control(Ctrl::LeftParen) => {
                 let contents = Box::new(self.s_expression(state)?);
@@ -204,7 +204,7 @@ impl FerryParser {
                 Ok(Expr::Group(Group {
                     token: self.previous().clone(),
                     contents,
-                    expr_type: FerryType::Untyped,
+                    expr_type: FerryTyping::Untyped,
                 }))
             }
             _ => Err(FerryParseError::UnexpectedToken {
