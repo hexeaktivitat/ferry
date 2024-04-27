@@ -44,7 +44,7 @@ Extremely barebones at the moment.
 Small roadmap:
 
 - [x] Basic arithmetic operations `4 + 3 - 2 / 1`
-  - [ ] Parenthetical grouping of expressions
+  - [x] Parenthetical grouping of expressions
 - [x] Variable assignment `five = 5`
 - [ ] Type assignment
   - Syntax options include: `Integer -> five = 5`, `five: Integer = 5` & `five := 5` for assigned vs inferred type
