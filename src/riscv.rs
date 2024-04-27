@@ -60,17 +60,17 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 value,
                 expr_type: _,
                 span: _,
-                token,
+                token: _,
             } => Ok(Instruction::Li {
                 d: Register::A0,
-                imm: value.clone() as i32,
+                imm: *value as i32,
             }),
             // not a functional instruction!
             Lit::Str {
                 value: _,
                 expr_type: _,
                 span: _,
-                token,
+                token: _,
             } => Ok(Instruction::Li {
                 d: Register::A0,
                 imm: 0,
@@ -79,7 +79,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 value,
                 expr_type: _,
                 span: _,
-                token,
+                token: _,
             } => {
                 if *value {
                     Ok(Instruction::Li {
@@ -95,7 +95,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
             }
             Lit::Undefined {
                 expr_type: _,
-                token,
+                token: _,
             } => todo!(),
         }
     }
@@ -198,8 +198,8 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
 
     fn visit_group(
         &mut self,
-        group: &mut crate::syntax::Group,
-        state: &mut Vec<Instruction>,
+        _group: &mut crate::syntax::Group,
+        _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         todo!()
     }

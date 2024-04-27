@@ -1,7 +1,7 @@
 use miette::SourceSpan;
 
 use crate::token::{FerryToken, TokenType as TT};
-use crate::types::{FerryType, FerryTyping};
+use crate::types::FerryTyping;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
@@ -103,25 +103,28 @@ impl Expr {
     pub fn get_token(&self) -> &FerryToken {
         match self {
             Expr::Literal(l) => match l {
-                Lit::Undefined { token, expr_type } => &token,
+                Lit::Undefined {
+                    token,
+                    expr_type: _,
+                } => token,
                 Lit::Number {
                     token,
-                    value,
-                    expr_type,
-                    span,
-                } => &token,
+                    value: _,
+                    expr_type: _,
+                    span: _,
+                } => token,
                 Lit::Str {
                     token,
-                    value,
-                    expr_type,
-                    span,
-                } => &token,
+                    value: _,
+                    expr_type: _,
+                    span: _,
+                } => token,
                 Lit::Bool {
                     token,
-                    value,
-                    expr_type,
-                    span,
-                } => &token,
+                    value: _,
+                    expr_type: _,
+                    span: _,
+                } => token,
             },
             Expr::Binary(b) => &b.operator,
             Expr::Variable(v) => &v.token,
@@ -140,21 +143,24 @@ impl std::fmt::Display for Expr {
                     value,
                     expr_type: _,
                     span: _,
-                    token,
+                    token: _,
                 } => write!(f, "{value}"),
                 Lit::Str {
                     value,
                     expr_type: _,
                     span: _,
-                    token,
+                    token: _,
                 } => write!(f, "{value}"),
                 Lit::Bool {
                     value,
                     expr_type: _,
                     span: _,
-                    token,
+                    token: _,
                 } => write!(f, "{value}"),
-                Lit::Undefined { expr_type, token } => write!(f, "{expr_type}"),
+                Lit::Undefined {
+                    expr_type,
+                    token: _,
+                } => write!(f, "{expr_type}"),
             },
             Expr::Binary(b) => match b.operator.get_token_type() {
                 TT::Operator(o) => match o {

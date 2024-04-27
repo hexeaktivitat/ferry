@@ -96,9 +96,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 span,
                 token,
             } => Ok(Expr::Literal(Lit::Number {
-                value: value.clone(),
+                value: *value,
                 expr_type: FerryTyping::Assigned(FerryType::Num),
-                span: span.clone(),
+                span: *span,
                 token: token.clone(),
             })),
             Lit::Str {
@@ -109,7 +109,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             } => Ok(Expr::Literal(Lit::Str {
                 value: value.clone(),
                 expr_type: FerryTyping::Assigned(FerryType::String),
-                span: span.clone(),
+                span: *span,
                 token: token.clone(),
             })),
             Lit::Bool {
@@ -118,9 +118,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 span,
                 token,
             } => Ok(Expr::Literal(Lit::Bool {
-                value: value.clone(),
+                value: *value,
                 expr_type: FerryTyping::Assigned(FerryType::Boolean),
-                span: span.clone(),
+                span: *span,
                 token: token.clone(),
             })),
             Lit::Undefined {
@@ -211,7 +211,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         if !condition.check(&FerryType::Boolean) {
             return Err(FerryTypeError::ConditionalNotBool {
                 advice: "expected conditional to if statement to be of type 'bool'".into(),
-                span: if_expr.token.get_span().clone(),
+                span: *if_expr.token.get_span(),
             });
         }
         let then_expr = self.check_types(&mut if_expr.then_expr, state)?;
@@ -220,7 +220,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             if then_expr.get_type() != else_expr.get_type() {
                 return Err(FerryTypeError::TypeMismatch {
                     advice: "type mismatch between two values".into(),
-                    span: if_expr.token.get_span().clone(),
+                    span: *if_expr.token.get_span(),
                     lhs_span: *then_expr.get_token().get_span(),
                     rhs_span: *else_expr.get_token().get_span(),
                 });

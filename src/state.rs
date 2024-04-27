@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::types::{FerryType, FerryTyping, TypeCheckable, Typing};
+use crate::types::{FerryType, TypeCheckable, Typing};
 
 // placeholder for program state
 #[derive(Debug, Clone, PartialEq)]
@@ -27,7 +27,7 @@ impl FerryState {
         if !self.symbols.contains_key(id) {
             self.symbols.insert(id.clone(), value);
         } else {
-            self.update_symbol(&id, value);
+            self.update_symbol(id, value);
         }
     }
 
@@ -50,9 +50,9 @@ impl std::fmt::Display for FerryState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for k in self.symbols.keys() {
             if let Some(v) = self.symbols.get(k).unwrap() {
-                write!(f, "{}: {}\n", k, v)?;
+                writeln!(f, "{}: {}", k, v)?;
             } else {
-                write!(f, "{}: undefined\n", k)?;
+                writeln!(f, "{}: undefined", k)?;
             }
         }
 

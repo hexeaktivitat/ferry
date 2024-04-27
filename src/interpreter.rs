@@ -49,8 +49,8 @@ impl FerryInterpreter {
     ) -> Result<Option<FerryValue>, Vec<FerryInterpreterError>> {
         let mut ret = None;
         let mut errors = vec![];
-        for mut code in self.syntax.clone().iter_mut() {
-            match self.evaluate(&mut code, state) {
+        for code in self.syntax.clone().iter_mut() {
+            match self.evaluate(code, state) {
                 Ok(r) => ret = r,
                 Err(e) => errors.push(e),
             };
@@ -78,23 +78,23 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 value,
                 expr_type: _,
                 span: _,
-                token,
+                token: _,
             } => Ok(Some(FerryValue::Number(*value))),
             SLit::Str {
                 value,
                 expr_type: _,
                 span: _,
-                token,
+                token: _,
             } => Ok(Some(FerryValue::Str(value.clone()))),
             SLit::Bool {
                 value,
                 expr_type: _,
                 span: _,
-                token,
+                token: _,
             } => Ok(Some(FerryValue::Boolean(*value))),
             SLit::Undefined {
                 expr_type: _,
-                token,
+                token: _,
             } => Ok(Some(FerryValue::Unit)),
         }
     }
@@ -185,14 +185,12 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         if let Some(conditional) = self.evaluate(&mut if_expr.condition, state)? {
             let value = if conditional.truthiness() {
                 self.evaluate(&mut if_expr.then_expr, state)?
+            } else if let Some(else_expr) = &mut if_expr.else_expr {
+                self.evaluate(else_expr, state)?
             } else {
-                if let Some(else_expr) = &mut if_expr.else_expr {
-                    self.evaluate(else_expr, state)?
-                } else {
-                    None
-                }
+                None
             };
-            return Ok(value);
+            Ok(value)
         } else {
             Ok(None)
         }
@@ -210,20 +208,8 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 impl FerryValue {
     fn truthiness(&self) -> bool {
         match self {
-            FerryValue::Number(n) => {
-                if n <= &0. {
-                    false
-                } else {
-                    true
-                }
-            }
-            FerryValue::Str(s) => {
-                if s.len() == 0 {
-                    false
-                } else {
-                    true
-                }
-            }
+            FerryValue::Number(n) => n > &0.,
+            FerryValue::Str(s) => !s.is_empty(),
             FerryValue::Boolean(b) => *b,
             FerryValue::Unit => false,
         }

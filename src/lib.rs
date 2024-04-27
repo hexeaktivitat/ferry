@@ -152,7 +152,7 @@ impl<'source> Ferry {
                 }
             }
         }
-        println!("");
+        println!();
     }
 }
 

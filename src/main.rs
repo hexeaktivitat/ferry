@@ -100,8 +100,8 @@ enum FerryRepl {
 fn repl_input_process(input: &str) -> Option<FerryRepl> {
     let output = input.trim_end();
 
-    if output.starts_with("!") {
-        match output.trim_start_matches("!").to_lowercase().as_str() {
+    if output.starts_with('!') {
+        match output.trim_start_matches('!').to_lowercase().as_str() {
             "exit" | "quit" => Some(FerryRepl::Exit),
             "token" | "tokens" => Some(FerryRepl::Tokens),
             "state" => Some(FerryRepl::State),

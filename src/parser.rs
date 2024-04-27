@@ -5,7 +5,7 @@ use crate::state::FerryState;
 use crate::syntax::{Assign, Binary, Expr, Group, If, Lit as SLit, Variable};
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
-use crate::types::{FerryType, FerryTyping};
+use crate::types::FerryTyping;
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryParseError {
@@ -218,7 +218,7 @@ impl FerryParser {
             }
             _ => Err(FerryParseError::UnexpectedToken {
                 msg: format!("Unexpected token: {}", self.previous().get_token_type()),
-                span: self.previous().get_span().clone(),
+                span: *self.previous().get_span(),
             }),
         }
     }
