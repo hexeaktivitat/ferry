@@ -43,13 +43,23 @@ impl FerryInterpreter {
         Self { syntax }
     }
 
-    pub fn interpret(&mut self, state: &mut FerryState) -> FerryResult<FerryValue> {
+    pub fn interpret(
+        &mut self,
+        state: &mut FerryState,
+    ) -> Result<Option<FerryValue>, Vec<FerryInterpreterError>> {
         let mut ret = None;
+        let mut errors = vec![];
         for mut code in self.syntax.clone().iter_mut() {
-            ret = self.evaluate(&mut code, state)?;
+            match self.evaluate(&mut code, state) {
+                Ok(r) => ret = r,
+                Err(e) => errors.push(e),
+            };
         }
-
-        Ok(ret)
+        if errors.is_empty() {
+            Ok(ret)
+        } else {
+            Err(errors)
+        }
     }
 
     fn evaluate(&mut self, code: &mut Expr, state: &mut FerryState) -> FerryResult<FerryValue> {
@@ -99,26 +109,38 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
                         Ok(Some(FerryValue::Number(l + r)))
                     }
-                    _ => unimplemented!(),
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
                 },
                 Op::Subtract => match (left, right) {
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
                         Ok(Some(FerryValue::Number(l - r)))
                     }
-                    _ => unimplemented!(),
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
                 },
 
                 Op::Multiply => match (left, right) {
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
                         Ok(Some(FerryValue::Number(l * r)))
                     }
-                    _ => unimplemented!(),
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
                 },
                 Op::Divide => match (left, right) {
                     (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
                         Ok(Some(FerryValue::Number(l / r)))
                     }
-                    _ => unimplemented!(),
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
                 },
                 // Op::RightArrow => todo!(),
                 Op::Equals => todo!(),

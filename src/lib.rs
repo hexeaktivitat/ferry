@@ -83,7 +83,12 @@ impl<'source> Ferry {
                 })?;
 
         let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
-        let result = match interpreter.interpret(&mut self.state)? {
+        let result = match interpreter.interpret(&mut self.state).map_err(|err_list| {
+            FerryInterpreterErrors {
+                source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
+                related: err_list,
+            }
+        })? {
             Some(r) => r,
             None => FerryValue::Unit,
         };
