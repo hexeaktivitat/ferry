@@ -57,6 +57,7 @@ pub enum Ctrl {
     Colon,
     LeftParen,
     RightParen,
+    Newline,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

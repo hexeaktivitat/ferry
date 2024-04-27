@@ -119,8 +119,12 @@ impl<'source> FerryLexer<'source> {
                 })
             }
 
+            // SIGNIFICANT WHITESPACE
+            // b'\n' => Ok(Some(TT::Control(Ctrl::Newline))),
+            b'\n' => Ok(None),
+
             // NON-SIGNIFICANT WHITESPACE
-            b' ' | b'\n' | b'\r' => Ok(None),
+            b' ' | b'\r' => Ok(None),
             _ => Err(FerryLexError::UnexpectedCharacter {
                 advice: "Expected literally anything else".into(),
                 bad_char: (self.start, self.current - self.start).into(),
