@@ -94,6 +94,7 @@ impl std::fmt::Display for TokenType {
                 Ctrl::Colon => write!(f, "Control<Colon>"),
                 Ctrl::LeftParen => write!(f, "Control<LeftParen>"),
                 Ctrl::RightParen => write!(f, "Control<RightParen>"),
+                Ctrl::Newline => write!(f, "Control<Newline>"),
             },
             TokenType::Keyword(k) => match k {
                 Kwd::If => write!(f, "Keyword<If>"),

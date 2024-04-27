@@ -120,8 +120,8 @@ impl<'source> FerryLexer<'source> {
             }
 
             // SIGNIFICANT WHITESPACE
-            // b'\n' => Ok(Some(TT::Control(Ctrl::Newline))),
-            b'\n' => Ok(None),
+            b'\n' => Ok(Some(TT::Control(Ctrl::Newline))),
+            // b'\n' => Ok(None),
 
             // NON-SIGNIFICANT WHITESPACE
             b' ' | b'\r' => Ok(None),

@@ -83,7 +83,9 @@ impl FerryParser {
             "expected 'then' after 'if' conditional",
         )?;
         self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'then'")?;
+        self.consume_newline()?;
         let then_expr = Box::new(self.s_expression(state)?);
+        self.consume_newline()?;
         let else_expr = if self.peek().get_token_type() == &TT::Keyword(Kwd::Else) {
             self.consume(&TT::Keyword(Kwd::Else), "idk how you got this")?;
             if self.peek().get_token_type() == &TT::Control(Ctrl::Colon) {
@@ -96,6 +98,7 @@ impl FerryParser {
         } else {
             None
         };
+        self.consume_newline()?;
 
         let expr = Expr::If(If {
             token,
@@ -110,6 +113,8 @@ impl FerryParser {
 
     fn s_expression(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         let expr = self.assignment(state)?;
+
+        self.consume_newline()?;
 
         Ok(expr)
     }
@@ -265,6 +270,17 @@ impl FerryParser {
 
     fn end_of_program(&self) -> bool {
         self.tokens[self.current].get_token_type() == &TT::End
+    }
+
+    fn consume_newline(&mut self) -> Result<Option<FerryToken>, FerryParseError> {
+        if self.matches(&[TT::Control(Ctrl::Newline)]) {
+            Ok(Some(self.consume(
+                &TT::Control(Ctrl::Newline),
+                "Expected consumable newline",
+            )?))
+        } else {
+            Ok(None)
+        }
     }
 }
 

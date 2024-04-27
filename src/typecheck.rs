@@ -185,7 +185,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
 
     fn visit_if_expr(&mut self, if_expr: &mut If, state: &mut FerryState) -> FerryResult<Expr> {
         let condition = self.check_types(&mut if_expr.condition, state)?;
-        if condition.check(&FerryType::Boolean) {
+        if !condition.check(&FerryType::Boolean) {
             return Err(FerryTypeError::ConditionalNotBool {
                 advice: "expected conditional to if statement to be of type 'bool'".into(),
                 span: if_expr.token.get_span().clone(),
