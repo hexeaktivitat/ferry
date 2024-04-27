@@ -35,6 +35,17 @@ pub enum FerryTypeError {
         #[label("rhs")]
         rhs_span: SourceSpan,
     },
+    #[error("mismatched if-then and else types")]
+    MismatchedThenElse {
+        #[help]
+        advice: String,
+        #[label("operand")]
+        span: SourceSpan,
+        #[label("if-then")]
+        lhs_span: SourceSpan,
+        #[label("else")]
+        rhs_span: SourceSpan,
+    },
     #[error("mistyped variable")]
     MistypedVariable {
         #[help]
@@ -218,7 +229,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         let else_expr = if let Some(else_expr_box) = &mut if_expr.else_expr {
             let else_expr = self.check_types(else_expr_box, state)?;
             if then_expr.get_type() != else_expr.get_type() {
-                return Err(FerryTypeError::TypeMismatch {
+                return Err(FerryTypeError::MismatchedThenElse {
                     advice: "type mismatch between two values".into(),
                     span: *if_expr.token.get_span(),
                     lhs_span: *then_expr.get_token().get_span(),
