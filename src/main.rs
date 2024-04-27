@@ -46,6 +46,11 @@ fn repl() -> Result<(), Error> {
     let mut input = String::new();
     let mut program = Ferry::new(input.clone());
 
+    println!("FERRY 0.1.0");
+    println!("===========");
+    println!("Language Design Experiment");
+    println!("Type !help for commands, or !quit to quit\n");
+
     loop {
         print!("Fwee...> ");
         stdout().flush().expect("stdout didn't flush");
