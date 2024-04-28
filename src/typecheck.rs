@@ -3,7 +3,9 @@ use thiserror::Error;
 
 use crate::{
     state::FerryState,
-    syntax::{walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Variable},
+    syntax::{
+        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Loop, Variable,
+    },
     types::{FerryType, FerryTyping, TypeCheckable, Typing},
 };
 
@@ -309,5 +311,35 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             advice: "aaa".into(),
             span: *binding.token.get_span(),
         })
+    }
+
+    fn visit_loop(&mut self, loop_expr: &mut Loop, state: &mut FerryState) -> FerryResult<Expr> {
+        if let Some(cond) = &mut loop_expr.condition {
+            let condition = Box::new(self.check_types(cond, state)?);
+            if condition.check(&FerryType::Boolean) {
+                let contents = Box::new(self.check_types(&mut loop_expr.contents, state)?);
+                let expr_type = FerryTyping::Inferred(contents.get_type().clone());
+                return Ok(Expr::Loop(Loop {
+                    token: loop_expr.token.clone(),
+                    condition: Some(condition),
+                    contents,
+                    expr_type,
+                }));
+            } else {
+                return Err(FerryTypeError::ConditionalNotBool {
+                    advice: "loop condition was not boolean".into(),
+                    span: *loop_expr.token.get_span(),
+                });
+            }
+        } else {
+            let contents = Box::new(self.check_types(&mut loop_expr.contents, state)?);
+            let expr_type = FerryTyping::Inferred(contents.get_type().clone());
+            return Ok(Expr::Loop(Loop {
+                token: loop_expr.token.clone(),
+                condition: loop_expr.condition.clone(),
+                contents,
+                expr_type,
+            }));
+        }
     }
 }

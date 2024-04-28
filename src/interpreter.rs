@@ -217,6 +217,27 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
             Ok(Some(FerryValue::Number(0.)))
         }
     }
+
+    fn visit_loop(
+        &mut self,
+        loop_expr: &mut crate::syntax::Loop,
+        state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
+        if let Some(cond) = &mut loop_expr.condition {
+            return Err(FerryInterpreterError::Unimplemented {
+                help: "Loops unimplemented".into(),
+                span: *loop_expr.token.get_span(),
+            });
+        } else {
+            println!("{:?}", loop_expr.contents);
+            loop {
+                match self.evaluate(&mut loop_expr.contents, state)? {
+                    Some(res) => println!("{res}"), // this will be replaced with FerryValue::Return
+                    None => (),
+                }
+            }
+        }
+    }
 }
 
 impl FerryValue {

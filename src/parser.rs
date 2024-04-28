@@ -2,7 +2,7 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::state::FerryState;
-use crate::syntax::{Assign, Binary, Binding, Expr, Group, If, Lit as SLit, Variable};
+use crate::syntax::{Assign, Binary, Binding, Expr, Group, If, Lit as SLit, Loop, Variable};
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
 use crate::types::FerryTyping;
@@ -70,6 +70,8 @@ impl FerryParser {
             self.if_expr(state)?
         } else if self.matches(&[TT::Keyword(Kwd::Let)]) {
             self.binding(state)?
+        } else if self.matches(&[TT::Keyword(Kwd::Do)]) {
+            self.do_loop(state)?
         } else {
             self.s_expression(state)?
         };
@@ -149,6 +151,20 @@ impl FerryParser {
                 span: self.previous().get_span().clone(),
             })
         }
+    }
+
+    fn do_loop(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let token = self.previous();
+        self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'do'")?;
+        let condition = None;
+        let contents = Box::new(self.start(state)?);
+
+        Ok(Expr::Loop(Loop {
+            token,
+            condition,
+            contents,
+            expr_type: FerryTyping::Untyped,
+        }))
     }
 
     fn s_expression(&mut self, state: &mut FerryState) -> FerryResult<Expr> {

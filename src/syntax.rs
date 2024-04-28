@@ -12,6 +12,7 @@ pub enum Expr {
     If(If),
     Group(Group),
     Binding(Binding),
+    Loop(Loop),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -89,6 +90,14 @@ pub struct Binding {
     pub expr_type: FerryTyping,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Loop {
+    pub token: FerryToken,
+    pub condition: Option<Box<Expr>>,
+    pub contents: Box<Expr>,
+    pub expr_type: FerryTyping,
+}
+
 pub trait ExprVisitor<T, S> {
     fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
     fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
@@ -97,6 +106,7 @@ pub trait ExprVisitor<T, S> {
     fn visit_if_expr(&mut self, if_expr: &mut If, state: S) -> T;
     fn visit_group(&mut self, group: &mut Group, state: S) -> T;
     fn visit_binding(&mut self, binding: &mut Binding, state: S) -> T;
+    fn visit_loop(&mut self, loop_expr: &mut Loop, state: S) -> T;
 }
 
 pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, state: S) -> T {
@@ -108,6 +118,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::If(if_expr) => visitor.visit_if_expr(if_expr, state),
         Expr::Group(group) => visitor.visit_group(group, state),
         Expr::Binding(binding) => visitor.visit_binding(binding, state),
+        Expr::Loop(loop_expr) => visitor.visit_loop(loop_expr, state),
     }
 }
 
@@ -144,6 +155,7 @@ impl Expr {
             Expr::If(i) => &i.token,
             Expr::Group(g) => &g.token,
             Expr::Binding(b) => &b.token,
+            Expr::Loop(l) => &l.token,
         }
     }
 }
@@ -208,6 +220,7 @@ impl std::fmt::Display for Expr {
             }
             Expr::Group(g) => write!(f, "( {} )", g.contents),
             Expr::Binding(b) => write!(f, "let {}", b.name),
+            Expr::Loop(l) => write!(f, "loop"),
         }
     }
 }

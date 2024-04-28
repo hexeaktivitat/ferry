@@ -112,6 +112,9 @@ impl<'source> FerryLexer<'source> {
                     "then" => Some(TT::Keyword(Kwd::Then)),
                     "else" => Some(TT::Keyword(Kwd::Else)),
                     "let" => Some(TT::Keyword(Kwd::Let)),
+                    "do" => Some(TT::Keyword(Kwd::Do)),
+                    "while" => Some(TT::Keyword(Kwd::While)),
+                    "for" => Some(TT::Keyword(Kwd::For)),
 
                     // reserved boolean keywords
                     "true" => Some(TT::Value(Val::Boolean(true))),

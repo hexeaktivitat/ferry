@@ -81,6 +81,7 @@ impl Typing for Expr {
             Expr::If(i) => i.expr_type.get_type(),
             Expr::Group(g) => g.expr_type.get_type(),
             Expr::Binding(b) => b.expr_type.get_type(),
+            Expr::Loop(l) => l.expr_type.get_type(),
         }
     }
 }
