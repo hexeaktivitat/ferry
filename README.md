@@ -49,4 +49,5 @@ Small roadmap:
 - [x] Typed variable binding `let five: Int = 5`
 - [x] Booleans
 - [x] `if`/`then`/`else` expressions
-- [ ] loop structures `do`/`while`/`for`
+- [x] loop structures `do`/`while`/`for`
+    - `for` postponed

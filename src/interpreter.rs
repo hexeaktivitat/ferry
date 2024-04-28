@@ -224,10 +224,21 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         if let Some(cond) = &mut loop_expr.condition {
-            return Err(FerryInterpreterError::Unimplemented {
-                help: "Loops unimplemented".into(),
-                span: *loop_expr.token.get_span(),
-            });
+            match self.evaluate(cond, state)? {
+                Some(b) => {
+                    if b.truthiness() {
+                        loop {
+                            match self.evaluate(&mut loop_expr.contents, state)? {
+                                Some(res) => println!("{res}"),
+                                None => (),
+                            }
+                        }
+                    } else {
+                        return Ok(Some(FerryValue::Unit));
+                    }
+                }
+                None => return Ok(Some(FerryValue::Unit)),
+            }
         } else {
             println!("{:?}", loop_expr.contents);
             loop {

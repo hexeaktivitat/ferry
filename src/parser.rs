@@ -72,6 +72,8 @@ impl FerryParser {
             self.binding(state)?
         } else if self.matches(&[TT::Keyword(Kwd::Do)]) {
             self.do_loop(state)?
+        } else if self.matches(&[TT::Keyword(Kwd::While)]) {
+            self.while_loop(state)?
         } else {
             self.s_expression(state)?
         };
@@ -157,6 +159,24 @@ impl FerryParser {
         let token = self.previous();
         self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'do'")?;
         let condition = None;
+        let contents = Box::new(self.start(state)?);
+
+        Ok(Expr::Loop(Loop {
+            token,
+            condition,
+            contents,
+            expr_type: FerryTyping::Untyped,
+        }))
+    }
+
+    fn while_loop(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let token = self.previous();
+        let condition = Some(Box::new(self.start(state)?));
+        self.consume(
+            &TT::Keyword(Kwd::Do),
+            "expected 'do:' after 'while' conditional",
+        )?;
+        self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'do'")?;
         let contents = Box::new(self.start(state)?);
 
         Ok(Expr::Loop(Loop {
