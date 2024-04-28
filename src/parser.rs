@@ -2,7 +2,7 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::state::FerryState;
-use crate::syntax::{Assign, Binary, Expr, Group, If, Lit as SLit, Variable};
+use crate::syntax::{Assign, Binary, Binding, Expr, Group, If, Lit as SLit, Variable};
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
 use crate::types::FerryTyping;
@@ -68,9 +68,13 @@ impl FerryParser {
     fn keywords(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         let expr = if self.matches(&[TT::Keyword(Kwd::If)]) {
             self.if_expr(state)?
+        } else if self.matches(&[TT::Keyword(Kwd::Let)]) {
+            self.binding(state)?
         } else {
             self.s_expression(state)?
         };
+
+        self.consume_newline()?;
 
         Ok(expr)
     }
@@ -111,10 +115,44 @@ impl FerryParser {
         Ok(expr)
     }
 
+    fn binding(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let token = self.previous();
+        if let TT::Identifier(name) = self.advance().get_token_type() {
+            self.consume(&TT::Control(Ctrl::Colon), "expected ':' after identifier")?;
+            let assigned_type = if let TT::Identifier(id) = self.peek().get_token_type() {
+                self.advance();
+                match id.clone().as_str() {
+                    "Int" => Some(crate::types::FerryType::Num),
+                    "String" => Some(crate::types::FerryType::String),
+                    _ => None,
+                }
+            } else {
+                None
+            };
+            let value = if self.peek().get_token_type() == &TT::Operator(Op::Equals) {
+                self.advance();
+                Some(Box::new(self.start(state)?))
+            } else {
+                None
+            };
+
+            Ok(Expr::Binding(Binding {
+                token,
+                name: name.clone(),
+                assigned_type,
+                value,
+                expr_type: FerryTyping::Untyped,
+            }))
+        } else {
+            Err(FerryParseError::AlternateToken {
+                help: "a?".into(),
+                span: self.previous().get_span().clone(),
+            })
+        }
+    }
+
     fn s_expression(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         let expr = self.assignment(state)?;
-
-        self.consume_newline()?;
 
         Ok(expr)
     }
@@ -124,7 +162,7 @@ impl FerryParser {
 
         if self.matches(&[TT::Operator(Op::Equals)]) {
             let operator = self.previous();
-            let value = self.s_expression(state)?;
+            let value = self.start(state)?;
             if let Expr::Variable(v) = &expr {
                 expr = Expr::Assign(Assign {
                     var: Box::new(expr.clone()),
@@ -144,7 +182,7 @@ impl FerryParser {
 
         if self.matches(&[TT::Operator(Op::Add), TT::Operator(Op::Subtract)]) {
             let op = self.previous();
-            let rhs = self.s_expression(state)?;
+            let rhs = self.start(state)?;
             expr = Expr::Binary(Binary {
                 lhs: Box::new(expr),
                 operator: op,
@@ -161,7 +199,7 @@ impl FerryParser {
 
         if self.matches(&[TT::Operator(Op::Multiply), TT::Operator(Op::Divide)]) {
             let op = self.previous();
-            let rhs = self.s_expression(state)?;
+            let rhs = self.start(state)?;
             expr = Expr::Binary(Binary {
                 lhs: Box::new(expr),
                 operator: op,
@@ -208,7 +246,7 @@ impl FerryParser {
                 expr_type: FerryTyping::Untyped,
             })),
             TT::Control(Ctrl::LeftParen) => {
-                let contents = Box::new(self.s_expression(state)?);
+                let contents = Box::new(self.start(state)?);
                 self.consume(&TT::Control(Ctrl::RightParen), "Expected ')' after '('")?;
                 Ok(Expr::Group(Group {
                     token: self.previous().clone(),

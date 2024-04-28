@@ -189,7 +189,7 @@ struct FerryTypeErrors {
 }
 
 #[derive(Error, Debug, Diagnostic)]
-#[error("Encountered type errors")]
+#[error("Encountered interpreter errors")]
 #[diagnostic()]
 struct FerryInterpreterErrors {
     #[source_code]

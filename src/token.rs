@@ -65,6 +65,7 @@ pub enum Kwd {
     If,
     Then,
     Else,
+    Let,
 }
 
 impl std::fmt::Display for FerryToken {
@@ -100,6 +101,7 @@ impl std::fmt::Display for TokenType {
                 Kwd::If => write!(f, "Keyword<If>"),
                 Kwd::Then => write!(f, "Keyword<Then>"),
                 Kwd::Else => write!(f, "Keyword<Else>"),
+                Kwd::Let => write!(f, "Keyword<Let>"),
             },
             TokenType::Identifier(i) => write!(f, "Identifier {i}"),
             TokenType::End => write!(f, "END"),

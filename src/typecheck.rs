@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::{
     state::FerryState,
-    syntax::{walk_expr, Assign, Binary, Expr, ExprVisitor, Group, If, Lit, Variable},
+    syntax::{walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Variable},
     types::{FerryType, FerryTyping, TypeCheckable, Typing},
 };
 
@@ -260,5 +260,54 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             contents,
             expr_type,
         }))
+    }
+
+    fn visit_binding(
+        &mut self,
+        binding: &mut Binding,
+        state: &mut FerryState,
+    ) -> FerryResult<Expr> {
+        // type inference first
+        if let Some(value) = &mut binding.value {
+            if let Ok(value_check) = self.check_types(value, state) {
+                if let Some(assigned_type) = &binding.assigned_type {
+                    if assigned_type.check(value_check.get_type()) {
+                        return Ok(Expr::Binding(Binding {
+                            token: binding.token.clone(),
+                            name: binding.name.clone(),
+                            assigned_type: binding.assigned_type.clone(),
+                            value: Some(Box::new(value_check.clone())),
+                            expr_type: FerryTyping::Untyped,
+                        }));
+                    } else {
+                        return Err(FerryTypeError::A {
+                            advice: "aaa".into(),
+                            span: *binding.token.get_span(),
+                        });
+                    }
+                } else {
+                    return Ok(Expr::Binding(Binding {
+                        token: binding.token.clone(),
+                        name: binding.name.clone(),
+                        assigned_type: None,
+                        value: Some(Box::new(value_check.clone())),
+                        expr_type: FerryTyping::Inferred(value_check.get_type().clone()),
+                    }));
+                }
+            }
+        } else if let Some(assigned_type) = &binding.assigned_type {
+            return Ok(Expr::Binding(Binding {
+                token: binding.token.clone(),
+                name: binding.name.clone(),
+                assigned_type: binding.assigned_type.clone(),
+                value: None,
+                expr_type: FerryTyping::Assigned(assigned_type.clone()),
+            }));
+        }
+
+        Err(FerryTypeError::A {
+            advice: "aaa".into(),
+            span: *binding.token.get_span(),
+        })
     }
 }

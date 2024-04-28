@@ -203,6 +203,20 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
     ) -> FerryResult<FerryValue> {
         self.evaluate(&mut group.contents, state)
     }
+
+    fn visit_binding(
+        &mut self,
+        binding: &mut crate::syntax::Binding,
+        state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
+        if let Some(v) = &mut binding.value {
+            let value = self.evaluate(v, state)?;
+            state.add_symbol(&binding.name, value.clone());
+            Ok(value)
+        } else {
+            Ok(Some(FerryValue::Number(0.)))
+        }
+    }
 }
 
 impl FerryValue {

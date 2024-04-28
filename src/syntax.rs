@@ -1,7 +1,7 @@
 use miette::SourceSpan;
 
 use crate::token::{FerryToken, TokenType as TT};
-use crate::types::FerryTyping;
+use crate::types::{FerryType, FerryTyping};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
@@ -11,6 +11,7 @@ pub enum Expr {
     Assign(Assign),
     If(If),
     Group(Group),
+    Binding(Binding),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -79,6 +80,15 @@ pub struct Group {
     pub expr_type: FerryTyping,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Binding {
+    pub token: FerryToken,
+    pub name: String,
+    pub assigned_type: Option<FerryType>,
+    pub value: Option<Box<Expr>>,
+    pub expr_type: FerryTyping,
+}
+
 pub trait ExprVisitor<T, S> {
     fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
     fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
@@ -86,6 +96,7 @@ pub trait ExprVisitor<T, S> {
     fn visit_assign(&mut self, assign: &mut Assign, state: S) -> T;
     fn visit_if_expr(&mut self, if_expr: &mut If, state: S) -> T;
     fn visit_group(&mut self, group: &mut Group, state: S) -> T;
+    fn visit_binding(&mut self, binding: &mut Binding, state: S) -> T;
 }
 
 pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, state: S) -> T {
@@ -96,6 +107,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::Assign(assign) => visitor.visit_assign(assign, state),
         Expr::If(if_expr) => visitor.visit_if_expr(if_expr, state),
         Expr::Group(group) => visitor.visit_group(group, state),
+        Expr::Binding(binding) => visitor.visit_binding(binding, state),
     }
 }
 
@@ -131,6 +143,7 @@ impl Expr {
             Expr::Assign(a) => &a.token,
             Expr::If(i) => &i.token,
             Expr::Group(g) => &g.token,
+            Expr::Binding(b) => &b.token,
         }
     }
 }
@@ -194,6 +207,7 @@ impl std::fmt::Display for Expr {
                 }
             }
             Expr::Group(g) => write!(f, "( {} )", g.contents),
+            Expr::Binding(b) => write!(f, "let {}", b.name),
         }
     }
 }
