@@ -234,10 +234,10 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                             }
                         }
                     } else {
-                        return Ok(Some(FerryValue::Unit));
+                        Ok(Some(FerryValue::Unit))
                     }
                 }
-                None => return Ok(Some(FerryValue::Unit)),
+                None => Ok(Some(FerryValue::Unit)),
             }
         } else {
             println!("{:?}", loop_expr.contents);

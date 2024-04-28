@@ -150,7 +150,7 @@ impl FerryParser {
         } else {
             Err(FerryParseError::AlternateToken {
                 help: "a?".into(),
-                span: self.previous().get_span().clone(),
+                span: *self.previous().get_span(),
             })
         }
     }

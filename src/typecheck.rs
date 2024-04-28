@@ -319,12 +319,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             if condition.check(&FerryType::Boolean) {
                 let contents = Box::new(self.check_types(&mut loop_expr.contents, state)?);
                 let expr_type = FerryTyping::Inferred(contents.get_type().clone());
-                return Ok(Expr::Loop(Loop {
+                Ok(Expr::Loop(Loop {
                     token: loop_expr.token.clone(),
                     condition: Some(condition),
                     contents,
                     expr_type,
-                }));
+                }))
             } else {
                 return Err(FerryTypeError::ConditionalNotBool {
                     advice: "loop condition was not boolean".into(),
@@ -334,12 +334,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         } else {
             let contents = Box::new(self.check_types(&mut loop_expr.contents, state)?);
             let expr_type = FerryTyping::Inferred(contents.get_type().clone());
-            return Ok(Expr::Loop(Loop {
+            Ok(Expr::Loop(Loop {
                 token: loop_expr.token.clone(),
                 condition: loop_expr.condition.clone(),
                 contents,
                 expr_type,
-            }));
+            }))
         }
     }
 }

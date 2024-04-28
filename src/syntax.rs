@@ -220,7 +220,7 @@ impl std::fmt::Display for Expr {
             }
             Expr::Group(g) => write!(f, "( {} )", g.contents),
             Expr::Binding(b) => write!(f, "let {}", b.name),
-            Expr::Loop(l) => write!(f, "loop"),
+            Expr::Loop(_l) => write!(f, "loop"),
         }
     }
 }

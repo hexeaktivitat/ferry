@@ -206,16 +206,16 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
 
     fn visit_binding(
         &mut self,
-        binding: &mut crate::syntax::Binding,
-        state: &mut Vec<Instruction>,
+        _binding: &mut crate::syntax::Binding,
+        _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         todo!()
     }
 
     fn visit_loop(
         &mut self,
-        loop_expr: &mut crate::syntax::Loop,
-        state: &mut Vec<Instruction>,
+        _loop_expr: &mut crate::syntax::Loop,
+        _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         todo!()
     }
