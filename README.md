@@ -45,9 +45,8 @@ Small roadmap:
 
 - [x] Basic arithmetic operations `4 + 3 - 2 / 1`
   - [x] Parenthetical grouping of expressions
-- [x] Variable assignment `five = 5`
-- [ ] Type assignment
-  - Syntax options include: `Integer -> five = 5`, `five: Integer = 5` & `five := 5` for assigned vs inferred type
+- [x] Untyped variable assignment `let five := 5`
+- [x] Typed variable binding `let five: Int = 5`
 - [x] Booleans
 - [x] `if`/`then`/`else` expressions
 - [ ] loop structures `loop`/`while`/`for`
