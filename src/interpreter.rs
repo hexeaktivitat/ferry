@@ -149,7 +149,52 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                     }),
                 },
                 // Op::RightArrow => todo!(),
-                Op::Equals => todo!(),
+                Op::Equals => Ok(None),
+                Op::LessThan => match (left, right) {
+                    (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
+                        Ok(Some(FerryValue::Boolean(l < r)))
+                    }
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
+                },
+                Op::GreaterThan => match (left, right) {
+                    (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
+                        Ok(Some(FerryValue::Boolean(l > r)))
+                    }
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
+                },
+                Op::Equality => match (left, right) {
+                    (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
+                        Ok(Some(FerryValue::Boolean(l == r)))
+                    }
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
+                },
+                Op::LessEqual => match (left, right) {
+                    (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
+                        Ok(Some(FerryValue::Boolean(l <= r)))
+                    }
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
+                },
+                Op::GreaterEqual => match (left, right) {
+                    (Some(FerryValue::Number(l)), Some(FerryValue::Number(r))) => {
+                        Ok(Some(FerryValue::Boolean(l >= r)))
+                    }
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
+                },
             },
             _ => Ok(None),
         }

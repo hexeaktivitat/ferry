@@ -89,14 +89,34 @@ impl<'source> FerryLexer<'source> {
             b'+' => Ok(Some(TT::Operator(Op::Add))),
             b'-' => {
                 // if self.peek() == b'>' {
-                // Ok(Some(TT::Operator(Op::RightArrow)))
+                //     Ok(Some(TT::Operator(Op::RightArrow)))
                 // } else {
                 Ok(Some(TT::Operator(Op::Subtract)))
                 // }
             }
             b'*' => Ok(Some(TT::Operator(Op::Multiply))),
             b'/' => Ok(Some(TT::Operator(Op::Divide))),
-            b'=' => Ok(Some(TT::Operator(Op::Equals))),
+            b'=' => {
+                if self.peek() == b'=' {
+                    Ok(Some(TT::Operator(Op::Equality)))
+                } else {
+                    Ok(Some(TT::Operator(Op::Equals)))
+                }
+            }
+            b'<' => {
+                if self.peek() == b'=' {
+                    Ok(Some(TT::Operator(Op::LessEqual)))
+                } else {
+                    Ok(Some(TT::Operator(Op::LessThan)))
+                }
+            }
+            b'>' => {
+                if self.peek() == b'=' {
+                    Ok(Some(TT::Operator(Op::GreaterEqual)))
+                } else {
+                    Ok(Some(TT::Operator(Op::GreaterThan)))
+                }
+            }
 
             // STRING LITERAL
             b'"' => self.string().map(Some),

@@ -49,6 +49,11 @@ pub enum Op {
     Multiply,
     Divide,
     Equals,
+    LessThan,
+    GreaterThan,
+    Equality,
+    LessEqual,
+    GreaterEqual,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -92,6 +97,11 @@ impl std::fmt::Display for TokenType {
                 Op::Multiply => write!(f, "Operator<Multiply>"),
                 Op::Divide => write!(f, "Operator<Divide>"),
                 Op::Equals => write!(f, "Operator<Equals>"),
+                Op::LessThan => write!(f, "Operator<LessThan>"),
+                Op::GreaterThan => write!(f, "Operator<GreaterThan>"),
+                Op::Equality => write!(f, "Operator<Equality>"),
+                Op::LessEqual => write!(f, "Operator<LessThanOrEqual>"),
+                Op::GreaterEqual => write!(f, "Operator<GreaterThanOrEqual"),
             },
             TokenType::Control(c) => match c {
                 Ctrl::Semicolon => write!(f, "Control<Semicolon>"),

@@ -150,21 +150,56 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         let left = self.check_types(&mut binary.lhs, state)?;
         let right = self.check_types(&mut binary.rhs, state)?;
 
-        if left.check(right.get_type()) {
-            let expr_type = FerryTyping::Inferred(left.get_type().clone());
-            Ok(Expr::Binary(Binary {
-                lhs: Box::new(left.clone()),
-                operator: binary.operator.clone(),
-                rhs: Box::new(right),
-                expr_type: expr_type.clone(),
-            }))
-        } else {
-            Err(FerryTypeError::TypeMismatch {
-                advice: "operands did not match types".into(),
-                span: *binary.operator.get_span(),
-                lhs_span: *left.get_token().get_span(),
-                rhs_span: *right.get_token().get_span(),
-            })
+        match binary.operator.get_token_type() {
+            crate::token::TokenType::Operator(o) => match o {
+                crate::token::Op::Add
+                | crate::token::Op::Subtract
+                | crate::token::Op::Multiply
+                | crate::token::Op::Divide
+                | crate::token::Op::Equals => {
+                    if left.check(right.get_type()) {
+                        let expr_type = FerryTyping::Inferred(left.get_type().clone());
+                        Ok(Expr::Binary(Binary {
+                            lhs: Box::new(left.clone()),
+                            operator: binary.operator.clone(),
+                            rhs: Box::new(right),
+                            expr_type: expr_type.clone(),
+                        }))
+                    } else {
+                        Err(FerryTypeError::TypeMismatch {
+                            advice: "operands did not match types".into(),
+                            span: *binary.operator.get_span(),
+                            lhs_span: *left.get_token().get_span(),
+                            rhs_span: *right.get_token().get_span(),
+                        })
+                    }
+                }
+                crate::token::Op::LessThan
+                | crate::token::Op::GreaterThan
+                | crate::token::Op::Equality
+                | crate::token::Op::LessEqual
+                | crate::token::Op::GreaterEqual => {
+                    if left.check(right.get_type()) {
+                        Ok(Expr::Binary(Binary {
+                            lhs: Box::new(left.clone()),
+                            operator: binary.operator.clone(),
+                            rhs: Box::new(right),
+                            expr_type: FerryTyping::Assigned(FerryType::Boolean),
+                        }))
+                    } else {
+                        Err(FerryTypeError::TypeMismatch {
+                            advice: "operands did not match types".into(),
+                            span: *binary.operator.get_span(),
+                            lhs_span: *left.get_token().get_span(),
+                            rhs_span: *right.get_token().get_span(),
+                        })
+                    }
+                }
+            },
+            _ => Err(FerryTypeError::A {
+                advice: "aaa".into(),
+                span: binary.operator.get_span().clone(),
+            }),
         }
     }
 

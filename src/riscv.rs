@@ -146,6 +146,11 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 },
                 // crate::token::Op::RightArrow => todo!(),
                 crate::token::Op::Equals => todo!(),
+                crate::token::Op::LessThan => todo!(),
+                crate::token::Op::GreaterThan => todo!(),
+                crate::token::Op::Equality => todo!(),
+                crate::token::Op::LessEqual => todo!(),
+                crate::token::Op::GreaterEqual => todo!(),
             },
             _ => unreachable!(),
         };

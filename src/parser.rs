@@ -194,7 +194,7 @@ impl FerryParser {
     }
 
     fn assignment(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let mut expr = self.sum(state)?;
+        let mut expr = self.comparison(state)?;
 
         if self.matches(&[TT::Operator(Op::Equals)]) {
             let operator = self.previous();
@@ -208,6 +208,29 @@ impl FerryParser {
                     token: operator,
                 });
             }
+        }
+
+        Ok(expr)
+    }
+
+    fn comparison(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.sum(state)?;
+
+        if self.matches(&[
+            TT::Operator(Op::GreaterThan),
+            TT::Operator(Op::LessThan),
+            TT::Operator(Op::Equality),
+            TT::Operator(Op::GreaterEqual),
+            TT::Operator(Op::LessEqual),
+        ]) {
+            let op = self.previous();
+            let rhs = Box::new(self.start(state)?);
+            expr = Expr::Binary(Binary {
+                lhs: Box::new(expr),
+                operator: op,
+                rhs,
+                expr_type: FerryTyping::Untyped,
+            })
         }
 
         Ok(expr)

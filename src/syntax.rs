@@ -194,6 +194,17 @@ impl std::fmt::Display for Expr {
                     crate::token::Op::Multiply => write!(f, "Multiply {} {}", b.lhs, b.rhs),
                     crate::token::Op::Divide => write!(f, "Divide {} {}", b.lhs, b.rhs),
                     crate::token::Op::Equals => write!(f, "{} equals {}", b.lhs, b.rhs),
+                    crate::token::Op::LessThan => write!(f, "{} is less than {}", b.lhs, b.rhs),
+                    crate::token::Op::GreaterThan => {
+                        write!(f, "{} is greater than {}", b.lhs, b.rhs)
+                    }
+                    crate::token::Op::Equality => write!(f, "{} is equal to {}", b.lhs, b.rhs),
+                    crate::token::Op::LessEqual => {
+                        write!(f, "{} is less than or equal to {}", b.lhs, b.rhs)
+                    }
+                    crate::token::Op::GreaterEqual => {
+                        write!(f, "{} is greater than or equal to {}", b.lhs, b.rhs)
+                    }
                 },
                 _ => unreachable!(),
             },
