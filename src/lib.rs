@@ -93,16 +93,6 @@ impl<'source> Ferry {
             None => FerryValue::Unit,
         };
 
-        // let mut assembler = FerryRiscVAssembler::new();
-        // self.riscv_asm = assembler
-        //     .assemble(self.typed_ast.clone(), &mut self.state)
-        //     .unwrap();
-
-        // println!("\n\nSTATE");
-        // println!("=====");
-
-        // println!("\n{}", self.state);
-
         Ok(result)
     }
 
