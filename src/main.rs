@@ -2,9 +2,11 @@ use anyhow::Error;
 use clap::{Parser, Subcommand};
 use miette::Result;
 
-use std::fs::read_to_string;
-use std::io::{stdin, stdout, Write};
-use std::process::ExitCode;
+use std::{
+    fs::read_to_string,
+    io::{stdin, stdout, Write},
+    process::ExitCode,
+};
 
 use ferry::{Ferry, PrintReq};
 
