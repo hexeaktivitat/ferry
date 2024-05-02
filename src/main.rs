@@ -2,6 +2,7 @@ use anyhow::Error;
 use clap::{Parser, Subcommand};
 use miette::Result;
 
+use std::fs::read_to_string;
 use std::io::{stdin, stdout, Write};
 use std::process::ExitCode;
 
@@ -17,6 +18,7 @@ struct FerryArgs {
 #[derive(Subcommand)]
 enum Commands {
     Compile { file: String },
+    Run { file: String },
 }
 
 fn main() -> ExitCode {
@@ -26,6 +28,15 @@ fn main() -> ExitCode {
         Some(f) => match f {
             Commands::Compile { file } => {
                 println!("{file}");
+                ExitCode::SUCCESS
+            }
+            Commands::Run { file } => {
+                let source_code = read_to_string(file).expect("couldn't read from file");
+                let mut program = Ferry::new(source_code.clone());
+                match program.run() {
+                    Ok(r) => println!("{r}"),
+                    Err(e) => eprintln!("{:?}", e),
+                }
                 ExitCode::SUCCESS
             }
         },
