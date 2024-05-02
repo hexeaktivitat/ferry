@@ -102,6 +102,7 @@ impl FerryParser {
                     "colon not consumed",
                 )?;
             }
+            self.consume_newline()?;
             Some(Box::new(self.s_expression(state)?))
         } else {
             None
@@ -375,10 +376,7 @@ impl FerryParser {
 
     fn consume_newline(&mut self) -> Result<Option<FerryToken>, FerryParseError> {
         if self.matches(&[TT::Control(Ctrl::Newline)]) {
-            Ok(Some(self.consume(
-                &TT::Control(Ctrl::Newline),
-                "Expected consumable newline",
-            )?))
+            Ok(Some(self.previous()))
         } else {
             Ok(None)
         }

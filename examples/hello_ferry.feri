@@ -1,0 +1,4 @@
+if true then:
+	"Hello world!"
+else:
+	"Oh no"
