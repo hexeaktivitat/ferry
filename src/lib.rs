@@ -1,11 +1,13 @@
-use interpreter::FerryInterpreterError;
-use lexer::FerryLexError;
 use miette::{Diagnostic, Result};
+use thiserror::Error;
+
+use interpreter::{FerryInterpreter, FerryInterpreterError};
+use lexer::{FerryLexError, FerryLexer};
 use parser::{FerryParseError, FerryParser};
 use riscv::{FerryRiscVAssembler, Instruction};
-use state::FerryValue;
+use state::{FerryState, FerryValue};
 use syntax::Expr;
-use thiserror::Error;
+use token::FerryToken;
 use typecheck::{FerryTypeError, FerryTypechecker};
 
 mod interpreter;
@@ -17,11 +19,6 @@ mod syntax;
 mod token;
 mod typecheck;
 mod types;
-
-use crate::interpreter::FerryInterpreter;
-use crate::lexer::FerryLexer;
-use crate::state::FerryState;
-use crate::token::FerryToken;
 
 pub struct Ferry {
     source_code: String,
