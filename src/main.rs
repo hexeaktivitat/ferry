@@ -59,7 +59,7 @@ fn repl() -> Result<(), Error> {
     let mut input = String::new();
     let mut program = Ferry::new(input.clone());
 
-    println!("FERRY 0.1.1");
+    println!("\nFERRY 0.1.1");
     println!("===========");
     println!("Language Design Experiment");
     println!("Type !help for commands, or !quit to quit\n");
@@ -91,6 +91,7 @@ fn repl() -> Result<(), Error> {
                 FerryRepl::Ast => program.print_data(PrintReq::Ast),
                 FerryRepl::Type => program.print_data(PrintReq::TypedAst),
                 FerryRepl::Asm => program.print_data(PrintReq::Asm),
+                FerryRepl::Help => print_help(),
             },
             None => {
                 println!("invalid command {input}");
@@ -108,6 +109,7 @@ enum FerryRepl {
     Ast,
     Type,
     Asm,
+    Help,
 }
 
 fn repl_input_process(input: &str) -> Option<FerryRepl> {
@@ -121,9 +123,23 @@ fn repl_input_process(input: &str) -> Option<FerryRepl> {
             "ast" => Some(FerryRepl::Ast),
             "type" => Some(FerryRepl::Type),
             "asm" => Some(FerryRepl::Asm),
+            "help" => Some(FerryRepl::Help),
             _ => None,
         }
     } else {
         Some(FerryRepl::Run(output.into()))
     }
+}
+
+fn print_help() {
+    println!("\nList of Ferry commands:");
+    println!("=======================\n");
+    println!("!token: Print list of source code tokens for last command");
+    println!("!ast:   Print a representation of the AST for the last comand");
+    println!("!type:  Print a representation of the AST after the typechecker");
+    println!("!state: Print the current global state (variables, etc)");
+    println!("!asm:   Print the generated RISC-V assembly (alpha)");
+    println!("!exit:");
+    println!("!quit:  Quit the REPL");
+    print!("\n");
 }
