@@ -143,6 +143,17 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 token: token.clone(),
                 expr_type: FerryTyping::Undefined,
             })),
+            Lit::List {
+                token,
+                contents,
+                expr_type: _,
+                span,
+            } => Ok(Expr::Literal(Lit::List {
+                token: token.clone(),
+                contents: contents.clone(),
+                expr_type: FerryTyping::Inferred(FerryType::List),
+                span: *span,
+            })),
         }
     }
 

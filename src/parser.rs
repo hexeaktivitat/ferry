@@ -189,15 +189,41 @@ impl FerryParser {
     }
 
     fn s_expression(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let expr = self.list(state)?;
+        let expr = self.assignment(state)?;
 
         Ok(expr)
     }
 
     fn list(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let expr = self.assignment(state)?;
+        let token = self.previous();
+        let mut contents: Vec<Expr> = Vec::new();
+        self.advance();
 
-        Ok(expr)
+        if self.matches(&[TT::Control(Ctrl::RightBracket)]) {
+            self.consume(
+                &TT::Control(Ctrl::RightBracket),
+                "expected ']' after list '['",
+            )?;
+            contents.push(Expr::Literal(SLit::Undefined {
+                token: token.clone(),
+                expr_type: FerryTyping::Untyped,
+            }));
+            Ok(Expr::Literal(SLit::List {
+                token,
+                contents,
+                expr_type: FerryTyping::Untyped,
+                span: *self.previous().get_span(),
+            }))
+        } else if self.matches(&[TT::Control(Ctrl::Comma)]) {
+            let first = self.start(state)?;
+            contents.push(first);
+            Ok(self.finish_sequence(token, state, contents)?)
+        } else {
+            Err(FerryParseError::UnexpectedToken {
+                msg: "what".into(),
+                span: *self.previous().get_span(),
+            })
+        }
     }
 
     fn assignment(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
@@ -320,6 +346,7 @@ impl FerryParser {
                     expr_type: FerryTyping::Untyped,
                 }))
             }
+            TT::Control(Ctrl::LeftBracket) => self.list(state),
             _ => Err(FerryParseError::UnexpectedToken {
                 msg: format!("Unexpected token: {}", self.previous().get_token_type()),
                 span: *self.previous().get_span(),
@@ -386,6 +413,32 @@ impl FerryParser {
         } else {
             Ok(None)
         }
+    }
+
+    fn finish_sequence(
+        &mut self,
+        token: FerryToken,
+        state: &mut FerryState,
+        mut contents: Vec<Expr>,
+    ) -> FerryResult<Expr> {
+        while self.peek().get_token_type() != &TT::Control(Ctrl::RightBracket) {
+            self.consume(
+                &TT::Control(Ctrl::Comma),
+                "expected ',' in multiple item array",
+            )?;
+            let next = self.start(state)?;
+            contents.push(next);
+        }
+        self.consume(
+            &TT::Control(Ctrl::RightBracket),
+            "expected right bracket after list",
+        )?;
+        Ok(Expr::Literal(SLit::List {
+            token,
+            contents,
+            expr_type: FerryTyping::Untyped,
+            span: *self.previous().get_span(),
+        }))
     }
 }
 

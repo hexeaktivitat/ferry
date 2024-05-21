@@ -65,6 +65,7 @@ pub enum Ctrl {
     Newline,
     LeftBracket,
     RightBracket,
+    Comma,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -112,7 +113,8 @@ impl std::fmt::Display for TokenType {
                 Ctrl::RightParen => write!(f, "Control<RightParen>"),
                 Ctrl::Newline => write!(f, "Control<Newline>"),
                 Ctrl::LeftBracket => write!(f, "Control<LeftBracket>"),
-                Ctrl::RightBracket => write!(f, "Control<RightBracket"),
+                Ctrl::RightBracket => write!(f, "Control<RightBracket>"),
+                Ctrl::Comma => write!(f, "Control<Comma>"),
             },
             TokenType::Keyword(k) => match k {
                 Kwd::If => write!(f, "Keyword<If>"),

@@ -39,6 +39,12 @@ pub enum Lit {
         expr_type: FerryTyping,
         span: SourceSpan,
     },
+    List {
+        token: FerryToken,
+        contents: Vec<Expr>,
+        expr_type: FerryTyping,
+        span: SourceSpan,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -148,6 +154,12 @@ impl Expr {
                     expr_type: _,
                     span: _,
                 } => token,
+                Lit::List {
+                    token,
+                    contents: _,
+                    expr_type: _,
+                    span: _,
+                } => token,
             },
             Expr::Binary(b) => &b.operator,
             Expr::Variable(v) => &v.token,
@@ -186,6 +198,12 @@ impl std::fmt::Display for Expr {
                     expr_type,
                     token: _,
                 } => write!(f, "{expr_type}"),
+                Lit::List {
+                    token: _,
+                    contents,
+                    expr_type: _,
+                    span: _,
+                } => write!(f, "{:?}", contents),
             },
             Expr::Binary(b) => match b.operator.get_token_type() {
                 TT::Operator(o) => match o {

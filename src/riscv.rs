@@ -97,6 +97,12 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 expr_type: _,
                 token: _,
             } => todo!(),
+            Lit::List {
+                token,
+                contents,
+                expr_type,
+                span,
+            } => todo!(),
         }
     }
 

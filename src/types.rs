@@ -75,6 +75,12 @@ impl Typing for Expr {
                     expr_type,
                     token: _,
                 } => expr_type.get_type(),
+                Lit::List {
+                    token: _,
+                    contents: _,
+                    expr_type,
+                    span: _,
+                } => expr_type.get_type(),
             },
             Expr::Binary(b) => b.expr_type.get_type(),
             Expr::Variable(v) => v.expr_type.get_type(),

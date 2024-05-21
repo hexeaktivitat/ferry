@@ -96,6 +96,15 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 expr_type: _,
                 token: _,
             } => Ok(Some(FerryValue::Unit)),
+            SLit::List {
+                token,
+                contents,
+                expr_type,
+                span,
+            } => Err(FerryInterpreterError::Unimplemented {
+                help: "Unimplemented feature".into(),
+                span: *span,
+            }),
         }
     }
 
