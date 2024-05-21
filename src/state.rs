@@ -84,22 +84,6 @@ impl std::fmt::Display for FerryValue {
             FerryValue::Str(s) => write!(f, "{s}"),
             FerryValue::Boolean(b) => write!(f, "{b}"),
             FerryValue::Unit => write!(f, "[unit]"),
-<<<<<<< HEAD
-=======
-            FerryValue::List(l) => {
-                let mut formatting = String::new();
-                formatting.push_str("[");
-                let mut items = l.iter().peekable();
-                while let Some(item) = items.next() {
-                    formatting.push_str(format!("{item}").as_str());
-                    if !items.peek().is_none() {
-                        formatting.push_str(", ");
-                    }
-                }
-                formatting.push_str("]");
-                write!(f, "{formatting}")
-            }
->>>>>>> 7c56c1d (improve type information in command output formatting)
         }
     }
 }

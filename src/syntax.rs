@@ -166,47 +166,26 @@ impl std::fmt::Display for Expr {
             Expr::Literal(l) => match l {
                 Lit::Number {
                     value,
-                    expr_type,
+                    expr_type: _,
                     span: _,
                     token: _,
-                } => write!(f, "{expr_type}: {value}"),
+                } => write!(f, "{value}"),
                 Lit::Str {
                     value,
-                    expr_type,
+                    expr_type: _,
                     span: _,
                     token: _,
-                } => write!(f, "{expr_type}: {value}"),
+                } => write!(f, "{value}"),
                 Lit::Bool {
                     value,
-                    expr_type,
+                    expr_type: _,
                     span: _,
                     token: _,
-                } => write!(f, "{expr_type}: {value}"),
+                } => write!(f, "{value}"),
                 Lit::Undefined {
                     expr_type,
                     token: _,
                 } => write!(f, "{expr_type}"),
-<<<<<<< HEAD
-=======
-                Lit::List {
-                    token: _,
-                    contents,
-                    expr_type,
-                    span: _,
-                } => {
-                    let mut formatting = String::new();
-                    formatting.push_str("[");
-                    let mut items = contents.iter().peekable();
-                    while let Some(item) = items.next() {
-                        formatting.push_str(format!("{item}").as_str());
-                        if !items.peek().is_none() {
-                            formatting.push_str(", ");
-                        }
-                    }
-                    formatting.push_str("]");
-                    write!(f, "{expr_type}: {formatting}")
-                }
->>>>>>> 7c56c1d (improve type information in command output formatting)
             },
             Expr::Binary(b) => match b.operator.get_token_type() {
                 TT::Operator(o) => match o {
@@ -229,53 +208,30 @@ impl std::fmt::Display for Expr {
                 },
                 _ => unreachable!(),
             },
-            Expr::Variable(v) => write!(f, "{}: {}", v.name, v.expr_type),
+            Expr::Variable(v) => write!(f, "{}", v.name),
             Expr::Assign(a) => {
                 if a.value.is_some() {
-                    write!(
-                        f,
-                        "{}: {} is {}",
-                        a.var,
-                        a.expr_type,
-                        a.value.clone().unwrap()
-                    )
+                    write!(f, "{} is {}", a.var, a.value.clone().unwrap())
                 } else {
-                    write!(f, "{}: {} is NULL", a.var, a.expr_type)
+                    write!(f, "{} is NULL", a.var)
                 }
             }
             Expr::If(i) => {
                 if i.else_expr.is_some() {
                     write!(
                         f,
-                        "if {} then: {} else: {} (type: {})",
+                        "if {} then: {} else: {}",
                         i.condition,
                         i.then_expr,
-                        i.else_expr.clone().unwrap(),
-                        i.expr_type,
+                        i.else_expr.clone().unwrap()
                     )
                 } else {
-                    write!(
-                        f,
-                        "if {} then: {} (type: {})",
-                        i.condition, i.then_expr, i.expr_type
-                    )
+                    write!(f, "if {} then: {}", i.condition, i.then_expr)
                 }
             }
-            Expr::Group(g) => write!(f, "{}: ( {} )", g.expr_type, g.contents),
-            Expr::Binding(b) => {
-                if b.value.is_some() {
-                    write!(
-                        f,
-                        "let {}: {} = {}",
-                        b.name,
-                        b.expr_type,
-                        b.value.clone().unwrap()
-                    )
-                } else {
-                    write!(f, "let {}: {}", b.name, b.expr_type)
-                }
-            }
-            Expr::Loop(l) => write!(f, "loop (type: {})", l.expr_type),
+            Expr::Group(g) => write!(f, "( {} )", g.contents),
+            Expr::Binding(b) => write!(f, "let {}", b.name),
+            Expr::Loop(_l) => write!(f, "loop"),
         }
     }
 }
