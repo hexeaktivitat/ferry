@@ -71,7 +71,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
     fn visit_literal(
         &mut self,
         literal: &mut SLit,
-        _state: &mut FerryState,
+        state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         match literal {
             SLit::Number {
@@ -101,10 +101,17 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 contents,
                 expr_type,
                 span,
-            } => Err(FerryInterpreterError::Unimplemented {
-                help: "Unimplemented feature".into(),
-                span: *span,
-            }),
+            } => {
+                let mut values: Vec<FerryValue> = Vec::new();
+                for c in contents {
+                    if let Some(value) = self.evaluate(c, state)? {
+                        values.push(value);
+                    } else {
+                        values.push(FerryValue::Unit);
+                    }
+                }
+                Ok(Some(FerryValue::List(values)))
+            }
         }
     }
 

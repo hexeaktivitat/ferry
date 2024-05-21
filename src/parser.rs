@@ -197,7 +197,6 @@ impl FerryParser {
     fn list(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         let token = self.previous();
         let mut contents: Vec<Expr> = Vec::new();
-        self.advance();
 
         if self.matches(&[TT::Control(Ctrl::RightBracket)]) {
             self.consume(
@@ -214,15 +213,8 @@ impl FerryParser {
                 expr_type: FerryTyping::Untyped,
                 span: *self.previous().get_span(),
             }))
-        } else if self.matches(&[TT::Control(Ctrl::Comma)]) {
-            let first = self.start(state)?;
-            contents.push(first);
-            Ok(self.finish_sequence(token, state, contents)?)
         } else {
-            Err(FerryParseError::UnexpectedToken {
-                msg: "what".into(),
-                span: *self.previous().get_span(),
-            })
+            self.finish_sequence(token, state, contents)
         }
     }
 
@@ -347,10 +339,13 @@ impl FerryParser {
                 }))
             }
             TT::Control(Ctrl::LeftBracket) => self.list(state),
-            _ => Err(FerryParseError::UnexpectedToken {
-                msg: format!("Unexpected token: {}", self.previous().get_token_type()),
-                span: *self.previous().get_span(),
-            }),
+            _ => {
+                println!("oops");
+                Err(FerryParseError::UnexpectedToken {
+                    msg: format!("Unexpected token: {}", self.previous().get_token_type()),
+                    span: *self.previous().get_span(),
+                })
+            }
         }
     }
 
@@ -422,10 +417,12 @@ impl FerryParser {
         mut contents: Vec<Expr>,
     ) -> FerryResult<Expr> {
         while self.peek().get_token_type() != &TT::Control(Ctrl::RightBracket) {
-            self.consume(
-                &TT::Control(Ctrl::Comma),
-                "expected ',' in multiple item array",
-            )?;
+            if self.peek().get_token_type() == &TT::Control(Ctrl::Comma) {
+                self.consume(
+                    &TT::Control(Ctrl::Comma),
+                    "expected ',' during multivalue lists",
+                )?;
+            }
             let next = self.start(state)?;
             contents.push(next);
         }
