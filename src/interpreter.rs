@@ -303,6 +303,7 @@ impl FerryValue {
             FerryValue::Str(s) => !s.is_empty(),
             FerryValue::Boolean(b) => *b,
             FerryValue::Unit => false,
+            FerryValue::List(l) => !l.is_empty(),
         }
     }
 }

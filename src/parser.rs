@@ -189,6 +189,12 @@ impl FerryParser {
     }
 
     fn s_expression(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let expr = self.list(state)?;
+
+        Ok(expr)
+    }
+
+    fn list(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         let expr = self.assignment(state)?;
 
         Ok(expr)

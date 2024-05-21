@@ -84,6 +84,8 @@ impl<'source> FerryLexer<'source> {
             b':' => Ok(Some(TT::Control(Ctrl::Colon))),
             b'(' => Ok(Some(TT::Control(Ctrl::LeftParen))),
             b')' => Ok(Some(TT::Control(Ctrl::RightParen))),
+            b'[' => Ok(Some(TT::Control(Ctrl::LeftBracket))),
+            b']' => Ok(Some(TT::Control(Ctrl::RightBracket))),
 
             // OPERATORS
             b'+' => Ok(Some(TT::Operator(Op::Add))),
