@@ -84,8 +84,6 @@ impl std::fmt::Display for FerryValue {
             FerryValue::Str(s) => write!(f, "{s}"),
             FerryValue::Boolean(b) => write!(f, "{b}"),
             FerryValue::Unit => write!(f, "[unit]"),
-<<<<<<< HEAD
-=======
             FerryValue::List(l) => {
                 let mut formatting = String::new();
                 formatting.push_str("[");
@@ -99,7 +97,6 @@ impl std::fmt::Display for FerryValue {
                 formatting.push_str("]");
                 write!(f, "{formatting}")
             }
->>>>>>> 7c56c1d (improve type information in command output formatting)
         }
     }
 }

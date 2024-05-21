@@ -186,8 +186,6 @@ impl std::fmt::Display for Expr {
                     expr_type,
                     token: _,
                 } => write!(f, "{expr_type}"),
-<<<<<<< HEAD
-=======
                 Lit::List {
                     token: _,
                     contents,
@@ -206,7 +204,6 @@ impl std::fmt::Display for Expr {
                     formatting.push_str("]");
                     write!(f, "{expr_type}: {formatting}")
                 }
->>>>>>> 7c56c1d (improve type information in command output formatting)
             },
             Expr::Binary(b) => match b.operator.get_token_type() {
                 TT::Operator(o) => match o {
