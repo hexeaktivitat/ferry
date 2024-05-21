@@ -101,7 +101,7 @@ impl FerryTypechecker {
 }
 
 impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
-    fn visit_literal(&mut self, literal: &mut Lit, _state: &mut FerryState) -> FerryResult<Expr> {
+    fn visit_literal(&mut self, literal: &mut Lit, state: &mut FerryState) -> FerryResult<Expr> {
         match literal {
             Lit::Number {
                 value,
@@ -148,12 +148,19 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 contents,
                 expr_type: _,
                 span,
-            } => Ok(Expr::Literal(Lit::List {
-                token: token.clone(),
-                contents: contents.clone(),
-                expr_type: FerryTyping::Inferred(FerryType::List),
-                span: *span,
-            })),
+            } => {
+                let mut checked_contents: Vec<Expr> = Vec::new();
+                for item in contents {
+                    checked_contents.push(self.check_types(item, state)?);
+                }
+
+                Ok(Expr::Literal(Lit::List {
+                    token: token.clone(),
+                    contents: checked_contents,
+                    expr_type: FerryTyping::Inferred(FerryType::List),
+                    span: *span,
+                }))
+            }
         }
     }
 
