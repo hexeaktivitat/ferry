@@ -7,6 +7,7 @@ use crate::types::{FerryType, FerryTyping};
 pub enum Expr {
     Literal(Lit),
     Binary(Binary),
+    Unary(Unary),
     Variable(Variable),
     Assign(Assign),
     If(If),
@@ -50,6 +51,13 @@ pub enum Lit {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binary {
     pub lhs: Box<Expr>,
+    pub operator: FerryToken,
+    pub rhs: Box<Expr>,
+    pub expr_type: FerryTyping,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Unary {
     pub operator: FerryToken,
     pub rhs: Box<Expr>,
     pub expr_type: FerryTyping,
@@ -107,6 +115,7 @@ pub struct Loop {
 pub trait ExprVisitor<T, S> {
     fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
     fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
+    fn visit_unary(&mut self, unary: &mut Unary, state: S) -> T;
     fn visit_variable(&mut self, variable: &mut Variable, state: S) -> T;
     fn visit_assign(&mut self, assign: &mut Assign, state: S) -> T;
     fn visit_if_expr(&mut self, if_expr: &mut If, state: S) -> T;
@@ -125,6 +134,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::Group(group) => visitor.visit_group(group, state),
         Expr::Binding(binding) => visitor.visit_binding(binding, state),
         Expr::Loop(loop_expr) => visitor.visit_loop(loop_expr, state),
+        Expr::Unary(unary) => visitor.visit_unary(unary, state),
     }
 }
 
@@ -168,6 +178,7 @@ impl Expr {
             Expr::Group(g) => &g.token,
             Expr::Binding(b) => &b.token,
             Expr::Loop(l) => &l.token,
+            Expr::Unary(u) => &u.operator,
         }
     }
 }
@@ -235,6 +246,7 @@ impl std::fmt::Display for Expr {
                     crate::token::Op::GreaterEqual => {
                         write!(f, "{} is greater than or equal to {}", b.lhs, b.rhs)
                     }
+                    crate::token::Op::GetI => write!(f, "GetI"),
                 },
                 _ => unreachable!(),
             },
@@ -285,6 +297,7 @@ impl std::fmt::Display for Expr {
                 }
             }
             Expr::Loop(l) => write!(f, "loop (type: {})", l.expr_type),
+            Expr::Unary(u) => write!(f, "{}: {} (type: {})", u.operator, u.rhs, u.expr_type),
         }
     }
 }

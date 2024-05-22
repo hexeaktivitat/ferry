@@ -142,6 +142,9 @@ impl<'source> FerryLexer<'source> {
                     // reserved boolean keywords
                     "true" => Some(TT::Value(Val::Boolean(true))),
                     "false" => Some(TT::Value(Val::Boolean(false))),
+
+                    // list operators
+                    "geti" => Some(TT::Operator(Op::GetI)),
                     _ => Some(TT::Identifier(id)),
                 })
             }

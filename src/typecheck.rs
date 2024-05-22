@@ -4,7 +4,8 @@ use thiserror::Error;
 use crate::{
     state::FerryState,
     syntax::{
-        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Loop, Variable,
+        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Loop, Unary,
+        Variable,
     },
     types::{FerryType, FerryTyping, TypeCheckable, Typing},
 };
@@ -213,6 +214,36 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
+                crate::token::Op::GetI => {
+                    if left.check(&FerryType::List) {
+                        if right.check(&FerryType::Num) {
+                            Ok(Expr::Binary(Binary {
+                                lhs: Box::new(left.clone()),
+                                operator: binary.operator.clone(),
+                                rhs: Box::new(right),
+                                expr_type: FerryTyping::Assigned(FerryType::List),
+                            }))
+                        } else {
+                            Err(FerryTypeError::TypeMismatch {
+                                advice: "invalid attempt at list indexing".into(),
+                                span: *binary.operator.get_span(),
+                                lhs_span: *left.get_token().get_span(),
+                                rhs_span: *right.get_token().get_span(),
+                            })
+                        }
+                    } else {
+                        Err(FerryTypeError::TypeMismatch {
+                            advice: "invalid attempt at list indexing".into(),
+                            span: *binary.operator.get_span(),
+                            lhs_span: *left.get_token().get_span(),
+                            rhs_span: *right.get_token().get_span(),
+                        })
+                    }
+                }
+                _ => Err(FerryTypeError::A {
+                    advice: "aaa".into(),
+                    span: *binary.operator.get_span(),
+                }),
             },
             _ => Err(FerryTypeError::A {
                 advice: "aaa".into(),
@@ -393,6 +424,29 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 contents,
                 expr_type,
             }))
+        }
+    }
+
+    fn visit_unary(
+        &mut self,
+        unary: &mut crate::syntax::Unary,
+        state: &mut FerryState,
+    ) -> FerryResult<Expr> {
+        let right = self.check_types(&mut unary.rhs, state)?;
+
+        if right.get_type() == &FerryType::Num {
+            Ok(Expr::Unary(Unary {
+                operator: unary.operator.clone(),
+                rhs: Box::new(right),
+                expr_type: FerryTyping::Assigned(FerryType::Num),
+            }))
+        } else {
+            Err(FerryTypeError::TypeMismatch {
+                advice: "Expected Num, found".into(),
+                span: *unary.operator.get_span(),
+                lhs_span: *unary.operator.get_span(),
+                rhs_span: *right.get_token().get_span(),
+            })
         }
     }
 }

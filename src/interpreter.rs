@@ -211,6 +211,28 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                         span: *op.get_span(),
                     }),
                 },
+                Op::GetI => match (left, right) {
+                    (Some(FerryValue::List(l)), Some(FerryValue::Number(n))) => {
+                        let value = l.get(n as usize);
+                        match value {
+                            Some(v) => Ok(Some(v.clone())),
+                            None => Err(FerryInterpreterError::InvalidOperation {
+                                help: "Invalid list index access".into(),
+                                span: *binary.rhs.get_token().get_span(),
+                            }),
+                        }
+                    }
+
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
+                },
+
+                _ => Err(FerryInterpreterError::InvalidOperation {
+                    help: "this was not a binary op".into(),
+                    span: *binary.operator.get_span(),
+                }),
             },
             _ => Ok(None),
         }
@@ -308,6 +330,27 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                     None => (),
                 }
             }
+        }
+    }
+
+    fn visit_unary(
+        &mut self,
+        unary: &mut crate::syntax::Unary,
+        state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
+        let right = self.evaluate(&mut unary.rhs, state)?;
+
+        match unary.operator.get_token_type() {
+            TT::Operator(o) => match o {
+                _ => Err(FerryInterpreterError::InvalidOperation {
+                    help: "Invalid unary operator".into(),
+                    span: *unary.operator.get_span(),
+                }),
+            },
+            _ => Err(FerryInterpreterError::InvalidOperation {
+                help: "Invalid unary operator".into(),
+                span: *unary.operator.get_span(),
+            }),
         }
     }
 }

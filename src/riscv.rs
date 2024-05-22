@@ -157,6 +157,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 crate::token::Op::Equality => todo!(),
                 crate::token::Op::LessEqual => todo!(),
                 crate::token::Op::GreaterEqual => todo!(),
+                crate::token::Op::GetI => todo!(),
             },
             _ => unreachable!(),
         };
@@ -227,6 +228,14 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         &mut self,
         _loop_expr: &mut crate::syntax::Loop,
         _state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        todo!()
+    }
+
+    fn visit_unary(
+        &mut self,
+        unary: &mut crate::syntax::Unary,
+        state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         todo!()
     }

@@ -219,7 +219,7 @@ impl FerryParser {
     }
 
     fn assignment(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let mut expr = self.comparison(state)?;
+        let mut expr = self.index(state)?;
 
         if self.matches(&[TT::Operator(Op::Equals)]) {
             let operator = self.previous();
@@ -233,6 +233,24 @@ impl FerryParser {
                     token: operator,
                 });
             }
+        }
+
+        Ok(expr)
+    }
+
+    fn index(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.comparison(state)?;
+
+        if self.matches(&[TT::Operator(Op::GetI)]) {
+            let lhs = Box::new(expr);
+            let op = self.previous();
+            let rhs = Box::new(self.start(state)?);
+            expr = Expr::Binary(Binary {
+                operator: op,
+                lhs,
+                rhs,
+                expr_type: FerryTyping::Untyped,
+            });
         }
 
         Ok(expr)
@@ -279,7 +297,7 @@ impl FerryParser {
     }
 
     fn factor(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let mut expr = self.target(state)?;
+        let mut expr = self.unary(state)?;
 
         if self.matches(&[TT::Operator(Op::Multiply), TT::Operator(Op::Divide)]) {
             let op = self.previous();
@@ -291,6 +309,22 @@ impl FerryParser {
                 expr_type: FerryTyping::Untyped,
             });
         }
+
+        Ok(expr)
+    }
+
+    fn unary(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.target(state)?;
+
+        // if self.matches(&[TT::Operator(Op::GetI)]) {
+        //     let op = self.previous();
+        //     let rhs = Box::new(self.start(state)?);
+        //     expr = Expr::Unary(Unary {
+        //         operator: op,
+        //         rhs,
+        //         expr_type: FerryTyping::Untyped,
+        //     });
+        // }
 
         Ok(expr)
     }
