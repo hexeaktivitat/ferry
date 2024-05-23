@@ -81,7 +81,7 @@ impl std::fmt::Display for FerryValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             FerryValue::Number(n) => write!(f, "{}", n),
-            FerryValue::Str(s) => write!(f, "{s}"),
+            FerryValue::Str(s) => write!(f, "\"{s}\""),
             FerryValue::Boolean(b) => write!(f, "{b}"),
             FerryValue::Unit => write!(f, "[unit]"),
         }
