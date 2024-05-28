@@ -97,10 +97,10 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 token: _,
             } => Ok(Some(FerryValue::Unit)),
             SLit::List {
-                token,
+                token: _,
                 contents,
-                expr_type,
-                span,
+                expr_type: _,
+                span: _,
             } => {
                 let mut values: Vec<FerryValue> = Vec::new();
                 for c in contents {
@@ -239,11 +239,10 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                         span: *op.get_span(),
                     }),
                 },
-
-                _ => Err(FerryInterpreterError::InvalidOperation {
-                    help: "this was not a binary op".into(),
-                    span: *binary.operator.get_span(),
-                }),
+                // _ => Err(FerryInterpreterError::InvalidOperation {
+                //     help: "this was not a binary op".into(),
+                //     span: *binary.operator.get_span(),
+                // }),
             },
             _ => Ok(None),
         }
@@ -349,7 +348,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         unary: &mut crate::syntax::Unary,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
-        let right = self.evaluate(&mut unary.rhs, state)?;
+        let _right = self.evaluate(&mut unary.rhs, state)?;
 
         match unary.operator.get_token_type() {
             TT::Operator(o) => match o {
