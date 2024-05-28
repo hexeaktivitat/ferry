@@ -3,7 +3,9 @@ use thiserror::Error;
 
 use crate::{
     state::FerryState,
-    syntax::{walk_expr, Binary, Expr, ExprVisitor, Lit, Variable},
+    syntax::{
+        walk_expr, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Loop, Unary, Variable,
+    },
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -97,6 +99,12 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 expr_type: _,
                 token: _,
             } => todo!(),
+            Lit::List {
+                token,
+                contents,
+                expr_type,
+                span,
+            } => todo!(),
         }
     }
 
@@ -151,6 +159,8 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
                 crate::token::Op::Equality => todo!(),
                 crate::token::Op::LessEqual => todo!(),
                 crate::token::Op::GreaterEqual => todo!(),
+                crate::token::Op::GetI => todo!(),
+                crate::token::Op::Cons => todo!(),
             },
             _ => unreachable!(),
         };
@@ -195,7 +205,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
 
     fn visit_if_expr(
         &mut self,
-        _if_expr: &mut crate::syntax::If,
+        _if_expr: &mut If,
         _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         todo!()
@@ -203,7 +213,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
 
     fn visit_group(
         &mut self,
-        _group: &mut crate::syntax::Group,
+        _group: &mut Group,
         _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         todo!()
@@ -211,7 +221,7 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
 
     fn visit_binding(
         &mut self,
-        _binding: &mut crate::syntax::Binding,
+        _binding: &mut Binding,
         _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         todo!()
@@ -219,8 +229,16 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
 
     fn visit_loop(
         &mut self,
-        _loop_expr: &mut crate::syntax::Loop,
+        _loop_expr: &mut Loop,
         _state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        todo!()
+    }
+
+    fn visit_unary(
+        &mut self,
+        unary: &mut Unary,
+        state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
         todo!()
     }

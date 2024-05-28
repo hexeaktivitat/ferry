@@ -194,8 +194,32 @@ impl FerryParser {
         Ok(expr)
     }
 
+    fn list(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let token = self.previous();
+        let mut contents: Vec<Expr> = Vec::new();
+
+        if self.matches(&[TT::Control(Ctrl::RightBracket)]) {
+            self.consume(
+                &TT::Control(Ctrl::RightBracket),
+                "expected ']' after list '['",
+            )?;
+            contents.push(Expr::Literal(SLit::Undefined {
+                token: token.clone(),
+                expr_type: FerryTyping::Untyped,
+            }));
+            Ok(Expr::Literal(SLit::List {
+                token,
+                contents,
+                expr_type: FerryTyping::Untyped,
+                span: *self.previous().get_span(),
+            }))
+        } else {
+            self.finish_sequence(token, state, contents)
+        }
+    }
+
     fn assignment(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let mut expr = self.comparison(state)?;
+        let mut expr = self.cons(state)?;
 
         if self.matches(&[TT::Operator(Op::Equals)]) {
             let operator = self.previous();
@@ -209,6 +233,41 @@ impl FerryParser {
                     token: operator,
                 });
             }
+        }
+
+        Ok(expr)
+    }
+
+    fn cons(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.index(state)?;
+
+        if self.matches(&[TT::Operator(Op::Cons)]) {
+            let operator = self.previous();
+            let rhs = Box::new(self.start(state)?);
+            expr = Expr::Binary(Binary {
+                lhs: Box::new(expr.clone()),
+                operator,
+                rhs,
+                expr_type: FerryTyping::Untyped,
+            });
+        }
+
+        Ok(expr)
+    }
+
+    fn index(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.comparison(state)?;
+
+        if self.matches(&[TT::Operator(Op::GetI)]) {
+            let lhs = Box::new(expr);
+            let op = self.previous();
+            let rhs = Box::new(self.start(state)?);
+            expr = Expr::Binary(Binary {
+                operator: op,
+                lhs,
+                rhs,
+                expr_type: FerryTyping::Untyped,
+            });
         }
 
         Ok(expr)
@@ -255,7 +314,7 @@ impl FerryParser {
     }
 
     fn factor(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let mut expr = self.target(state)?;
+        let mut expr = self.unary(state)?;
 
         if self.matches(&[TT::Operator(Op::Multiply), TT::Operator(Op::Divide)]) {
             let op = self.previous();
@@ -267,6 +326,12 @@ impl FerryParser {
                 expr_type: FerryTyping::Untyped,
             });
         }
+
+        Ok(expr)
+    }
+
+    fn unary(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let expr = self.target(state)?;
 
         Ok(expr)
     }
@@ -300,11 +365,32 @@ impl FerryParser {
                 }),
                 // _ => unreachable!(),
             }),
-            TT::Identifier(id) => Ok(Expr::Variable(Variable {
-                token: self.previous().clone(),
-                name: id.clone(),
-                expr_type: FerryTyping::Untyped,
-            })),
+            TT::Identifier(id) => {
+                if self.peek().get_token_type() == &TT::Control(Ctrl::LeftBracket) {
+                    let lhs = Box::new(Expr::Variable(Variable {
+                        token: self.previous().clone(),
+                        name: id.clone(),
+                        expr_type: FerryTyping::Untyped,
+                    }));
+                    let operator =
+                        FerryToken::new(TT::Operator(Op::GetI), *self.peek().get_span());
+                    self.consume(&TT::Control(Ctrl::LeftBracket), "expected '[' for index ")?;
+                    let rhs = Box::new(self.start(state)?);
+                    self.consume(&TT::Control(Ctrl::RightBracket), "expected ']' after '['")?;
+                    Ok(Expr::Binary(Binary {
+                        lhs,
+                        operator,
+                        rhs,
+                        expr_type: FerryTyping::Untyped,
+                    }))
+                } else {
+                    Ok(Expr::Variable(Variable {
+                        token: self.previous().clone(),
+                        name: id.clone(),
+                        expr_type: FerryTyping::Untyped,
+                    }))
+                }
+            }
             TT::Control(Ctrl::LeftParen) => {
                 let contents = Box::new(self.start(state)?);
                 self.consume(&TT::Control(Ctrl::RightParen), "Expected ')' after '('")?;
@@ -314,10 +400,14 @@ impl FerryParser {
                     expr_type: FerryTyping::Untyped,
                 }))
             }
-            _ => Err(FerryParseError::UnexpectedToken {
-                msg: format!("Unexpected token: {}", self.previous().get_token_type()),
-                span: *self.previous().get_span(),
-            }),
+            TT::Control(Ctrl::LeftBracket) => self.list(state),
+            _ => {
+                println!("oops");
+                Err(FerryParseError::UnexpectedToken {
+                    msg: format!("Unexpected token: {}", self.previous().get_token_type()),
+                    span: *self.previous().get_span(),
+                })
+            }
         }
     }
 
@@ -380,6 +470,34 @@ impl FerryParser {
         } else {
             Ok(None)
         }
+    }
+
+    fn finish_sequence(
+        &mut self,
+        token: FerryToken,
+        state: &mut FerryState,
+        mut contents: Vec<Expr>,
+    ) -> FerryResult<Expr> {
+        while self.peek().get_token_type() != &TT::Control(Ctrl::RightBracket) {
+            if self.peek().get_token_type() == &TT::Control(Ctrl::Comma) {
+                self.consume(
+                    &TT::Control(Ctrl::Comma),
+                    "expected ',' during multivalue lists",
+                )?;
+            }
+            let next = self.start(state)?;
+            contents.push(next);
+        }
+        self.consume(
+            &TT::Control(Ctrl::RightBracket),
+            "expected right bracket after list",
+        )?;
+        Ok(Expr::Literal(SLit::List {
+            token,
+            contents,
+            expr_type: FerryTyping::Untyped,
+            span: *self.previous().get_span(),
+        }))
     }
 }
 

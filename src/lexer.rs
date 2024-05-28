@@ -84,6 +84,9 @@ impl<'source> FerryLexer<'source> {
             b':' => Ok(Some(TT::Control(Ctrl::Colon))),
             b'(' => Ok(Some(TT::Control(Ctrl::LeftParen))),
             b')' => Ok(Some(TT::Control(Ctrl::RightParen))),
+            b'[' => Ok(Some(TT::Control(Ctrl::LeftBracket))),
+            b']' => Ok(Some(TT::Control(Ctrl::RightBracket))),
+            b',' => Ok(Some(TT::Control(Ctrl::Comma))),
 
             // OPERATORS
             b'+' => Ok(Some(TT::Operator(Op::Add))),
@@ -139,6 +142,10 @@ impl<'source> FerryLexer<'source> {
                     // reserved boolean keywords
                     "true" => Some(TT::Value(Val::Boolean(true))),
                     "false" => Some(TT::Value(Val::Boolean(false))),
+
+                    // list operators
+                    "geti" => Some(TT::Operator(Op::GetI)),
+                    "cons" => Some(TT::Operator(Op::Cons)),
                     _ => Some(TT::Identifier(id)),
                 })
             }

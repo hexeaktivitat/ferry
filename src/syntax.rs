@@ -1,12 +1,13 @@
 use miette::SourceSpan;
 
-use crate::token::{FerryToken, TokenType as TT};
+use crate::token::{FerryToken, Op, TokenType as TT};
 use crate::types::{FerryType, FerryTyping};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Literal(Lit),
     Binary(Binary),
+    Unary(Unary),
     Variable(Variable),
     Assign(Assign),
     If(If),
@@ -39,11 +40,24 @@ pub enum Lit {
         expr_type: FerryTyping,
         span: SourceSpan,
     },
+    List {
+        token: FerryToken,
+        contents: Vec<Expr>,
+        expr_type: FerryTyping,
+        span: SourceSpan,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binary {
     pub lhs: Box<Expr>,
+    pub operator: FerryToken,
+    pub rhs: Box<Expr>,
+    pub expr_type: FerryTyping,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Unary {
     pub operator: FerryToken,
     pub rhs: Box<Expr>,
     pub expr_type: FerryTyping,
@@ -101,6 +115,7 @@ pub struct Loop {
 pub trait ExprVisitor<T, S> {
     fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
     fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
+    fn visit_unary(&mut self, unary: &mut Unary, state: S) -> T;
     fn visit_variable(&mut self, variable: &mut Variable, state: S) -> T;
     fn visit_assign(&mut self, assign: &mut Assign, state: S) -> T;
     fn visit_if_expr(&mut self, if_expr: &mut If, state: S) -> T;
@@ -119,6 +134,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::Group(group) => visitor.visit_group(group, state),
         Expr::Binding(binding) => visitor.visit_binding(binding, state),
         Expr::Loop(loop_expr) => visitor.visit_loop(loop_expr, state),
+        Expr::Unary(unary) => visitor.visit_unary(unary, state),
     }
 }
 
@@ -148,6 +164,12 @@ impl Expr {
                     expr_type: _,
                     span: _,
                 } => token,
+                Lit::List {
+                    token,
+                    contents: _,
+                    expr_type: _,
+                    span: _,
+                } => token,
             },
             Expr::Binary(b) => &b.operator,
             Expr::Variable(v) => &v.token,
@@ -156,6 +178,7 @@ impl Expr {
             Expr::Group(g) => &g.token,
             Expr::Binding(b) => &b.token,
             Expr::Loop(l) => &l.token,
+            Expr::Unary(u) => &u.operator,
         }
     }
 }
@@ -166,72 +189,116 @@ impl std::fmt::Display for Expr {
             Expr::Literal(l) => match l {
                 Lit::Number {
                     value,
-                    expr_type: _,
+                    expr_type,
                     span: _,
                     token: _,
-                } => write!(f, "{value}"),
+                } => write!(f, "{expr_type}: {value}"),
                 Lit::Str {
                     value,
-                    expr_type: _,
+                    expr_type,
                     span: _,
                     token: _,
-                } => write!(f, "{value}"),
+                } => write!(f, "{expr_type}: {value}"),
                 Lit::Bool {
                     value,
-                    expr_type: _,
+                    expr_type,
                     span: _,
                     token: _,
-                } => write!(f, "{value}"),
+                } => write!(f, "{expr_type}: {value}"),
                 Lit::Undefined {
                     expr_type,
                     token: _,
                 } => write!(f, "{expr_type}"),
+                Lit::List {
+                    token: _,
+                    contents,
+                    expr_type,
+                    span: _,
+                } => {
+                    let mut formatting = String::new();
+                    formatting.push('[');
+                    let mut items = contents.iter().peekable();
+                    while let Some(item) = items.next() {
+                        formatting.push_str(format!("{item}").as_str());
+                        if items.peek().is_some() {
+                            formatting.push_str(", ");
+                        }
+                    }
+                    formatting.push(']');
+                    write!(f, "{expr_type}: {formatting}")
+                }
             },
             Expr::Binary(b) => match b.operator.get_token_type() {
                 TT::Operator(o) => match o {
-                    crate::token::Op::Add => write!(f, "Add {} {}", b.lhs, b.rhs),
-                    crate::token::Op::Subtract => write!(f, "Subtract {} {}", b.lhs, b.rhs),
-                    crate::token::Op::Multiply => write!(f, "Multiply {} {}", b.lhs, b.rhs),
-                    crate::token::Op::Divide => write!(f, "Divide {} {}", b.lhs, b.rhs),
-                    crate::token::Op::Equals => write!(f, "{} equals {}", b.lhs, b.rhs),
-                    crate::token::Op::LessThan => write!(f, "{} is less than {}", b.lhs, b.rhs),
-                    crate::token::Op::GreaterThan => {
+                    Op::Add => write!(f, "Add {} {}", b.lhs, b.rhs),
+                    Op::Subtract => write!(f, "Subtract {} {}", b.lhs, b.rhs),
+                    Op::Multiply => write!(f, "Multiply {} {}", b.lhs, b.rhs),
+                    Op::Divide => write!(f, "Divide {} {}", b.lhs, b.rhs),
+                    Op::Equals => write!(f, "{} equals {}", b.lhs, b.rhs),
+                    Op::LessThan => write!(f, "{} is less than {}", b.lhs, b.rhs),
+                    Op::GreaterThan => {
                         write!(f, "{} is greater than {}", b.lhs, b.rhs)
                     }
-                    crate::token::Op::Equality => write!(f, "{} is equal to {}", b.lhs, b.rhs),
-                    crate::token::Op::LessEqual => {
+                    Op::Equality => write!(f, "{} is equal to {}", b.lhs, b.rhs),
+                    Op::LessEqual => {
                         write!(f, "{} is less than or equal to {}", b.lhs, b.rhs)
                     }
-                    crate::token::Op::GreaterEqual => {
+                    Op::GreaterEqual => {
                         write!(f, "{} is greater than or equal to {}", b.lhs, b.rhs)
                     }
+                    Op::GetI => write!(f, "GetI"),
+                    Op::Cons => write!(f, "Cons"),
                 },
                 _ => unreachable!(),
             },
-            Expr::Variable(v) => write!(f, "{}", v.name),
+            Expr::Variable(v) => write!(f, "{}: {}", v.name, v.expr_type),
             Expr::Assign(a) => {
                 if a.value.is_some() {
-                    write!(f, "{} is {}", a.var, a.value.clone().unwrap())
+                    write!(
+                        f,
+                        "{}: {} is {}",
+                        a.var,
+                        a.expr_type,
+                        a.value.clone().unwrap()
+                    )
                 } else {
-                    write!(f, "{} is NULL", a.var)
+                    write!(f, "{}: {} is NULL", a.var, a.expr_type)
                 }
             }
             Expr::If(i) => {
                 if i.else_expr.is_some() {
                     write!(
                         f,
-                        "if {} then: {} else: {}",
+                        "if {} then: {} else: {} (type: {})",
                         i.condition,
                         i.then_expr,
-                        i.else_expr.clone().unwrap()
+                        i.else_expr.clone().unwrap(),
+                        i.expr_type,
                     )
                 } else {
-                    write!(f, "if {} then: {}", i.condition, i.then_expr)
+                    write!(
+                        f,
+                        "if {} then: {} (type: {})",
+                        i.condition, i.then_expr, i.expr_type
+                    )
                 }
             }
-            Expr::Group(g) => write!(f, "( {} )", g.contents),
-            Expr::Binding(b) => write!(f, "let {}", b.name),
-            Expr::Loop(_l) => write!(f, "loop"),
+            Expr::Group(g) => write!(f, "{}: ( {} )", g.expr_type, g.contents),
+            Expr::Binding(b) => {
+                if b.value.is_some() {
+                    write!(
+                        f,
+                        "let {}: {} = {}",
+                        b.name,
+                        b.expr_type,
+                        b.value.clone().unwrap()
+                    )
+                } else {
+                    write!(f, "let {}: {}", b.name, b.expr_type)
+                }
+            }
+            Expr::Loop(l) => write!(f, "loop (type: {})", l.expr_type),
+            Expr::Unary(u) => write!(f, "{}: {} (type: {})", u.operator, u.rhs, u.expr_type),
         }
     }
 }

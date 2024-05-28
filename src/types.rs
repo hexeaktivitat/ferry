@@ -15,6 +15,7 @@ pub enum FerryType {
     Num,
     String,
     Boolean,
+    List,
 }
 
 pub trait Typing {
@@ -74,6 +75,12 @@ impl Typing for Expr {
                     expr_type,
                     token: _,
                 } => expr_type.get_type(),
+                Lit::List {
+                    token: _,
+                    contents: _,
+                    expr_type,
+                    span: _,
+                } => expr_type.get_type(),
             },
             Expr::Binary(b) => b.expr_type.get_type(),
             Expr::Variable(v) => v.expr_type.get_type(),
@@ -82,6 +89,7 @@ impl Typing for Expr {
             Expr::Group(g) => g.expr_type.get_type(),
             Expr::Binding(b) => b.expr_type.get_type(),
             Expr::Loop(l) => l.expr_type.get_type(),
+            Expr::Unary(u) => u.expr_type.get_type(),
         }
     }
 }
@@ -106,6 +114,7 @@ impl std::fmt::Display for FerryType {
             FerryType::Num => write!(f, "Num"),
             FerryType::String => write!(f, "String"),
             FerryType::Boolean => write!(f, "Boolean"),
+            FerryType::List => write!(f, "List"),
         }
     }
 }

@@ -141,5 +141,5 @@ fn print_help() {
     println!("!asm:   Print the generated RISC-V assembly (alpha)");
     println!("!exit:");
     println!("!quit:  Quit the REPL");
-    print!("\n");
+    println!();
 }

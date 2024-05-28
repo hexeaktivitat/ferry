@@ -4,8 +4,10 @@ use thiserror::Error;
 use crate::{
     state::FerryState,
     syntax::{
-        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Loop, Variable,
+        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Loop, Unary,
+        Variable,
     },
+    token::{Op, TokenType},
     types::{FerryType, FerryTyping, TypeCheckable, Typing},
 };
 
@@ -101,7 +103,7 @@ impl FerryTypechecker {
 }
 
 impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
-    fn visit_literal(&mut self, literal: &mut Lit, _state: &mut FerryState) -> FerryResult<Expr> {
+    fn visit_literal(&mut self, literal: &mut Lit, state: &mut FerryState) -> FerryResult<Expr> {
         match literal {
             Lit::Number {
                 value,
@@ -143,6 +145,24 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 token: token.clone(),
                 expr_type: FerryTyping::Undefined,
             })),
+            Lit::List {
+                token,
+                contents,
+                expr_type: _,
+                span,
+            } => {
+                let mut checked_contents: Vec<Expr> = Vec::new();
+                for item in contents {
+                    checked_contents.push(self.check_types(item, state)?);
+                }
+
+                Ok(Expr::Literal(Lit::List {
+                    token: token.clone(),
+                    contents: checked_contents,
+                    expr_type: FerryTyping::Inferred(FerryType::List),
+                    span: *span,
+                }))
+            }
         }
     }
 
@@ -151,12 +171,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         let right = self.check_types(&mut binary.rhs, state)?;
 
         match binary.operator.get_token_type() {
-            crate::token::TokenType::Operator(o) => match o {
-                crate::token::Op::Add
-                | crate::token::Op::Subtract
-                | crate::token::Op::Multiply
-                | crate::token::Op::Divide
-                | crate::token::Op::Equals => {
+            TokenType::Operator(o) => match o {
+                Op::Add | Op::Subtract | Op::Multiply | Op::Divide | Op::Equals => {
                     if left.check(right.get_type()) {
                         let expr_type = FerryTyping::Inferred(left.get_type().clone());
                         Ok(Expr::Binary(Binary {
@@ -174,11 +190,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
-                crate::token::Op::LessThan
-                | crate::token::Op::GreaterThan
-                | crate::token::Op::Equality
-                | crate::token::Op::LessEqual
-                | crate::token::Op::GreaterEqual => {
+                Op::LessThan
+                | Op::GreaterThan
+                | Op::Equality
+                | Op::LessEqual
+                | Op::GreaterEqual => {
                     if left.check(right.get_type()) {
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
@@ -195,10 +211,66 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
+                Op::GetI => {
+                    if left.check(&FerryType::List) {
+                        if right.check(&FerryType::Num) {
+                            Ok(Expr::Binary(Binary {
+                                lhs: Box::new(left.clone()),
+                                operator: binary.operator.clone(),
+                                rhs: Box::new(right),
+                                expr_type: FerryTyping::Assigned(FerryType::List),
+                            }))
+                        } else {
+                            Err(FerryTypeError::TypeMismatch {
+                                advice: "invalid attempt at list indexing".into(),
+                                span: *binary.operator.get_span(),
+                                lhs_span: *left.get_token().get_span(),
+                                rhs_span: *right.get_token().get_span(),
+                            })
+                        }
+                    } else {
+                        Err(FerryTypeError::TypeMismatch {
+                            advice: "invalid attempt at list indexing".into(),
+                            span: *binary.operator.get_span(),
+                            lhs_span: *left.get_token().get_span(),
+                            rhs_span: *right.get_token().get_span(),
+                        })
+                    }
+                }
+                Op::Cons => {
+                    if left.check(&FerryType::List) {
+                        if right.check(&FerryType::List) {
+                            Ok(Expr::Binary(Binary {
+                                lhs: Box::new(left.clone()),
+                                operator: binary.operator.clone(),
+                                rhs: Box::new(right.clone()),
+                                expr_type: FerryTyping::Inferred(FerryType::List),
+                            }))
+                        } else {
+                            Err(FerryTypeError::TypeMismatch {
+                                advice: "invalid attempt at list cons".into(),
+                                span: *binary.operator.get_span(),
+                                lhs_span: *left.get_token().get_span(),
+                                rhs_span: *right.get_token().get_span(),
+                            })
+                        }
+                    } else {
+                        Err(FerryTypeError::TypeMismatch {
+                            advice: "invalid attempt at list cons".into(),
+                            span: *binary.operator.get_span(),
+                            lhs_span: *left.get_token().get_span(),
+                            rhs_span: *right.get_token().get_span(),
+                        })
+                    }
+                }
+                _ => Err(FerryTypeError::A {
+                    advice: "aaa".into(),
+                    span: *binary.operator.get_span(),
+                }),
             },
             _ => Err(FerryTypeError::A {
                 advice: "aaa".into(),
-                span: binary.operator.get_span().clone(),
+                span: *binary.operator.get_span(),
             }),
         }
     }
@@ -375,6 +447,29 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 contents,
                 expr_type,
             }))
+        }
+    }
+
+    fn visit_unary(
+        &mut self,
+        unary: &mut crate::syntax::Unary,
+        state: &mut FerryState,
+    ) -> FerryResult<Expr> {
+        let right = self.check_types(&mut unary.rhs, state)?;
+
+        if right.get_type() == &FerryType::Num {
+            Ok(Expr::Unary(Unary {
+                operator: unary.operator.clone(),
+                rhs: Box::new(right),
+                expr_type: FerryTyping::Assigned(FerryType::Num),
+            }))
+        } else {
+            Err(FerryTypeError::TypeMismatch {
+                advice: "Expected Num, found".into(),
+                span: *unary.operator.get_span(),
+                lhs_span: *unary.operator.get_span(),
+                rhs_span: *right.get_token().get_span(),
+            })
         }
     }
 }

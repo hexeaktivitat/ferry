@@ -3,7 +3,10 @@ use thiserror::Error;
 
 use crate::{
     state::{FerryState, FerryValue},
-    syntax::{walk_expr, Binary, Expr, ExprVisitor, Group, Lit as SLit, Variable},
+    syntax::{
+        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit as SLit, Loop, Unary,
+        Variable,
+    },
     token::{Op, TokenType as TT},
 };
 
@@ -71,7 +74,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
     fn visit_literal(
         &mut self,
         literal: &mut SLit,
-        _state: &mut FerryState,
+        state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         match literal {
             SLit::Number {
@@ -96,6 +99,22 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 expr_type: _,
                 token: _,
             } => Ok(Some(FerryValue::Unit)),
+            SLit::List {
+                token: _,
+                contents,
+                expr_type: _,
+                span: _,
+            } => {
+                let mut values: Vec<FerryValue> = Vec::new();
+                for c in contents {
+                    if let Some(value) = self.evaluate(c, state)? {
+                        values.push(value);
+                    } else {
+                        values.push(FerryValue::Unit);
+                    }
+                }
+                Ok(Some(FerryValue::List(values)))
+            }
         }
     }
 
@@ -195,6 +214,38 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                         span: *op.get_span(),
                     }),
                 },
+                Op::GetI => match (left, right) {
+                    (Some(FerryValue::List(l)), Some(FerryValue::Number(n))) => {
+                        let value = l.get(n as usize);
+                        match value {
+                            Some(v) => Ok(Some(v.clone())),
+                            None => Err(FerryInterpreterError::InvalidOperation {
+                                help: "Invalid list index access".into(),
+                                span: *binary.rhs.get_token().get_span(),
+                            }),
+                        }
+                    }
+
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type Num".into(),
+                        span: *op.get_span(),
+                    }),
+                },
+                Op::Cons => match (left, right) {
+                    (Some(FerryValue::List(a)), Some(FerryValue::List(b))) => {
+                        let value = [a, b].concat();
+                        Ok(Some(FerryValue::List(value)))
+                    }
+
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type List".into(),
+                        span: *op.get_span(),
+                    }),
+                },
+                // _ => Err(FerryInterpreterError::InvalidOperation {
+                //     help: "this was not a binary op".into(),
+                //     span: *binary.operator.get_span(),
+                // }),
             },
             _ => Ok(None),
         }
@@ -210,7 +261,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_assign(
         &mut self,
-        assign: &mut crate::syntax::Assign,
+        assign: &mut Assign,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         if let Some(v) = &mut assign.value {
@@ -224,7 +275,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_if_expr(
         &mut self,
-        if_expr: &mut crate::syntax::If,
+        if_expr: &mut If,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         if let Some(conditional) = self.evaluate(&mut if_expr.condition, state)? {
@@ -251,7 +302,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_binding(
         &mut self,
-        binding: &mut crate::syntax::Binding,
+        binding: &mut Binding,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         if let Some(v) = &mut binding.value {
@@ -265,7 +316,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_loop(
         &mut self,
-        loop_expr: &mut crate::syntax::Loop,
+        loop_expr: &mut Loop,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         if let Some(cond) = &mut loop_expr.condition {
@@ -294,6 +345,25 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
             }
         }
     }
+
+    fn visit_unary(
+        &mut self,
+        unary: &mut Unary,
+        state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
+        let _right = self.evaluate(&mut unary.rhs, state)?;
+
+        match unary.operator.get_token_type() {
+            TT::Operator(o) => Err(FerryInterpreterError::InvalidOperation {
+                help: "Invalid unary operator".into(),
+                span: *unary.operator.get_span(),
+            }),
+            _ => Err(FerryInterpreterError::InvalidOperation {
+                help: "Invalid unary operator".into(),
+                span: *unary.operator.get_span(),
+            }),
+        }
+    }
 }
 
 impl FerryValue {
@@ -303,6 +373,7 @@ impl FerryValue {
             FerryValue::Str(s) => !s.is_empty(),
             FerryValue::Boolean(b) => *b,
             FerryValue::Unit => false,
+            FerryValue::List(l) => !l.is_empty(),
         }
     }
 }

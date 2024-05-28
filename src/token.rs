@@ -54,6 +54,8 @@ pub enum Op {
     Equality,
     LessEqual,
     GreaterEqual,
+    GetI,
+    Cons,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -63,6 +65,9 @@ pub enum Ctrl {
     LeftParen,
     RightParen,
     Newline,
+    LeftBracket,
+    RightBracket,
+    Comma,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -102,6 +107,8 @@ impl std::fmt::Display for TokenType {
                 Op::Equality => write!(f, "Operator<Equality>"),
                 Op::LessEqual => write!(f, "Operator<LessThanOrEqual>"),
                 Op::GreaterEqual => write!(f, "Operator<GreaterThanOrEqual"),
+                Op::GetI => write!(f, "Operator<GetI>"),
+                Op::Cons => write!(f, "Operator<Cons>"),
             },
             TokenType::Control(c) => match c {
                 Ctrl::Semicolon => write!(f, "Control<Semicolon>"),
@@ -109,6 +116,9 @@ impl std::fmt::Display for TokenType {
                 Ctrl::LeftParen => write!(f, "Control<LeftParen>"),
                 Ctrl::RightParen => write!(f, "Control<RightParen>"),
                 Ctrl::Newline => write!(f, "Control<Newline>"),
+                Ctrl::LeftBracket => write!(f, "Control<LeftBracket>"),
+                Ctrl::RightBracket => write!(f, "Control<RightBracket>"),
+                Ctrl::Comma => write!(f, "Control<Comma>"),
             },
             TokenType::Keyword(k) => match k {
                 Kwd::If => write!(f, "Keyword<If>"),
