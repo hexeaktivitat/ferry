@@ -372,8 +372,7 @@ impl FerryParser {
                         name: id.clone(),
                         expr_type: FerryTyping::Untyped,
                     }));
-                    let operator =
-                        FerryToken::new(TT::Operator(Op::GetI), *self.peek().get_span());
+                    let operator = FerryToken::new(TT::Operator(Op::GetI), *self.peek().get_span());
                     self.consume(&TT::Control(Ctrl::LeftBracket), "expected '[' for index ")?;
                     let rhs = Box::new(self.start(state)?);
                     self.consume(&TT::Control(Ctrl::RightBracket), "expected ']' after '['")?;
@@ -401,13 +400,10 @@ impl FerryParser {
                 }))
             }
             TT::Control(Ctrl::LeftBracket) => self.list(state),
-            _ => {
-                println!("oops");
-                Err(FerryParseError::UnexpectedToken {
-                    msg: format!("Unexpected token: {}", self.previous().get_token_type()),
-                    span: *self.previous().get_span(),
-                })
-            }
+            _ => Err(FerryParseError::UnexpectedToken {
+                msg: format!("Unexpected token: {}", self.previous().get_token_type()),
+                span: *self.previous().get_span(),
+            }),
         }
     }
 
