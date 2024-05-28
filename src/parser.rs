@@ -358,11 +358,32 @@ impl FerryParser {
                 }),
                 // _ => unreachable!(),
             }),
-            TT::Identifier(id) => Ok(Expr::Variable(Variable {
-                token: self.previous().clone(),
-                name: id.clone(),
-                expr_type: FerryTyping::Untyped,
-            })),
+            TT::Identifier(id) => {
+                if self.peek().get_token_type() == &TT::Control(Ctrl::LeftBracket) {
+                    let lhs = Box::new(Expr::Variable(Variable {
+                        token: self.previous().clone(),
+                        name: id.clone(),
+                        expr_type: FerryTyping::Untyped,
+                    }));
+                    let operator =
+                        FerryToken::new(TT::Operator(Op::GetI), self.peek().get_span().clone());
+                    self.consume(&TT::Control(Ctrl::LeftBracket), "expected '[' for index ")?;
+                    let rhs = Box::new(self.start(state)?);
+                    self.consume(&TT::Control(Ctrl::RightBracket), "expected ']' after '['")?;
+                    Ok(Expr::Binary(Binary {
+                        lhs,
+                        operator,
+                        rhs,
+                        expr_type: FerryTyping::Untyped,
+                    }))
+                } else {
+                    Ok(Expr::Variable(Variable {
+                        token: self.previous().clone(),
+                        name: id.clone(),
+                        expr_type: FerryTyping::Untyped,
+                    }))
+                }
+            }
             TT::Control(Ctrl::LeftParen) => {
                 let contents = Box::new(self.start(state)?);
                 self.consume(&TT::Control(Ctrl::RightParen), "Expected ')' after '('")?;
