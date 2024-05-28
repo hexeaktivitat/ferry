@@ -247,6 +247,7 @@ impl std::fmt::Display for Expr {
                         write!(f, "{} is greater than or equal to {}", b.lhs, b.rhs)
                     }
                     crate::token::Op::GetI => write!(f, "GetI"),
+                    crate::token::Op::Cons => write!(f, "Cons"),
                 },
                 _ => unreachable!(),
             },

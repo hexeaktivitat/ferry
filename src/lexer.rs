@@ -145,6 +145,7 @@ impl<'source> FerryLexer<'source> {
 
                     // list operators
                     "geti" => Some(TT::Operator(Op::GetI)),
+                    "cons" => Some(TT::Operator(Op::Cons)),
                     _ => Some(TT::Identifier(id)),
                 })
             }

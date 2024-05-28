@@ -55,6 +55,7 @@ pub enum Op {
     LessEqual,
     GreaterEqual,
     GetI,
+    Cons,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -107,6 +108,7 @@ impl std::fmt::Display for TokenType {
                 Op::LessEqual => write!(f, "Operator<LessThanOrEqual>"),
                 Op::GreaterEqual => write!(f, "Operator<GreaterThanOrEqual"),
                 Op::GetI => write!(f, "Operator<GetI>"),
+                Op::Cons => write!(f, "Operator<Cons>"),
             },
             TokenType::Control(c) => match c {
                 Ctrl::Semicolon => write!(f, "Control<Semicolon>"),

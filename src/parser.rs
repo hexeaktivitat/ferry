@@ -1,3 +1,5 @@
+use std::slice::RChunks;
+
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
@@ -219,7 +221,7 @@ impl FerryParser {
     }
 
     fn assignment(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let mut expr = self.index(state)?;
+        let mut expr = self.cons(state)?;
 
         if self.matches(&[TT::Operator(Op::Equals)]) {
             let operator = self.previous();
@@ -233,6 +235,23 @@ impl FerryParser {
                     token: operator,
                 });
             }
+        }
+
+        Ok(expr)
+    }
+
+    fn cons(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.index(state)?;
+
+        if self.matches(&[TT::Operator(Op::Cons)]) {
+            let operator = self.previous();
+            let rhs = Box::new(self.start(state)?);
+            expr = Expr::Binary(Binary {
+                lhs: Box::new(expr.clone()),
+                operator,
+                rhs,
+                expr_type: FerryTyping::Untyped,
+            });
         }
 
         Ok(expr)

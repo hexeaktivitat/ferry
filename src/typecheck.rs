@@ -240,6 +240,32 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
+                crate::token::Op::Cons => {
+                    if left.check(&FerryType::List) {
+                        if right.check(&FerryType::List) {
+                            Ok(Expr::Binary(Binary {
+                                lhs: Box::new(left.clone()),
+                                operator: binary.operator.clone(),
+                                rhs: Box::new(right.clone()),
+                                expr_type: FerryTyping::Inferred(FerryType::List),
+                            }))
+                        } else {
+                            Err(FerryTypeError::TypeMismatch {
+                                advice: "invalid attempt at list cons".into(),
+                                span: *binary.operator.get_span(),
+                                lhs_span: *left.get_token().get_span(),
+                                rhs_span: *right.get_token().get_span(),
+                            })
+                        }
+                    } else {
+                        Err(FerryTypeError::TypeMismatch {
+                            advice: "invalid attempt at list cons".into(),
+                            span: *binary.operator.get_span(),
+                            lhs_span: *left.get_token().get_span(),
+                            rhs_span: *right.get_token().get_span(),
+                        })
+                    }
+                }
                 _ => Err(FerryTypeError::A {
                     advice: "aaa".into(),
                     span: *binary.operator.get_span(),

@@ -228,6 +228,17 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                         span: *op.get_span(),
                     }),
                 },
+                Op::Cons => match (left, right) {
+                    (Some(FerryValue::List(a)), Some(FerryValue::List(b))) => {
+                        let value = vec![a, b].concat();
+                        Ok(Some(FerryValue::List(value)))
+                    }
+
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Operator only takes values of type List".into(),
+                        span: *op.get_span(),
+                    }),
+                },
 
                 _ => Err(FerryInterpreterError::InvalidOperation {
                     help: "this was not a binary op".into(),
