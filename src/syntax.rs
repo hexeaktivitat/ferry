@@ -1,6 +1,6 @@
 use miette::SourceSpan;
 
-use crate::token::{FerryToken, TokenType as TT};
+use crate::token::{FerryToken, Op, TokenType as TT};
 use crate::types::{FerryType, FerryTyping};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -230,24 +230,24 @@ impl std::fmt::Display for Expr {
             },
             Expr::Binary(b) => match b.operator.get_token_type() {
                 TT::Operator(o) => match o {
-                    crate::token::Op::Add => write!(f, "Add {} {}", b.lhs, b.rhs),
-                    crate::token::Op::Subtract => write!(f, "Subtract {} {}", b.lhs, b.rhs),
-                    crate::token::Op::Multiply => write!(f, "Multiply {} {}", b.lhs, b.rhs),
-                    crate::token::Op::Divide => write!(f, "Divide {} {}", b.lhs, b.rhs),
-                    crate::token::Op::Equals => write!(f, "{} equals {}", b.lhs, b.rhs),
-                    crate::token::Op::LessThan => write!(f, "{} is less than {}", b.lhs, b.rhs),
-                    crate::token::Op::GreaterThan => {
+                    Op::Add => write!(f, "Add {} {}", b.lhs, b.rhs),
+                    Op::Subtract => write!(f, "Subtract {} {}", b.lhs, b.rhs),
+                    Op::Multiply => write!(f, "Multiply {} {}", b.lhs, b.rhs),
+                    Op::Divide => write!(f, "Divide {} {}", b.lhs, b.rhs),
+                    Op::Equals => write!(f, "{} equals {}", b.lhs, b.rhs),
+                    Op::LessThan => write!(f, "{} is less than {}", b.lhs, b.rhs),
+                    Op::GreaterThan => {
                         write!(f, "{} is greater than {}", b.lhs, b.rhs)
                     }
-                    crate::token::Op::Equality => write!(f, "{} is equal to {}", b.lhs, b.rhs),
-                    crate::token::Op::LessEqual => {
+                    Op::Equality => write!(f, "{} is equal to {}", b.lhs, b.rhs),
+                    Op::LessEqual => {
                         write!(f, "{} is less than or equal to {}", b.lhs, b.rhs)
                     }
-                    crate::token::Op::GreaterEqual => {
+                    Op::GreaterEqual => {
                         write!(f, "{} is greater than or equal to {}", b.lhs, b.rhs)
                     }
-                    crate::token::Op::GetI => write!(f, "GetI"),
-                    crate::token::Op::Cons => write!(f, "Cons"),
+                    Op::GetI => write!(f, "GetI"),
+                    Op::Cons => write!(f, "Cons"),
                 },
                 _ => unreachable!(),
             },

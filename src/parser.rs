@@ -333,16 +333,6 @@ impl FerryParser {
     fn unary(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         let mut expr = self.target(state)?;
 
-        // if self.matches(&[TT::Operator(Op::GetI)]) {
-        //     let op = self.previous();
-        //     let rhs = Box::new(self.start(state)?);
-        //     expr = Expr::Unary(Unary {
-        //         operator: op,
-        //         rhs,
-        //         expr_type: FerryTyping::Untyped,
-        //     });
-        // }
-
         Ok(expr)
     }
 
