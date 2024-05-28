@@ -7,6 +7,7 @@ use crate::{
         walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Loop, Unary,
         Variable,
     },
+    token::{Op, TokenType},
     types::{FerryType, FerryTyping, TypeCheckable, Typing},
 };
 
@@ -170,12 +171,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         let right = self.check_types(&mut binary.rhs, state)?;
 
         match binary.operator.get_token_type() {
-            crate::token::TokenType::Operator(o) => match o {
-                crate::token::Op::Add
-                | crate::token::Op::Subtract
-                | crate::token::Op::Multiply
-                | crate::token::Op::Divide
-                | crate::token::Op::Equals => {
+            TokenType::Operator(o) => match o {
+                Op::Add | Op::Subtract | Op::Multiply | Op::Divide | Op::Equals => {
                     if left.check(right.get_type()) {
                         let expr_type = FerryTyping::Inferred(left.get_type().clone());
                         Ok(Expr::Binary(Binary {
@@ -193,11 +190,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
-                crate::token::Op::LessThan
-                | crate::token::Op::GreaterThan
-                | crate::token::Op::Equality
-                | crate::token::Op::LessEqual
-                | crate::token::Op::GreaterEqual => {
+                Op::LessThan
+                | Op::GreaterThan
+                | Op::Equality
+                | Op::LessEqual
+                | Op::GreaterEqual => {
                     if left.check(right.get_type()) {
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
@@ -214,7 +211,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
-                crate::token::Op::GetI => {
+                Op::GetI => {
                     if left.check(&FerryType::List) {
                         if right.check(&FerryType::Num) {
                             Ok(Expr::Binary(Binary {
@@ -240,7 +237,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
-                crate::token::Op::Cons => {
+                Op::Cons => {
                     if left.check(&FerryType::List) {
                         if right.check(&FerryType::List) {
                             Ok(Expr::Binary(Binary {

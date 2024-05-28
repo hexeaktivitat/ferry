@@ -3,7 +3,10 @@ use thiserror::Error;
 
 use crate::{
     state::{FerryState, FerryValue},
-    syntax::{walk_expr, Binary, Expr, ExprVisitor, Group, Lit as SLit, Variable},
+    syntax::{
+        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit as SLit, Loop, Unary,
+        Variable,
+    },
     token::{Op, TokenType as TT},
 };
 
@@ -258,7 +261,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_assign(
         &mut self,
-        assign: &mut crate::syntax::Assign,
+        assign: &mut Assign,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         if let Some(v) = &mut assign.value {
@@ -272,7 +275,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_if_expr(
         &mut self,
-        if_expr: &mut crate::syntax::If,
+        if_expr: &mut If,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         if let Some(conditional) = self.evaluate(&mut if_expr.condition, state)? {
@@ -299,7 +302,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_binding(
         &mut self,
-        binding: &mut crate::syntax::Binding,
+        binding: &mut Binding,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         if let Some(v) = &mut binding.value {
@@ -313,7 +316,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_loop(
         &mut self,
-        loop_expr: &mut crate::syntax::Loop,
+        loop_expr: &mut Loop,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         if let Some(cond) = &mut loop_expr.condition {
@@ -345,7 +348,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_unary(
         &mut self,
-        unary: &mut crate::syntax::Unary,
+        unary: &mut Unary,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         let _right = self.evaluate(&mut unary.rhs, state)?;
