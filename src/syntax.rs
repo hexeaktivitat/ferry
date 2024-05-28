@@ -216,15 +216,15 @@ impl std::fmt::Display for Expr {
                     span: _,
                 } => {
                     let mut formatting = String::new();
-                    formatting.push_str("[");
+                    formatting.push('[');
                     let mut items = contents.iter().peekable();
                     while let Some(item) = items.next() {
                         formatting.push_str(format!("{item}").as_str());
-                        if !items.peek().is_none() {
+                        if items.peek().is_some() {
                             formatting.push_str(", ");
                         }
                     }
-                    formatting.push_str("]");
+                    formatting.push(']');
                     write!(f, "{expr_type}: {formatting}")
                 }
             },

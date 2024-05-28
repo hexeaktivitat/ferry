@@ -230,7 +230,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 },
                 Op::Cons => match (left, right) {
                     (Some(FerryValue::List(a)), Some(FerryValue::List(b))) => {
-                        let value = vec![a, b].concat();
+                        let value = [a, b].concat();
                         Ok(Some(FerryValue::List(value)))
                     }
 
@@ -351,12 +351,10 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         let _right = self.evaluate(&mut unary.rhs, state)?;
 
         match unary.operator.get_token_type() {
-            TT::Operator(o) => match o {
-                _ => Err(FerryInterpreterError::InvalidOperation {
-                    help: "Invalid unary operator".into(),
-                    span: *unary.operator.get_span(),
-                }),
-            },
+            TT::Operator(o) => Err(FerryInterpreterError::InvalidOperation {
+                help: "Invalid unary operator".into(),
+                span: *unary.operator.get_span(),
+            }),
             _ => Err(FerryInterpreterError::InvalidOperation {
                 help: "Invalid unary operator".into(),
                 span: *unary.operator.get_span(),

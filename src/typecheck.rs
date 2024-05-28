@@ -273,7 +273,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             },
             _ => Err(FerryTypeError::A {
                 advice: "aaa".into(),
-                span: binary.operator.get_span().clone(),
+                span: *binary.operator.get_span(),
             }),
         }
     }

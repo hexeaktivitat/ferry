@@ -331,7 +331,7 @@ impl FerryParser {
     }
 
     fn unary(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let mut expr = self.target(state)?;
+        let expr = self.target(state)?;
 
         Ok(expr)
     }
@@ -373,7 +373,7 @@ impl FerryParser {
                         expr_type: FerryTyping::Untyped,
                     }));
                     let operator =
-                        FerryToken::new(TT::Operator(Op::GetI), self.peek().get_span().clone());
+                        FerryToken::new(TT::Operator(Op::GetI), *self.peek().get_span());
                     self.consume(&TT::Control(Ctrl::LeftBracket), "expected '[' for index ")?;
                     let rhs = Box::new(self.start(state)?);
                     self.consume(&TT::Control(Ctrl::RightBracket), "expected ']' after '['")?;

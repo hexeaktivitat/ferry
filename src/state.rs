@@ -34,7 +34,7 @@ impl FerryState {
 
     fn update_symbol(&mut self, id: &String, value: Option<FerryValue>) {
         if self.symbols.contains_key(id) {
-            *self.symbols.get_mut(id).unwrap() = value.clone();
+            self.symbols.get_mut(id).unwrap().clone_from(&value);
         }
     }
 
@@ -88,15 +88,15 @@ impl std::fmt::Display for FerryValue {
             FerryValue::Unit => write!(f, "[unit]"),
             FerryValue::List(l) => {
                 let mut formatting = String::new();
-                formatting.push_str("[");
+                formatting.push('[');
                 let mut items = l.iter().peekable();
                 while let Some(item) = items.next() {
                     formatting.push_str(format!("{item}").as_str());
-                    if !items.peek().is_none() {
+                    if items.peek().is_some() {
                         formatting.push_str(", ");
                     }
                 }
-                formatting.push_str("]");
+                formatting.push(']');
                 write!(f, "{formatting}")
             }
         }
