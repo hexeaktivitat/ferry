@@ -2,7 +2,7 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::state::FerryState;
-use crate::syntax::{Assign, Binary, Binding, Expr, Group, If, Lit as SLit, Loop, Variable};
+use crate::syntax::{Assign, Binary, Binding, Expr, For, Group, If, Lit as SLit, Loop, Variable};
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
 use crate::types::FerryTyping;
@@ -74,6 +74,8 @@ impl FerryParser {
             self.do_loop(state)?
         } else if self.matches(&[TT::Keyword(Kwd::While)]) {
             self.while_loop(state)?
+        } else if self.matches(&[TT::Keyword(Kwd::For)]) {
+            self.for_loop(state)?
         } else {
             self.s_expression(state)?
         };
@@ -141,6 +143,8 @@ impl FerryParser {
                 None
             };
 
+            state.add_symbol(name, None);
+
             Ok(Expr::Binding(Binding {
                 token,
                 name: name.clone(),
@@ -183,6 +187,26 @@ impl FerryParser {
         Ok(Expr::Loop(Loop {
             token,
             condition,
+            contents,
+            expr_type: FerryTyping::Untyped,
+        }))
+    }
+
+    fn for_loop(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let token = self.previous();
+        let variable = Some(Box::new(self.start(state)?)); //explicitly expect variable decl
+        self.consume(&TT::Keyword(Kwd::In), "expected 'in' after 'for'")?;
+        let iterator = Box::new(self.start(state)?);
+        self.consume(
+            &TT::Control(Ctrl::Colon),
+            "expected ':' after 'for' iteration",
+        )?;
+        let contents = Box::new(self.start(state)?);
+
+        Ok(Expr::For(For {
+            token,
+            variable,
+            iterator,
             contents,
             expr_type: FerryTyping::Untyped,
         }))
@@ -363,7 +387,23 @@ impl FerryParser {
                     token: self.previous().clone(),
                     expr_type: FerryTyping::Undefined,
                 }),
-                // _ => unreachable!(),
+                TLit::Range(start, end) => {
+                    let mut contents = Vec::new();
+                    for i in *start..=*end {
+                        contents.push(Expr::Literal(SLit::Number {
+                            token: self.previous().clone(),
+                            value: i as f64,
+                            expr_type: FerryTyping::Untyped,
+                            span: *self.previous().get_span(),
+                        }));
+                    }
+                    Expr::Literal(SLit::List {
+                        token: self.previous().clone(),
+                        contents,
+                        expr_type: FerryTyping::Untyped,
+                        span: *self.previous().get_span(),
+                    })
+                } // _ => unreachable!(),
             }),
             TT::Identifier(id) => {
                 if self.peek().get_token_type() == &TT::Control(Ctrl::LeftBracket) {
@@ -372,8 +412,7 @@ impl FerryParser {
                         name: id.clone(),
                         expr_type: FerryTyping::Untyped,
                     }));
-                    let operator =
-                        FerryToken::new(TT::Operator(Op::GetI), *self.peek().get_span());
+                    let operator = FerryToken::new(TT::Operator(Op::GetI), *self.peek().get_span());
                     self.consume(&TT::Control(Ctrl::LeftBracket), "expected '[' for index ")?;
                     let rhs = Box::new(self.start(state)?);
                     self.consume(&TT::Control(Ctrl::RightBracket), "expected ']' after '['")?;
@@ -401,13 +440,10 @@ impl FerryParser {
                 }))
             }
             TT::Control(Ctrl::LeftBracket) => self.list(state),
-            _ => {
-                println!("oops");
-                Err(FerryParseError::UnexpectedToken {
-                    msg: format!("Unexpected token: {}", self.previous().get_token_type()),
-                    span: *self.previous().get_span(),
-                })
-            }
+            _ => Err(FerryParseError::UnexpectedToken {
+                msg: format!("Unexpected token: {}", self.previous().get_token_type()),
+                span: *self.previous().get_span(),
+            }),
         }
     }
 

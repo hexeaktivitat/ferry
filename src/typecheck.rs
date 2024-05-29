@@ -4,7 +4,7 @@ use thiserror::Error;
 use crate::{
     state::FerryState,
     syntax::{
-        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Loop, Unary,
+        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, For, Group, If, Lit, Loop, Unary,
         Variable,
     },
     token::{Op, TokenType},
@@ -264,12 +264,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     }
                 }
                 _ => Err(FerryTypeError::A {
-                    advice: "aaa".into(),
+                    advice: "aaa 1".into(),
                     span: *binary.operator.get_span(),
                 }),
             },
             _ => Err(FerryTypeError::A {
-                advice: "aaa".into(),
+                advice: "aaa 2".into(),
                 span: *binary.operator.get_span(),
             }),
         }
@@ -299,6 +299,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     span: *variable.token.get_span(),
                 })
             }
+        } else if state.get_symbol_value(&variable.name) == None {
+            Ok(Expr::Variable(variable.clone()))
         } else {
             Err(FerryTypeError::UnknownType {
                 advice: "variable of unknown type".into(),
@@ -381,6 +383,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             if let Ok(value_check) = self.check_types(value, state) {
                 if let Some(assigned_type) = &binding.assigned_type {
                     if assigned_type.check(value_check.get_type()) {
+                        state.add_symbol(&binding.name, None);
                         return Ok(Expr::Binding(Binding {
                             token: binding.token.clone(),
                             name: binding.name.clone(),
@@ -390,7 +393,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         }));
                     } else {
                         return Err(FerryTypeError::A {
-                            advice: "aaa".into(),
+                            advice: "aaa 3".into(),
                             span: *binding.token.get_span(),
                         });
                     }
@@ -415,7 +418,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         }
 
         Err(FerryTypeError::A {
-            advice: "aaa".into(),
+            advice: "aaa 4".into(),
             span: *binding.token.get_span(),
         })
     }
@@ -470,6 +473,47 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 lhs_span: *unary.operator.get_span(),
                 rhs_span: *right.get_token().get_span(),
             })
+        }
+    }
+
+    fn visit_for(&mut self, for_expr: &mut For, state: &mut FerryState) -> FerryResult<Expr> {
+        let iterator = self.check_types(&mut for_expr.iterator, state)?;
+        if let Some(variable) = &mut for_expr.variable {
+            let variable_checked = self.check_types(variable, state)?;
+            let contents = self.check_types(&mut for_expr.contents, state)?;
+            if iterator.get_type() == &FerryType::List {
+                let inf_type = contents.get_type().clone();
+                Ok(Expr::For(For {
+                    token: for_expr.token.clone(),
+                    // variable: Some(Box::new(variable_checked)),
+                    variable: Some(Box::new(variable_checked)),
+                    iterator: Box::new(iterator),
+                    contents: Box::new(contents),
+                    expr_type: FerryTyping::Inferred(inf_type),
+                }))
+            } else {
+                Err(FerryTypeError::MistypedVariable {
+                    advice: "Expected List, found".into(),
+                    span: *for_expr.token.get_span(),
+                })
+            }
+        } else {
+            let contents = self.check_types(&mut for_expr.contents, state)?;
+            if iterator.get_type() == &FerryType::List {
+                let inf_type = contents.get_type().clone();
+                Ok(Expr::For(For {
+                    token: for_expr.token.clone(),
+                    variable: None,
+                    iterator: Box::new(iterator),
+                    contents: Box::new(contents),
+                    expr_type: FerryTyping::Inferred(inf_type),
+                }))
+            } else {
+                Err(FerryTypeError::MistypedVariable {
+                    advice: "Expected List, found".into(),
+                    span: *for_expr.token.get_span(),
+                })
+            }
         }
     }
 }

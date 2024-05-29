@@ -242,6 +242,14 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
     ) -> FerryResult<Instruction> {
         todo!()
     }
+
+    fn visit_for(
+        &mut self,
+        for_expr: &mut crate::syntax::For,
+        state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        todo!()
+    }
 }
 
 /// `Instruction`
