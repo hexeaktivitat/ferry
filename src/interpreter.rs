@@ -12,13 +12,6 @@ use crate::{
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryInterpreterError {
-    #[error("Help?")]
-    Temp {
-        #[help]
-        help: String,
-        #[label]
-        span: SourceSpan,
-    },
     #[error("Invalid operation")]
     InvalidOperation {
         #[help]
