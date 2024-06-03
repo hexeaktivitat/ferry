@@ -4,8 +4,8 @@ use thiserror::Error;
 use crate::{
     state::{FerryState, FerryValue},
     syntax::{
-        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, For, Group, If, Lit as SLit, Loop,
-        Unary, Variable,
+        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, For, Function, Group, If,
+        Lit as SLit, Loop, Unary, Variable,
     },
     token::{Op, TokenType as TT},
 };
@@ -392,6 +392,17 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 span: *for_expr.token.get_span(),
             })
         }
+    }
+
+    fn visit_function(
+        &mut self,
+        function: &mut Function,
+        state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
+        Err(FerryInterpreterError::Unimplemented {
+            help: "unimplemented <Function>".into(),
+            span: *function.token.get_span(),
+        })
     }
 }
 

@@ -4,8 +4,8 @@ use thiserror::Error;
 use crate::{
     state::FerryState,
     syntax::{
-        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, For, Group, If, Lit, Loop, Unary,
-        Variable,
+        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, For, Function, Group, If, Lit, Loop,
+        Unary, Variable,
     },
     token::{Op, TokenType},
     types::{FerryType, FerryTyping, TypeCheckable, Typing},
@@ -15,7 +15,7 @@ use crate::{
 #[error("Type errors")]
 pub enum FerryTypeError {
     #[error("asdf")]
-    A {
+    UnimplementedFeature {
         #[help]
         advice: String,
         #[label]
@@ -263,12 +263,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
-                _ => Err(FerryTypeError::A {
+                _ => Err(FerryTypeError::UnimplementedFeature {
                     advice: "aaa 1".into(),
                     span: *binary.operator.get_span(),
                 }),
             },
-            _ => Err(FerryTypeError::A {
+            _ => Err(FerryTypeError::UnimplementedFeature {
                 advice: "aaa 2".into(),
                 span: *binary.operator.get_span(),
             }),
@@ -291,6 +291,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 Ok(Expr::Variable(Variable {
                     token: variable.token.clone(),
                     name: variable.name.clone(),
+                    assigned_type: variable.assigned_type.clone(),
                     expr_type: FerryTyping::Inferred(derived_type.get_type().clone()),
                 }))
             } else {
@@ -322,7 +323,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 }));
             }
         }
-        Err(FerryTypeError::A {
+        Err(FerryTypeError::UnimplementedFeature {
             advice: "???".into(),
             span: *assign.token.get_span(),
         })
@@ -392,7 +393,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                             expr_type: FerryTyping::Untyped,
                         }));
                     } else {
-                        return Err(FerryTypeError::A {
+                        return Err(FerryTypeError::UnimplementedFeature {
                             advice: "aaa 3".into(),
                             span: *binding.token.get_span(),
                         });
@@ -417,7 +418,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             }));
         }
 
-        Err(FerryTypeError::A {
+        Err(FerryTypeError::UnimplementedFeature {
             advice: "aaa 4".into(),
             span: *binding.token.get_span(),
         })
@@ -515,5 +516,37 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 })
             }
         }
+    }
+
+    fn visit_function(
+        &mut self,
+        function: &mut Function,
+        state: &mut FerryState,
+    ) -> FerryResult<Expr> {
+        let return_type = if let Some(ret) = &mut function.return_type {
+            Some(Box::new(self.check_types(ret, state)?))
+        } else {
+            None
+        };
+        let args = if let Some(arguments) = &mut function.args {
+            let mut rets = Vec::new();
+            for a in arguments {
+                rets.push(self.check_types(a, state)?);
+            }
+            Some(rets)
+        } else {
+            None
+        };
+
+        let checked_contents = Box::new(self.check_types(&mut function.contents, state)?);
+
+        Ok(Expr::Function(Function {
+            token: function.token.clone(),
+            name: function.name.clone(),
+            args,
+            contents: checked_contents,
+            return_type,
+            expr_type: FerryTyping::Undefined,
+        }))
     }
 }
