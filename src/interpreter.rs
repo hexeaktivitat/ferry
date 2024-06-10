@@ -392,10 +392,15 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         function: &mut Function,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
-        Err(FerryInterpreterError::Unimplemented {
-            help: "unimplemented <Function>".into(),
-            span: *function.token.get_span(),
-        })
+        let name = function.name.clone();
+        state.add_symbol(
+            &name,
+            Some(FerryValue::Function {
+                declaration: function.clone(),
+            }),
+        );
+
+        Ok(None)
     }
 }
 
@@ -407,6 +412,7 @@ impl FerryValue {
             FerryValue::Boolean(b) => *b,
             FerryValue::Unit => false,
             FerryValue::List(l) => !l.is_empty(),
+            FerryValue::Function { declaration } => false,
         }
     }
 }
