@@ -404,6 +404,18 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
     }
 
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<FerryValue> {
+        if let Some(FerryValue::Function {
+            declaration: function,
+        }) = state.get_symbol_value(&call.name)
+        {
+            if !call.args.is_empty() {
+                let mut interpreted_args = Vec::new();
+                for arg in &mut call.args {
+                    interpreted_args.push(self.evaluate(arg, state)?.unwrap_or(FerryValue::Unit));
+                }
+            }
+        }
+
         Err(FerryInterpreterError::Unimplemented {
             help: "didnt do this".into(),
             span: *call.token.get_span(),
