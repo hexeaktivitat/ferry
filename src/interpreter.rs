@@ -418,14 +418,18 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                         }
                     }
                     return self.evaluate(&mut function.contents, &mut param_state);
+                } else {
+                    return self.evaluate(&mut function.contents, &mut FerryState::new());
                 }
+            } else {
+                return self.evaluate(&mut function.contents, &mut FerryState::new());
             }
+        } else {
+            Err(FerryInterpreterError::InvalidOperation {
+                help: "function does not exist".into(),
+                span: *call.token.get_span(),
+            })
         }
-
-        Err(FerryInterpreterError::Unimplemented {
-            help: "didnt do this".into(),
-            span: *call.token.get_span(),
-        })
     }
 }
 

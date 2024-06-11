@@ -590,6 +590,14 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         expr_type: declaration.expr_type.clone(),
                     }));
                 }
+            } else {
+                return Ok(Expr::Call(Call {
+                    invoker: call.invoker.clone(),
+                    name: call.name.clone(),
+                    token: call.token.clone(),
+                    args: call.args.clone(),
+                    expr_type: declaration.expr_type.clone(),
+                }));
             }
         } else {
             return Err(FerryTypeError::UnknownType {
@@ -597,9 +605,5 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 span: *call.token.get_span(),
             });
         }
-        Err(FerryTypeError::UnimplementedFeature {
-            advice: "lol".into(),
-            span: *call.token.get_span(),
-        })
     }
 }
