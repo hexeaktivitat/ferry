@@ -275,6 +275,11 @@ impl FerryParser {
         } else {
             None
         };
+
+        self.consume(
+            &TT::Control(Ctrl::Colon),
+            "expected ':' after function header",
+        )?;
         let contents = Box::new(self.start(state)?);
 
         Ok(Expr::Function(Function {
