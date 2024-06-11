@@ -31,6 +31,7 @@ pub enum TokenType {
     Control(Ctrl),
     Keyword(Kwd),
     Identifier(String),
+    Comment(String),
     End,
 }
 
@@ -131,6 +132,7 @@ impl std::fmt::Display for TokenType {
             },
             TokenType::Identifier(i) => write!(f, "Identifier {i}"),
             TokenType::End => write!(f, "END"),
+            TokenType::Comment(c) => write!(f, "Comment: {c}"),
         }
     }
 }
