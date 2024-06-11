@@ -4,7 +4,7 @@ use thiserror::Error;
 use crate::{
     state::{FerryState, FerryValue},
     syntax::{
-        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, For, Function, Group, If,
+        walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
         Lit as SLit, Loop, Unary, Variable,
     },
     token::{Op, TokenType as TT},
@@ -401,6 +401,13 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         );
 
         Ok(None)
+    }
+
+    fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<FerryValue> {
+        Err(FerryInterpreterError::Unimplemented {
+            help: "didnt do this".into(),
+            span: *call.token.get_span(),
+        })
     }
 }
 

@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::state::FerryState;
 use crate::syntax::{
-    Assign, Binary, Binding, Expr, For, Function, Group, If, Lit as SLit, Loop, Variable,
+    Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Lit as SLit, Loop, Variable,
 };
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
@@ -430,7 +430,21 @@ impl FerryParser {
     }
 
     fn unary(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let expr = self.target(state)?;
+        let expr = self.call(state)?;
+
+        Ok(expr)
+    }
+
+    fn call(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut expr = self.target(state)?;
+
+        loop {
+            if self.matches(&[TT::Control(Ctrl::LeftParen)]) {
+                expr = self.call_function(expr, state)?;
+            } else {
+                break;
+            }
+        }
 
         Ok(expr)
     }
@@ -610,6 +624,30 @@ impl FerryParser {
             contents,
             expr_type: FerryTyping::Untyped,
             span: *self.previous().get_span(),
+        }))
+    }
+
+    fn call_function(&mut self, expr: Expr, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut args = Vec::new();
+        let name = expr.get_token().get_id().unwrap_or("".into());
+
+        if !self.check(&TT::Control(Ctrl::RightParen)) {
+            loop {
+                args.push(self.assignment(state)?);
+                if !self.matches(&[TT::Control(Ctrl::Comma)]) {
+                    break;
+                }
+            }
+        }
+
+        let token = self.consume(&TT::Control(Ctrl::RightParen), "expected ')' after '('")?;
+
+        Ok(Expr::Call(Call {
+            invoker: Box::new(expr),
+            name,
+            token,
+            args,
+            expr_type: FerryTyping::Untyped,
         }))
     }
 }

@@ -549,4 +549,15 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             expr_type: FerryTyping::Undefined,
         }))
     }
+
+    fn visit_call(
+        &mut self,
+        call: &mut crate::syntax::Call,
+        state: &mut FerryState,
+    ) -> FerryResult<Expr> {
+        Err(FerryTypeError::UnimplementedFeature {
+            advice: "lol".into(),
+            span: *call.token.get_span(),
+        })
+    }
 }

@@ -16,6 +16,7 @@ pub enum Expr {
     Loop(Loop),
     For(For),
     Function(Function),
+    Call(Call),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -134,6 +135,15 @@ pub struct Function {
     pub expr_type: FerryTyping,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Call {
+    pub invoker: Box<Expr>,
+    pub name: String,
+    pub token: FerryToken,
+    pub args: Vec<Expr>,
+    pub expr_type: FerryTyping,
+}
+
 pub trait ExprVisitor<T, S> {
     fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
     fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
@@ -146,6 +156,7 @@ pub trait ExprVisitor<T, S> {
     fn visit_loop(&mut self, loop_expr: &mut Loop, state: S) -> T;
     fn visit_for(&mut self, for_expr: &mut For, state: S) -> T;
     fn visit_function(&mut self, function: &mut Function, state: S) -> T;
+    fn visit_call(&mut self, call: &mut Call, state: S) -> T;
 }
 
 pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, state: S) -> T {
@@ -161,6 +172,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::Unary(unary) => visitor.visit_unary(unary, state),
         Expr::For(for_expr) => visitor.visit_for(for_expr, state),
         Expr::Function(function) => visitor.visit_function(function, state),
+        Expr::Call(call) => visitor.visit_call(call, state),
     }
 }
 
@@ -207,6 +219,7 @@ impl Expr {
             Expr::Unary(u) => &u.operator,
             Expr::For(f) => &f.token,
             Expr::Function(f) => &f.token,
+            Expr::Call(c) => &c.token,
         }
     }
 }
@@ -351,6 +364,7 @@ impl std::fmt::Display for Expr {
                     write!(f, "{}() returns {}", func.name, func.expr_type)
                 }
             }
+            Expr::Call(c) => write!(f, "{}({:?})", c.name, c.args),
         }
     }
 }

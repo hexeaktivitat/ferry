@@ -4,8 +4,7 @@ use thiserror::Error;
 use crate::{
     state::FerryState,
     syntax::{
-        walk_expr, Binary, Binding, Expr, ExprVisitor, Function, Group, If, Lit, Loop, Unary,
-        Variable,
+        walk_expr, Binary, Binding, Call, Expr, ExprVisitor, Function, Group, If, Lit, Loop, Unary, Variable
     },
 };
 
@@ -298,6 +297,14 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
             advice: "unimplemented feature".into(),
             span: *function.token.get_span(),
         })
+    }
+
+    fn visit_call(
+        &mut self,
+        call: &mut Call,
+        state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        Err(FerryAsmError::Unimplemented { advice: "unimplemented feature".into(), span: *call.token.get_span() })
     }
 }
 
