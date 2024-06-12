@@ -4,21 +4,14 @@ use thiserror::Error;
 use crate::{
     state::{FerryState, FerryValue},
     syntax::{
-        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit as SLit, Loop, Unary,
-        Variable,
+        walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
+        Lit as SLit, Loop, Unary, Variable,
     },
     token::{Op, TokenType as TT},
 };
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryInterpreterError {
-    #[error("Help?")]
-    Temp {
-        #[help]
-        help: String,
-        #[label]
-        span: SourceSpan,
-    },
     #[error("Invalid operation")]
     InvalidOperation {
         #[help]
@@ -354,14 +347,88 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         let _right = self.evaluate(&mut unary.rhs, state)?;
 
         match unary.operator.get_token_type() {
-            TT::Operator(o) => Err(FerryInterpreterError::InvalidOperation {
-                help: "Invalid unary operator".into(),
-                span: *unary.operator.get_span(),
-            }),
             _ => Err(FerryInterpreterError::InvalidOperation {
                 help: "Invalid unary operator".into(),
                 span: *unary.operator.get_span(),
             }),
+        }
+    }
+
+    fn visit_for(&mut self, for_expr: &mut For, state: &mut FerryState) -> FerryResult<FerryValue> {
+        if let Some(variable) = &mut for_expr.variable {
+            let name = variable.get_token().get_id().unwrap_or("error".into());
+            let var = self.evaluate(variable, state)?;
+            let iterator = self.evaluate(&mut for_expr.iterator, state)?;
+            if let Some(value) = iterator {
+                match value {
+                    FerryValue::List(list) => {
+                        for l in list {
+                            state.add_symbol(&name, Some(l));
+                            self.evaluate(&mut for_expr.contents, state)?;
+                        }
+                        Ok(None)
+                    }
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Expected iterator to be a List".into(),
+                        span: *for_expr.token.get_span(),
+                    }),
+                }
+            } else {
+                Err(FerryInterpreterError::InvalidOperation {
+                    help: "Expected iterator to be a List".into(),
+                    span: *for_expr.token.get_span(),
+                })
+            }
+        } else {
+            Err(FerryInterpreterError::Unimplemented {
+                help: "didnt do this".into(),
+                span: *for_expr.token.get_span(),
+            })
+        }
+    }
+
+    fn visit_function(
+        &mut self,
+        function: &mut Function,
+        state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
+        let name = function.name.clone();
+        state.add_symbol(
+            &name,
+            Some(FerryValue::Function {
+                declaration: function.clone(),
+            }),
+        );
+
+        Ok(None)
+    }
+
+    fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<FerryValue> {
+        if let Some(FerryValue::Function {
+            declaration: function,
+        }) = &mut state.get_symbol_value(&call.name)
+        {
+            if let Some(params) = &mut function.args {
+                if !call.args.is_empty() {
+                    let mut param_state = FerryState::new();
+                    for (arg, param_var) in call.args.iter_mut().zip(params.iter_mut()) {
+                        if let Expr::Variable(var) = param_var {
+                            let arg_val = self.evaluate(arg, state)?;
+                            param_state.add_symbol(&var.name, arg_val);
+                        }
+                    }
+                    return self.evaluate(&mut function.contents, &mut param_state);
+                } else {
+                    return self.evaluate(&mut function.contents, &mut FerryState::new());
+                }
+            } else {
+                return self.evaluate(&mut function.contents, &mut FerryState::new());
+            }
+        } else {
+            Err(FerryInterpreterError::InvalidOperation {
+                help: "function does not exist".into(),
+                span: *call.token.get_span(),
+            })
         }
     }
 }
@@ -374,6 +441,7 @@ impl FerryValue {
             FerryValue::Boolean(b) => *b,
             FerryValue::Unit => false,
             FerryValue::List(l) => !l.is_empty(),
+            FerryValue::Function { declaration } => false,
         }
     }
 }

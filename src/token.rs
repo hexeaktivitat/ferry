@@ -1,3 +1,4 @@
+use clap::Id;
 use miette::SourceSpan;
 
 /// `Token`
@@ -21,6 +22,14 @@ impl FerryToken {
     pub fn get_span(&self) -> &SourceSpan {
         &self.span
     }
+
+    pub fn get_id(&self) -> Option<String> {
+        if let TokenType::Identifier(id) = &self.token_type {
+            Some(id.clone())
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -40,6 +49,7 @@ pub enum Val {
     Num(f64),
     String(String),
     Boolean(bool),
+    Range(i64, i64),
     None,
 }
 
@@ -69,6 +79,7 @@ pub enum Ctrl {
     LeftBracket,
     RightBracket,
     Comma,
+    RightArrow,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -80,6 +91,10 @@ pub enum Kwd {
     Do,
     While,
     For,
+    In,
+    Def,
+    Fn,
+    Return,
 }
 
 impl std::fmt::Display for FerryToken {
@@ -96,6 +111,7 @@ impl std::fmt::Display for TokenType {
                 Val::String(s) => write!(f, "Value<String> {s}"),
                 Val::Boolean(b) => write!(f, "Value<Boolean> {b}"),
                 Val::None => write!(f, "Value<None>"),
+                Val::Range(s, e) => write!(f, "Value<Range> {s}..{e}"),
             },
             TokenType::Operator(o) => match o {
                 Op::Add => write!(f, "Operator<Add>"),
@@ -120,6 +136,7 @@ impl std::fmt::Display for TokenType {
                 Ctrl::LeftBracket => write!(f, "Control<LeftBracket>"),
                 Ctrl::RightBracket => write!(f, "Control<RightBracket>"),
                 Ctrl::Comma => write!(f, "Control<Comma>"),
+                Ctrl::RightArrow => write!(f, "Control<RightArrow>"),
             },
             TokenType::Keyword(k) => match k {
                 Kwd::If => write!(f, "Keyword<If>"),
@@ -129,6 +146,10 @@ impl std::fmt::Display for TokenType {
                 Kwd::Do => write!(f, "Keyword<Do>"),
                 Kwd::While => write!(f, "Keyword<While>"),
                 Kwd::For => write!(f, "Keyword<For>"),
+                Kwd::In => write!(f, "Keyword<In>"),
+                Kwd::Def => write!(f, "Keyword<Def>"),
+                Kwd::Fn => write!(f, "Keyword<Fn>"),
+                Kwd::Return => write!(f, "Keyword<Return>"),
             },
             TokenType::Identifier(i) => write!(f, "Identifier {i}"),
             TokenType::End => write!(f, "END"),

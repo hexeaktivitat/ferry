@@ -90,6 +90,9 @@ impl Typing for Expr {
             Expr::Binding(b) => b.expr_type.get_type(),
             Expr::Loop(l) => l.expr_type.get_type(),
             Expr::Unary(u) => u.expr_type.get_type(),
+            Expr::For(f) => f.expr_type.get_type(),
+            Expr::Function(f) => f.expr_type.get_type(),
+            Expr::Call(c) => c.expr_type.get_type(),
         }
     }
 }

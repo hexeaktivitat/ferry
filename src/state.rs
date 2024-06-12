@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use crate::types::{FerryType, TypeCheckable, Typing};
+use crate::{
+    syntax::Function,
+    types::{FerryType, TypeCheckable, Typing},
+};
 
 // placeholder for program state
 #[derive(Debug, Clone, PartialEq)]
@@ -14,6 +17,7 @@ pub enum FerryValue {
     Str(String),
     Boolean(bool),
     List(Vec<FerryValue>),
+    Function { declaration: Function },
     Unit,
 }
 
@@ -69,6 +73,7 @@ impl Typing for FerryValue {
             FerryValue::Boolean(_) => &FerryType::Boolean,
             FerryValue::Unit => &FerryType::Undefined,
             FerryValue::List(_) => &FerryType::List,
+            FerryValue::Function { declaration } => declaration.contents.get_type(),
         }
     }
 }
@@ -99,6 +104,7 @@ impl std::fmt::Display for FerryValue {
                 formatting.push(']');
                 write!(f, "{formatting}")
             }
+            FerryValue::Function { declaration } => write!(f, "function placeholder"),
         }
     }
 }

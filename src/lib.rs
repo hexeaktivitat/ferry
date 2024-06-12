@@ -1,10 +1,10 @@
-use miette::{Diagnostic, Result};
+use miette::{Diagnostic, IntoDiagnostic, Result};
 use thiserror::Error;
 
 use interpreter::{FerryInterpreter, FerryInterpreterError};
 use lexer::{FerryLexError, FerryLexer};
 use parser::{FerryParseError, FerryParser};
-use riscv::{FerryRiscVAssembler, Instruction};
+use riscv::{FerryAsmError, FerryRiscVAssembler, Instruction};
 use state::{FerryState, FerryValue};
 use syntax::Expr;
 use token::FerryToken;
@@ -129,10 +129,21 @@ impl<'source> Ferry {
                 println!("\nRISC-V ASM");
                 println!("==========\n");
 
+                self.riscv_asm = Vec::new();
+
                 let mut assembler = FerryRiscVAssembler::new();
-                self.riscv_asm = assembler
+                match assembler
                     .assemble(self.typed_ast.clone(), &mut self.state)
-                    .unwrap();
+                    .map_err(|err_list| FerryAsmErrors {
+                        source_code: String::from_utf8(self.source_code.as_bytes().to_vec())
+                            .unwrap(),
+                        related: err_list,
+                    })
+                    .into_diagnostic()
+                {
+                    Ok(o) => self.riscv_asm = o,
+                    Err(e) => eprintln!("{:?}", e),
+                }
 
                 for op in &self.riscv_asm {
                     println!("{}", op);
@@ -183,4 +194,14 @@ struct FerryInterpreterErrors {
     source_code: String,
     #[related]
     related: Vec<FerryInterpreterError>,
+}
+
+#[derive(Error, Debug, Diagnostic)]
+#[error("Encountered assembler errrors")]
+#[diagnostic()]
+struct FerryAsmErrors {
+    #[source_code]
+    source_code: String,
+    #[related]
+    related: Vec<FerryAsmError>,
 }

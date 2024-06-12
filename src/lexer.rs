@@ -91,11 +91,12 @@ impl<'source> FerryLexer<'source> {
             // OPERATORS
             b'+' => Ok(Some(TT::Operator(Op::Add))),
             b'-' => {
-                // if self.peek() == b'>' {
-                //     Ok(Some(TT::Operator(Op::RightArrow)))
-                // } else {
-                Ok(Some(TT::Operator(Op::Subtract)))
-                // }
+                if self.peek() == b'>' {
+                    self.advance();
+                    Ok(Some(TT::Control(Ctrl::RightArrow)))
+                } else {
+                    Ok(Some(TT::Operator(Op::Subtract)))
+                }
             }
             b'*' => Ok(Some(TT::Operator(Op::Multiply))),
             b'/' => {
@@ -111,7 +112,9 @@ impl<'source> FerryLexer<'source> {
             }
             b'=' => {
                 if self.peek() == b'=' {
+
                     self.current += 1;
+
                     Ok(Some(TT::Operator(Op::Equality)))
                 } else {
                     Ok(Some(TT::Operator(Op::Equals)))
@@ -120,6 +123,7 @@ impl<'source> FerryLexer<'source> {
             b'<' => {
                 if self.peek() == b'=' {
                     self.current += 1;
+
                     Ok(Some(TT::Operator(Op::LessEqual)))
                 } else {
                     Ok(Some(TT::Operator(Op::LessThan)))
@@ -128,6 +132,7 @@ impl<'source> FerryLexer<'source> {
             b'>' => {
                 if self.peek() == b'=' {
                     self.current += 1;
+
                     Ok(Some(TT::Operator(Op::GreaterEqual)))
                 } else {
                     Ok(Some(TT::Operator(Op::GreaterThan)))
@@ -151,6 +156,10 @@ impl<'source> FerryLexer<'source> {
                     "do" => Some(TT::Keyword(Kwd::Do)),
                     "while" => Some(TT::Keyword(Kwd::While)),
                     "for" => Some(TT::Keyword(Kwd::For)),
+                    "in" => Some(TT::Keyword(Kwd::In)),
+                    "def" => Some(TT::Keyword(Kwd::Def)),
+                    "fn" => Some(TT::Keyword(Kwd::Fn)),
+                    "return" => Some(TT::Keyword(Kwd::Return)),
 
                     // reserved boolean keywords
                     "true" => Some(TT::Value(Val::Boolean(true))),
@@ -265,6 +274,23 @@ impl<'source> FerryLexer<'source> {
             while self.peek().is_ascii_digit() {
                 self.advance();
             }
+        } else if self.peek() == b'.' && self.peek_next() == b'.' {
+            // consume the .. token
+            let start = self
+                .substring(self.start, self.current)?
+                .parse::<i64>()
+                .expect("should have been i64");
+            self.advance();
+            self.advance();
+            let end_start = self.current;
+            while self.peek().is_ascii_digit() {
+                self.advance();
+            }
+            let end = self
+                .substring(end_start, self.current)?
+                .parse::<i64>()
+                .expect("should have been i64");
+            return Ok(TokenType::Value(Val::Range(start, end)));
         }
 
         Ok(TokenType::Value(Val::Num(

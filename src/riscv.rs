@@ -1,15 +1,23 @@
-use miette::{Diagnostic, Result};
+use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::{
     state::FerryState,
     syntax::{
-        walk_expr, Binary, Binding, Expr, ExprVisitor, Group, If, Lit, Loop, Unary, Variable,
+        walk_expr, Binary, Binding, Call, Expr, ExprVisitor, Function, Group, If, Lit, Loop, Unary, Variable
     },
 };
 
 #[derive(Error, Diagnostic, Debug)]
-pub enum FerryAsmError {}
+pub enum FerryAsmError {
+    #[error("Unimplemented feature")]
+    Unimplemented {
+        #[help]
+        advice: String,
+        #[label]
+        span: SourceSpan,
+    },
+}
 
 type FerryResult<T> = Result<T, FerryAsmError>;
 type FerryAsmResult<T> = Result<Vec<T>, Vec<FerryAsmError>>;
@@ -28,18 +36,22 @@ impl FerryRiscVAssembler {
         source: Vec<Expr>,
         _state: &mut FerryState,
     ) -> FerryAsmResult<Instruction> {
-        // let mut results = Vec::new();
+        let mut errors = Vec::new();
         let mut operations = Vec::new();
 
         for code in source.clone().iter_mut() {
             match self.generate_asm(code, &mut operations) {
                 Ok(a) => operations.push(a),
 
-                Err(e) => println!("o no {}", e),
+                Err(e) => errors.push(e),
             }
         }
 
-        Ok(operations)
+        if errors.is_empty() {
+            Ok(operations)
+        } else {
+            Err(errors)
+        }
     }
 
     fn generate_asm(
@@ -97,14 +109,21 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
             }
             Lit::Undefined {
                 expr_type: _,
-                token: _,
-            } => todo!(),
+                token,
+            } => Err(FerryAsmError::Unimplemented {
+                advice: "unimplemented feature".into(),
+                span: *token.get_span(),
+            }),
+
             Lit::List {
                 token,
                 contents,
                 expr_type,
                 span,
-            } => todo!(),
+            } => Err(FerryAsmError::Unimplemented {
+                advice: "unimplemented feature".into(),
+                span: *token.get_span(),
+            }),
         }
     }
 
@@ -205,34 +224,46 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
 
     fn visit_if_expr(
         &mut self,
-        _if_expr: &mut If,
+        if_expr: &mut If,
         _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
-        todo!()
+        Err(FerryAsmError::Unimplemented {
+            advice: "unimplemented feature".into(),
+            span: *if_expr.token.get_span(),
+        })
     }
 
     fn visit_group(
         &mut self,
-        _group: &mut Group,
+        group: &mut Group,
         _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
-        todo!()
+        Err(FerryAsmError::Unimplemented {
+            advice: "unimplemented feature".into(),
+            span: *group.token.get_span(),
+        })
     }
 
     fn visit_binding(
         &mut self,
-        _binding: &mut Binding,
+        binding: &mut Binding,
         _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
-        todo!()
+        Err(FerryAsmError::Unimplemented {
+            advice: "unimplemented feature".into(),
+            span: *binding.token.get_span(),
+        })
     }
 
     fn visit_loop(
         &mut self,
-        _loop_expr: &mut Loop,
+        loop_expr: &mut Loop,
         _state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
-        todo!()
+        Err(FerryAsmError::Unimplemented {
+            advice: "unimplemented feature".into(),
+            span: *loop_expr.token.get_span(),
+        })
     }
 
     fn visit_unary(
@@ -240,7 +271,40 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
         unary: &mut Unary,
         state: &mut Vec<Instruction>,
     ) -> FerryResult<Instruction> {
-        todo!()
+        Err(FerryAsmError::Unimplemented {
+            advice: "unimplemented feature".into(),
+            span: *unary.operator.get_span(),
+        })
+    }
+
+    fn visit_for(
+        &mut self,
+        for_expr: &mut crate::syntax::For,
+        state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        Err(FerryAsmError::Unimplemented {
+            advice: "unimplemented feature".into(),
+            span: *for_expr.token.get_span(),
+        })
+    }
+
+    fn visit_function(
+        &mut self,
+        function: &mut Function,
+        state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        Err(FerryAsmError::Unimplemented {
+            advice: "unimplemented feature".into(),
+            span: *function.token.get_span(),
+        })
+    }
+
+    fn visit_call(
+        &mut self,
+        call: &mut Call,
+        state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        Err(FerryAsmError::Unimplemented { advice: "unimplemented feature".into(), span: *call.token.get_span() })
     }
 }
 
