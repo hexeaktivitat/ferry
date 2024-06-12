@@ -357,7 +357,6 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
     fn visit_for(&mut self, for_expr: &mut For, state: &mut FerryState) -> FerryResult<FerryValue> {
         if let Some(variable) = &mut for_expr.variable {
             let name = variable.get_token().get_id().unwrap_or("error".into());
-            let var = self.evaluate(variable, state)?;
             let iterator = self.evaluate(&mut for_expr.iterator, state)?;
             if let Some(value) = iterator {
                 match value {
@@ -441,7 +440,7 @@ impl FerryValue {
             FerryValue::Boolean(b) => *b,
             FerryValue::Unit => false,
             FerryValue::List(l) => !l.is_empty(),
-            FerryValue::Function { declaration } => false,
+            FerryValue::Function { declaration: _ } => false,
         }
     }
 }

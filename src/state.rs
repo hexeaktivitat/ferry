@@ -104,7 +104,7 @@ impl std::fmt::Display for FerryValue {
                 formatting.push(']');
                 write!(f, "{formatting}")
             }
-            FerryValue::Function { declaration } => write!(f, "function placeholder"),
+            FerryValue::Function { declaration: _ } => write!(f, "function placeholder"),
         }
     }
 }
