@@ -7,7 +7,7 @@ use crate::syntax::{
 };
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
-use crate::types::{FerryTyping, Typing};
+use crate::types::FerryTyping;
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryParseError {

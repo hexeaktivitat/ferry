@@ -1,4 +1,3 @@
-use clap::Id;
 use miette::SourceSpan;
 
 /// `Token`

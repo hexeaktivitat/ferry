@@ -91,8 +91,7 @@ impl<'source> FerryLexer<'source> {
             // OPERATORS
             b'+' => Ok(Some(TT::Operator(Op::Add))),
             b'-' => {
-                if self.peek() == b'>' {
-                    self.advance();
+                if self.match_next(b'>') {
                     Ok(Some(TT::Control(Ctrl::RightArrow)))
                 } else {
                     Ok(Some(TT::Operator(Op::Subtract)))
@@ -104,35 +103,28 @@ impl<'source> FerryLexer<'source> {
                     while self.peek() != b'\n' && !self.end_of_code() {
                         self.current += 1;
                     }
-                    let comment = self.substring(self.start + 2, self.current - 1)?;
+                    let _comment = self.substring(self.start + 2, self.current - 1)?;
                     Ok(None)
                 } else {
                     Ok(Some(TT::Operator(Op::Divide)))
                 }
             }
             b'=' => {
-                if self.peek() == b'=' {
-
-                    self.current += 1;
-
+                if self.match_next(b'=') {
                     Ok(Some(TT::Operator(Op::Equality)))
                 } else {
                     Ok(Some(TT::Operator(Op::Equals)))
                 }
             }
             b'<' => {
-                if self.peek() == b'=' {
-                    self.current += 1;
-
+                if self.match_next(b'=') {
                     Ok(Some(TT::Operator(Op::LessEqual)))
                 } else {
                     Ok(Some(TT::Operator(Op::LessThan)))
                 }
             }
             b'>' => {
-                if self.peek() == b'=' {
-                    self.current += 1;
-
+                if self.match_next(b'=') {
                     Ok(Some(TT::Operator(Op::GreaterEqual)))
                 } else {
                     Ok(Some(TT::Operator(Op::GreaterThan)))
@@ -226,10 +218,7 @@ impl<'source> FerryLexer<'source> {
     /// creates a string value from the bytestream
     fn string(&mut self) -> FerryResult<TT> {
         while self.peek() != b'"' && !self.end_of_code() {
-            // if self.peek() == b'\n' {
-            //     self.line += 1;
-            // }
-            self.advance();
+            self.current += 1;
         }
         if self.end_of_code() {
             return Err(FerryLexError::UnterminatedString {

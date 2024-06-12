@@ -270,7 +270,6 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
-
             },
             _ => Err(FerryTypeError::InvalidOperand {
                 advice: "invalid operator token".into(),
@@ -397,7 +396,6 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                             expr_type: FerryTyping::Untyped,
                         }));
                     } else {
-
                         return Err(FerryTypeError::MistypedVariable {
                             advice: "cannot assign this value to this variable".into(),
                             span: *binding.token.get_span(),
@@ -423,7 +421,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             }));
         }
 
-      Err(FerryTypeError::UnknownType {
+        Err(FerryTypeError::UnknownType {
             advice: "unknown type for variable".into(),
             span: *binding.token.get_span(),
         })
@@ -567,7 +565,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 }
                 if !call.args.is_empty() {
                     let mut checked_args = Vec::new();
-                    for (call_arg, decl_arg) in call.args.iter_mut().zip(decl_args.iter_mut()) {
+                    for (call_arg, _decl_arg) in call.args.iter_mut().zip(decl_args.iter_mut()) {
                         let checked_arg = self.check_types(call_arg, state)?;
                         // let checked_decl_arg = self.check_types(decl_arg, state)?;
                         // if checked_arg.check(checked_decl_arg.get_type()) {
