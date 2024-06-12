@@ -2,10 +2,10 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::{
-    state::FerryState,
+    state::{FerryState, FerryValue},
     syntax::{
-        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, For, Group, If, Lit, Loop, Unary,
-        Variable,
+        walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If, Lit,
+        Loop, Unary, Variable,
     },
     token::{Op, TokenType},
     types::{FerryType, FerryTyping, TypeCheckable, Typing},
@@ -15,7 +15,7 @@ use crate::{
 #[error("Type errors")]
 pub enum FerryTypeError {
     #[error("asdf")]
-    A {
+    UnimplementedFeature {
         #[help]
         advice: String,
         #[label]
@@ -270,6 +270,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
+
             },
             _ => Err(FerryTypeError::InvalidOperand {
                 advice: "invalid operator token".into(),
@@ -294,6 +295,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 Ok(Expr::Variable(Variable {
                     token: variable.token.clone(),
                     name: variable.name.clone(),
+                    assigned_type: variable.assigned_type.clone(),
                     expr_type: FerryTyping::Inferred(derived_type.get_type().clone()),
                 }))
             } else {
@@ -325,7 +327,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 }));
             }
         }
-        Err(FerryTypeError::A {
+        Err(FerryTypeError::UnimplementedFeature {
             advice: "???".into(),
             span: *assign.token.get_span(),
         })
@@ -395,6 +397,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                             expr_type: FerryTyping::Untyped,
                         }));
                     } else {
+
                         return Err(FerryTypeError::MistypedVariable {
                             advice: "cannot assign this value to this variable".into(),
                             span: *binding.token.get_span(),
@@ -420,7 +423,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             }));
         }
 
-        Err(FerryTypeError::UnknownType {
+      Err(FerryTypeError::UnknownType {
             advice: "unknown type for variable".into(),
             span: *binding.token.get_span(),
         })
@@ -517,6 +520,95 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     span: *for_expr.token.get_span(),
                 })
             }
+        }
+    }
+
+    fn visit_function(
+        &mut self,
+        function: &mut Function,
+        state: &mut FerryState,
+    ) -> FerryResult<Expr> {
+        let return_type = if let Some(ret) = &mut function.return_type {
+            Some(Box::new(self.check_types(ret, state)?))
+        } else {
+            None
+        };
+        let args = if let Some(arguments) = &mut function.args {
+            let mut rets = Vec::new();
+            for a in arguments {
+                rets.push(self.check_types(a, state)?);
+            }
+            Some(rets)
+        } else {
+            None
+        };
+
+        let checked_contents = Box::new(self.check_types(&mut function.contents, state)?);
+
+        Ok(Expr::Function(Function {
+            token: function.token.clone(),
+            name: function.name.clone(),
+            args,
+            contents: checked_contents,
+            return_type,
+            expr_type: FerryTyping::Undefined,
+        }))
+    }
+
+    fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<Expr> {
+        if let Some(FerryValue::Function { declaration }) = &mut state.get_symbol_value(&call.name)
+        {
+            if let Some(decl_args) = &mut declaration.args {
+                if call.args.len() != decl_args.len() {
+                    return Err(FerryTypeError::UnimplementedFeature {
+                        advice: "actually an arity error".into(),
+                        span: *call.token.get_span(),
+                    });
+                }
+                if !call.args.is_empty() {
+                    let mut checked_args = Vec::new();
+                    for (call_arg, decl_arg) in call.args.iter_mut().zip(decl_args.iter_mut()) {
+                        let checked_arg = self.check_types(call_arg, state)?;
+                        // let checked_decl_arg = self.check_types(decl_arg, state)?;
+                        // if checked_arg.check(checked_decl_arg.get_type()) {
+                        checked_args.push(checked_arg);
+                        // } else {
+                        //     return Err(FerryTypeError::MistypedVariable {
+                        //         advice: "types do not match".into(),
+                        //         span: *call.token.get_span(),
+                        //     });
+                        // }
+                    }
+                    return Ok(Expr::Call(Call {
+                        invoker: call.invoker.clone(),
+                        name: call.name.clone(),
+                        token: call.token.clone(),
+                        args: checked_args,
+                        expr_type: declaration.expr_type.clone(),
+                    }));
+                } else {
+                    return Ok(Expr::Call(Call {
+                        invoker: call.invoker.clone(),
+                        name: call.name.clone(),
+                        token: call.token.clone(),
+                        args: vec![],
+                        expr_type: declaration.expr_type.clone(),
+                    }));
+                }
+            } else {
+                return Ok(Expr::Call(Call {
+                    invoker: call.invoker.clone(),
+                    name: call.name.clone(),
+                    token: call.token.clone(),
+                    args: call.args.clone(),
+                    expr_type: declaration.expr_type.clone(),
+                }));
+            }
+        } else {
+            return Err(FerryTypeError::UnknownType {
+                advice: "function type unknown at compile time".into(),
+                span: *call.token.get_span(),
+            });
         }
     }
 }

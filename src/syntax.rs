@@ -15,6 +15,8 @@ pub enum Expr {
     Binding(Binding),
     Loop(Loop),
     For(For),
+    Function(Function),
+    Call(Call),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -77,6 +79,7 @@ pub struct Assign {
 pub struct Variable {
     pub token: FerryToken,
     pub name: String,
+    pub assigned_type: Option<String>,
     pub expr_type: FerryTyping,
 }
 
@@ -122,6 +125,25 @@ pub struct For {
     pub expr_type: FerryTyping,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Function {
+    pub token: FerryToken,
+    pub name: String,
+    pub args: Option<Vec<Expr>>,
+    pub contents: Box<Expr>,
+    pub return_type: Option<Box<Expr>>,
+    pub expr_type: FerryTyping,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Call {
+    pub invoker: Box<Expr>,
+    pub name: String,
+    pub token: FerryToken,
+    pub args: Vec<Expr>,
+    pub expr_type: FerryTyping,
+}
+
 pub trait ExprVisitor<T, S> {
     fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
     fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
@@ -133,6 +155,8 @@ pub trait ExprVisitor<T, S> {
     fn visit_binding(&mut self, binding: &mut Binding, state: S) -> T;
     fn visit_loop(&mut self, loop_expr: &mut Loop, state: S) -> T;
     fn visit_for(&mut self, for_expr: &mut For, state: S) -> T;
+    fn visit_function(&mut self, function: &mut Function, state: S) -> T;
+    fn visit_call(&mut self, call: &mut Call, state: S) -> T;
 }
 
 pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, state: S) -> T {
@@ -147,6 +171,8 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::Loop(loop_expr) => visitor.visit_loop(loop_expr, state),
         Expr::Unary(unary) => visitor.visit_unary(unary, state),
         Expr::For(for_expr) => visitor.visit_for(for_expr, state),
+        Expr::Function(function) => visitor.visit_function(function, state),
+        Expr::Call(call) => visitor.visit_call(call, state),
     }
 }
 
@@ -192,6 +218,8 @@ impl Expr {
             Expr::Loop(l) => &l.token,
             Expr::Unary(u) => &u.operator,
             Expr::For(f) => &f.token,
+            Expr::Function(f) => &f.token,
+            Expr::Call(c) => &c.token,
         }
     }
 }
@@ -325,6 +353,18 @@ impl std::fmt::Display for Expr {
                     write!(f, "for {:#?}: {}", f_expr.iterator, f_expr.expr_type)
                 }
             }
+            Expr::Function(func) => {
+                if func.args.is_some() {
+                    write!(
+                        f,
+                        "{}({:#?}) returns {}",
+                        func.name, func.args, func.expr_type
+                    )
+                } else {
+                    write!(f, "{}() returns {}", func.name, func.expr_type)
+                }
+            }
+            Expr::Call(c) => write!(f, "{}({:?})", c.name, c.args),
         }
     }
 }

@@ -78,6 +78,7 @@ pub enum Ctrl {
     LeftBracket,
     RightBracket,
     Comma,
+    RightArrow,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -90,6 +91,9 @@ pub enum Kwd {
     While,
     For,
     In,
+    Def,
+    Fn,
+    Return,
 }
 
 impl std::fmt::Display for FerryToken {
@@ -131,6 +135,7 @@ impl std::fmt::Display for TokenType {
                 Ctrl::LeftBracket => write!(f, "Control<LeftBracket>"),
                 Ctrl::RightBracket => write!(f, "Control<RightBracket>"),
                 Ctrl::Comma => write!(f, "Control<Comma>"),
+                Ctrl::RightArrow => write!(f, "Control<RightArrow>"),
             },
             TokenType::Keyword(k) => match k {
                 Kwd::If => write!(f, "Keyword<If>"),
@@ -141,6 +146,9 @@ impl std::fmt::Display for TokenType {
                 Kwd::While => write!(f, "Keyword<While>"),
                 Kwd::For => write!(f, "Keyword<For>"),
                 Kwd::In => write!(f, "Keyword<In>"),
+                Kwd::Def => write!(f, "Keyword<Def>"),
+                Kwd::Fn => write!(f, "Keyword<Fn>"),
+                Kwd::Return => write!(f, "Keyword<Return>"),
             },
             TokenType::Identifier(i) => write!(f, "Identifier {i}"),
             TokenType::End => write!(f, "END"),
