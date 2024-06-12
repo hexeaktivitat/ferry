@@ -14,6 +14,7 @@ pub enum Expr {
     Group(Group),
     Binding(Binding),
     Loop(Loop),
+    For(For),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -112,6 +113,15 @@ pub struct Loop {
     pub expr_type: FerryTyping,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct For {
+    pub token: FerryToken,
+    pub variable: Option<Box<Expr>>,
+    pub iterator: Box<Expr>,
+    pub contents: Box<Expr>,
+    pub expr_type: FerryTyping,
+}
+
 pub trait ExprVisitor<T, S> {
     fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
     fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
@@ -122,6 +132,7 @@ pub trait ExprVisitor<T, S> {
     fn visit_group(&mut self, group: &mut Group, state: S) -> T;
     fn visit_binding(&mut self, binding: &mut Binding, state: S) -> T;
     fn visit_loop(&mut self, loop_expr: &mut Loop, state: S) -> T;
+    fn visit_for(&mut self, for_expr: &mut For, state: S) -> T;
 }
 
 pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, state: S) -> T {
@@ -135,6 +146,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::Binding(binding) => visitor.visit_binding(binding, state),
         Expr::Loop(loop_expr) => visitor.visit_loop(loop_expr, state),
         Expr::Unary(unary) => visitor.visit_unary(unary, state),
+        Expr::For(for_expr) => visitor.visit_for(for_expr, state),
     }
 }
 
@@ -179,6 +191,7 @@ impl Expr {
             Expr::Binding(b) => &b.token,
             Expr::Loop(l) => &l.token,
             Expr::Unary(u) => &u.operator,
+            Expr::For(f) => &f.token,
         }
     }
 }
@@ -299,6 +312,19 @@ impl std::fmt::Display for Expr {
             }
             Expr::Loop(l) => write!(f, "loop (type: {})", l.expr_type),
             Expr::Unary(u) => write!(f, "{}: {} (type: {})", u.operator, u.rhs, u.expr_type),
+            Expr::For(f_expr) => {
+                if f_expr.variable.is_some() {
+                    write!(
+                        f,
+                        "for {} in {:#?}: {}",
+                        f_expr.variable.clone().unwrap(),
+                        f_expr.iterator,
+                        f_expr.expr_type
+                    )
+                } else {
+                    write!(f, "for {:#?}: {}", f_expr.iterator, f_expr.expr_type)
+                }
+            }
         }
     }
 }

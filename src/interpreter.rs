@@ -4,8 +4,8 @@ use thiserror::Error;
 use crate::{
     state::{FerryState, FerryValue},
     syntax::{
-        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, Group, If, Lit as SLit, Loop, Unary,
-        Variable,
+        walk_expr, Assign, Binary, Binding, Expr, ExprVisitor, For, Group, If, Lit as SLit, Loop,
+        Unary, Variable,
     },
     token::{Op, TokenType as TT},
 };
@@ -354,14 +354,43 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         let _right = self.evaluate(&mut unary.rhs, state)?;
 
         match unary.operator.get_token_type() {
-            TT::Operator(o) => Err(FerryInterpreterError::InvalidOperation {
-                help: "Invalid unary operator".into(),
-                span: *unary.operator.get_span(),
-            }),
             _ => Err(FerryInterpreterError::InvalidOperation {
                 help: "Invalid unary operator".into(),
                 span: *unary.operator.get_span(),
             }),
+        }
+    }
+
+    fn visit_for(&mut self, for_expr: &mut For, state: &mut FerryState) -> FerryResult<FerryValue> {
+        if let Some(variable) = &mut for_expr.variable {
+            let name = variable.get_token().get_id().unwrap_or("error".into());
+            let var = self.evaluate(variable, state)?;
+            let iterator = self.evaluate(&mut for_expr.iterator, state)?;
+            if let Some(value) = iterator {
+                match value {
+                    FerryValue::List(list) => {
+                        for l in list {
+                            state.add_symbol(&name, Some(l));
+                            self.evaluate(&mut for_expr.contents, state)?;
+                        }
+                        Ok(None)
+                    }
+                    _ => Err(FerryInterpreterError::InvalidOperation {
+                        help: "Expected iterator to be a List".into(),
+                        span: *for_expr.token.get_span(),
+                    }),
+                }
+            } else {
+                Err(FerryInterpreterError::InvalidOperation {
+                    help: "Expected iterator to be a List".into(),
+                    span: *for_expr.token.get_span(),
+                })
+            }
+        } else {
+            Err(FerryInterpreterError::Unimplemented {
+                help: "didnt do this".into(),
+                span: *for_expr.token.get_span(),
+            })
         }
     }
 }

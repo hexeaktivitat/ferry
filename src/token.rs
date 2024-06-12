@@ -1,3 +1,4 @@
+use clap::Id;
 use miette::SourceSpan;
 
 /// `Token`
@@ -21,6 +22,14 @@ impl FerryToken {
     pub fn get_span(&self) -> &SourceSpan {
         &self.span
     }
+
+    pub fn get_id(&self) -> Option<String> {
+        if let TokenType::Identifier(id) = &self.token_type {
+            Some(id.clone())
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -39,6 +48,7 @@ pub enum Val {
     Num(f64),
     String(String),
     Boolean(bool),
+    Range(i64, i64),
     None,
 }
 
@@ -79,6 +89,7 @@ pub enum Kwd {
     Do,
     While,
     For,
+    In,
 }
 
 impl std::fmt::Display for FerryToken {
@@ -95,6 +106,7 @@ impl std::fmt::Display for TokenType {
                 Val::String(s) => write!(f, "Value<String> {s}"),
                 Val::Boolean(b) => write!(f, "Value<Boolean> {b}"),
                 Val::None => write!(f, "Value<None>"),
+                Val::Range(s, e) => write!(f, "Value<Range> {s}..{e}"),
             },
             TokenType::Operator(o) => match o {
                 Op::Add => write!(f, "Operator<Add>"),
@@ -128,6 +140,7 @@ impl std::fmt::Display for TokenType {
                 Kwd::Do => write!(f, "Keyword<Do>"),
                 Kwd::While => write!(f, "Keyword<While>"),
                 Kwd::For => write!(f, "Keyword<For>"),
+                Kwd::In => write!(f, "Keyword<In>"),
             },
             TokenType::Identifier(i) => write!(f, "Identifier {i}"),
             TokenType::End => write!(f, "END"),
