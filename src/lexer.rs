@@ -99,10 +99,22 @@ impl<'source> FerryLexer<'source> {
                 }
             }
             b'*' => Ok(Some(TT::Operator(Op::Multiply))),
-            b'/' => Ok(Some(TT::Operator(Op::Divide))),
+            b'/' => {
+                if self.peek() == b'/' {
+                    while self.peek() != b'\n' && !self.end_of_code() {
+                        self.current += 1;
+                    }
+                    let comment = self.substring(self.start + 2, self.current - 1)?;
+                    Ok(None)
+                } else {
+                    Ok(Some(TT::Operator(Op::Divide)))
+                }
+            }
             b'=' => {
                 if self.peek() == b'=' {
-                    self.advance();
+
+                    self.current += 1;
+
                     Ok(Some(TT::Operator(Op::Equality)))
                 } else {
                     Ok(Some(TT::Operator(Op::Equals)))
@@ -110,7 +122,8 @@ impl<'source> FerryLexer<'source> {
             }
             b'<' => {
                 if self.peek() == b'=' {
-                    self.advance();
+                    self.current += 1;
+
                     Ok(Some(TT::Operator(Op::LessEqual)))
                 } else {
                     Ok(Some(TT::Operator(Op::LessThan)))
@@ -118,7 +131,8 @@ impl<'source> FerryLexer<'source> {
             }
             b'>' => {
                 if self.peek() == b'=' {
-                    self.advance();
+                    self.current += 1;
+
                     Ok(Some(TT::Operator(Op::GreaterEqual)))
                 } else {
                     Ok(Some(TT::Operator(Op::GreaterThan)))

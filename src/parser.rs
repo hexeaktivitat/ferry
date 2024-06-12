@@ -536,10 +536,15 @@ impl FerryParser {
                 }))
             }
             TT::Control(Ctrl::LeftBracket) => self.list(state),
-            _ => Err(FerryParseError::UnexpectedToken {
-                msg: format!("Unexpected token: {}", self.previous().get_token_type()),
-                span: *self.previous().get_span(),
-            }),
+
+            // TT::Comment(_) => {}
+            _ => {
+                println!("oops");
+                Err(FerryParseError::UnexpectedToken {
+                    msg: format!("Unexpected token: {}", self.previous().get_token_type()),
+                    span: *self.previous().get_span(),
+                })
+            }
         }
     }
 
