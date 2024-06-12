@@ -64,6 +64,13 @@ pub enum FerryTypeError {
         #[label]
         span: SourceSpan,
     },
+    #[error("invalid operand")]
+    InvalidOperand {
+        #[help]
+        advice: String,
+        #[label]
+        span: SourceSpan,
+    },
 }
 
 type FerryResult<T> = Result<T, FerryTypeError>;
@@ -263,13 +270,10 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         })
                     }
                 }
-                _ => Err(FerryTypeError::UnimplementedFeature {
-                    advice: "aaa 1".into(),
-                    span: *binary.operator.get_span(),
-                }),
+
             },
-            _ => Err(FerryTypeError::UnimplementedFeature {
-                advice: "aaa 2".into(),
+            _ => Err(FerryTypeError::InvalidOperand {
+                advice: "invalid operator token".into(),
                 span: *binary.operator.get_span(),
             }),
         }
@@ -393,8 +397,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                             expr_type: FerryTyping::Untyped,
                         }));
                     } else {
-                        return Err(FerryTypeError::UnimplementedFeature {
-                            advice: "aaa 3".into(),
+
+                        return Err(FerryTypeError::MistypedVariable {
+                            advice: "cannot assign this value to this variable".into(),
                             span: *binding.token.get_span(),
                         });
                     }
@@ -418,8 +423,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             }));
         }
 
-        Err(FerryTypeError::UnimplementedFeature {
-            advice: "aaa 4".into(),
+      Err(FerryTypeError::UnknownType {
+            advice: "unknown type for variable".into(),
             span: *binding.token.get_span(),
         })
     }
