@@ -104,6 +104,9 @@ impl<'source> FerryLexer<'source> {
                         self.current += 1;
                     }
                     let _comment = self.substring(self.start + 2, self.current - 1)?;
+                    if self.peek() == b'\n' {
+                        self.current += 1;
+                    }
                     Ok(None)
                 } else {
                     Ok(Some(TT::Operator(Op::Divide)))

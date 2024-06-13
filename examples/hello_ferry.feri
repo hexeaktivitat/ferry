@@ -1,4 +1,70 @@
+// FERRY SYNTAX GUIDE
+
+// Expression syntax
+
+1 + 10
+256 - 128
+5 * 5
+100 / 20
+1..100 // Range operator
+
+// Variable declarations
+
+// Explicit type
+
+let foo: Int = 10
+let bar: String = "Hello, world!"
+let list: List = 1..10
+
+// Implicit type
+
+let baz := "This is a string"
+
+// List operations
+
+// Retrieve element at index
+// [n] is syntatic sugar for the `geti` operator
+
+list geti 2
+list[2]
+
+// Concatenate lists
+
+list cons 11..20
+
+// Flow control
+
+// if / then / else
+
 if true then:
-	"Hello world!"
+	"Hello"
 else:
-	"Oh no"
+	"Unreachable?"
+
+// Loop syntax
+
+// Infinite looping
+// do: (2 + 1)
+
+// Conditional looping
+
+let x: Int = 0
+
+//while (x < 10) do:
+	x = x + 1
+
+// For loops
+
+let a := 0
+for y in 1..10:
+	a = a + y
+
+// Functions
+
+def fn function(x: Int, z: String) -> String:
+	(if x == 3 then:
+		z
+	else:
+		"x wasn't 3!!")
+
+function(3, "Hello, world!")

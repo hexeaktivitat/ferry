@@ -185,7 +185,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                         Ok(Some(FerryValue::Boolean(l == r)))
                     }
                     _ => Err(FerryInterpreterError::InvalidOperation {
-                        help: "Operator only takes values of type Num".into(),
+                        help: "Invalid operator types".into(),
                         span: *op.get_span(),
                     }),
                 },
@@ -411,7 +411,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 if !call.args.is_empty() {
                     let mut param_state = FerryState::new();
                     for (arg, param_var) in call.args.iter_mut().zip(params.iter_mut()) {
-                        if let Expr::Variable(var) = param_var {
+                        if let Expr::Binding(var) = param_var {
                             let arg_val = self.evaluate(arg, state)?;
                             param_state.add_symbol(&var.name, arg_val);
                         }

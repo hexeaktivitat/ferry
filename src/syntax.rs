@@ -131,7 +131,7 @@ pub struct Function {
     pub name: String,
     pub args: Option<Vec<Expr>>,
     pub contents: Box<Expr>,
-    pub return_type: Option<Box<Expr>>,
+    pub return_type: Option<FerryType>,
     pub expr_type: FerryTyping,
 }
 
