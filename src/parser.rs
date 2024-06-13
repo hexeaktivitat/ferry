@@ -7,7 +7,7 @@ use crate::syntax::{
 };
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
-use crate::types::FerryTyping;
+use crate::types::{FerryType, FerryTyping};
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryParseError {
@@ -69,24 +69,28 @@ impl FerryParser {
 
     fn keywords(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         let expr = if self.matches(&[TT::Keyword(Kwd::If)]) {
-            self.if_expr(state)?
+            self.if_expr(state)
         } else if self.matches(&[TT::Keyword(Kwd::Let)]) {
-            self.binding(state)?
+            self.binding(state)
         } else if self.matches(&[TT::Keyword(Kwd::Do)]) {
-            self.do_loop(state)?
+            self.do_loop(state)
         } else if self.matches(&[TT::Keyword(Kwd::While)]) {
-            self.while_loop(state)?
+            self.while_loop(state)
         } else if self.matches(&[TT::Keyword(Kwd::For)]) {
-            self.for_loop(state)?
+            self.for_loop(state)
         } else if self.matches(&[TT::Keyword(Kwd::Def)]) {
-            self.function(state)?
+            self.function(state)
         } else {
-            self.s_expression(state)?
+            self.s_expression(state)
         };
 
         self.consume_newline()?;
 
-        Ok(expr)
+        if expr.is_err() {
+            self.synchronize();
+        }
+
+        Ok(expr?)
     }
 
     fn if_expr(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
@@ -148,6 +152,8 @@ impl FerryParser {
             };
 
             state.add_symbol(name, None);
+
+            self.consume_newline()?;
 
             Ok(Expr::Binding(Binding {
                 token,
@@ -245,19 +251,23 @@ impl FerryParser {
                     });
                 };
                 self.consume(&TT::Control(Ctrl::Colon), "expected ':' after variable id")?;
-                let param_type = if let TT::Identifier(id) = self.advance().get_token_type() {
-                    id.clone()
+                let param_type = if let TT::Identifier(id) = self.peek().get_token_type() {
+                    self.advance();
+                    match id.clone().as_str() {
+                        "Int" => Some(crate::types::FerryType::Num),
+                        "String" => Some(crate::types::FerryType::String),
+                        _ => None,
+                    }
                 } else {
-                    return Err(FerryParseError::UnexpectedToken {
-                        msg: "expected param id".into(),
-                        span: *self.previous().get_span(),
-                    });
+                    None
                 };
-                ret.push(Expr::Variable(Variable {
+
+                ret.push(Expr::Binding(Binding {
                     token: self.previous(),
                     name: param_id,
-                    assigned_type: Some(param_type),
+                    assigned_type: param_type,
                     expr_type: FerryTyping::Untyped,
+                    value: None,
                 }));
                 if self.peek().get_token_type() == &TT::Control(Ctrl::Comma) {
                     self.consume(&TT::Control(Ctrl::Comma), "expected ',' in params list")?;
@@ -271,7 +281,19 @@ impl FerryParser {
                 &TT::Control(Ctrl::RightArrow),
                 "expected '->' after fn definition",
             )?;
-            Some(Box::new(self.start(state)?))
+            if let TT::Identifier(id) = self.advance().get_token_type() {
+                match id.clone().as_str() {
+                    "Int" => Some(FerryType::Num),
+                    "String" => Some(FerryType::String),
+                    _ => None,
+                }
+            } else {
+                return Err(FerryParseError::UnexpectedToken {
+                    msg: "expected ID token".into(),
+                    span: *self.previous().get_span(),
+                });
+            }
+            // Some(Box::new(self.start(state)?))
         } else {
             None
         };
@@ -280,7 +302,12 @@ impl FerryParser {
             &TT::Control(Ctrl::Colon),
             "expected ':' after function header",
         )?;
+
+        self.consume_newline()?;
+
         let contents = Box::new(self.start(state)?);
+
+        self.consume_newline()?;
 
         Ok(Expr::Function(Function {
             token,
@@ -499,6 +526,10 @@ impl FerryParser {
                     })
                 } // _ => unreachable!(),
             }),
+            TT::Control(Ctrl::Newline) => {
+                self.consume_newline()?;
+                self.start(state)
+            }
             TT::Identifier(id) => {
                 if self.peek().get_token_type() == &TT::Control(Ctrl::LeftBracket) {
                     let lhs = Box::new(Expr::Variable(Variable {
@@ -595,6 +626,21 @@ impl FerryParser {
             }
         }
         false
+    }
+
+    fn synchronize(&mut self) {
+        self.advance();
+
+        while !self.end_of_program() {
+            if self.previous().get_token_type() == &TT::Control(Ctrl::Newline) {
+                return;
+            } else {
+                match self.peek().get_token_type() {
+                    TT::Keyword(_) => return,
+                    _ => self.advance(),
+                };
+            }
+        }
     }
 
     fn end_of_program(&self) -> bool {
