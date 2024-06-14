@@ -30,7 +30,7 @@ list[2]
 
 // Concatenate lists
 
-list cons 11..20
+let second_list: List = list cons 11..20
 
 // Flow control
 
@@ -50,7 +50,7 @@ else:
 
 let x: Int = 0
 
-//while (x < 10) do:
+while (x < 10) do:
 	x = x + 1
 
 // For loops

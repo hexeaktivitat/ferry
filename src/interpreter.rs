@@ -317,15 +317,23 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 Some(b) => {
                     if b.truthiness() {
                         loop {
-                            match self.evaluate(&mut loop_expr.contents, state)? {
-                                Some(res) => println!("{res}"),
+                            self.evaluate(&mut loop_expr.contents.clone(), state)?;
+                            match self.evaluate(cond, state)? {
+                                Some(b) => {
+                                    if !b.truthiness() {
+                                        break;
+                                    }
+                                }
                                 None => (),
                             }
                         }
+                        Ok(None)
+                        // Ok(Some(FerryValue::Unit))
                     } else {
-                        Ok(Some(FerryValue::Unit))
+                        Ok(None)
                     }
                 }
+
                 None => Ok(Some(FerryValue::Unit)),
             }
         } else {
