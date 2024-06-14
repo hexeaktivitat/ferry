@@ -2,52 +2,28 @@
 
 # ferry
 
-A toy programming language for learning and exhibiting.
-
-Long-term plans:
-- [ ] LLVM backend for actual compilation (self-written RISC-V support is intended to be minimal and learning-focused)
-- [ ] Typeclasses
-- [ ] ???
+Ferry is an expression-oriented interpreted functional programming language developed with the aim of being an educational language, both for learning programming as a beginner and for learning how compilers are structured and function. Ferry is meant to be a simple and straightforward language, and while it should be a capable language, producing efficient production-ready code is not a goal of the project.
 
 ## Building
 
-`cargo run --release`
+Clone the repository and then `cargo run --release` to run the interpreter. You may also install the application to cargo's `$PATH` by using `cargo install --path=.`.
 
 ## Usage
 
-Currently only features an interactive REPL for language testing. During the REPL session, you can invoke commands  with `!`. Recognized commands:
+### REPL
 
-```
+Invoking ferry with `ferry` starts the interactive REPL. During the REPL session, you can invoke commands  with `!`. Recognized commands:
+
+```bash
 !tokens     # Prints the generated tokens of last expression
 !state      # Prints the current REPL state
 !ast        # Prints the Abstract Syntax Tree
 !type       # Prints the Abstract Syntax Tree with TYPES
-!asm        # Prints RISC-V ASM
+!asm        # Prints RISC-V ASM (alpha, has not been fully implemented yet)
 !exit       # Exit REPL
 !quit       # Quit REPL
 ```
 
-Planned and expected features include:
+### Source code interpretation
 
-- [ ] Flags to enable/disable diagnostic print as standard
-  - May not implement; use case covered by below
-- [x] Commands recognized by the REPL to print a diagnostic
-- [ ] `ferry compile` subcommand to explicitly invoke a mock compilation process
-  - [x] `ferry compile` subcommand framework established
-  - [ ] compilation actually performed
-  - [ ] `ferry [FILE]` to run as interpreted language
-
-## Language features
-
-Extremely barebones at the moment.
-
-Small roadmap:
-
-- [x] Basic arithmetic operations `4 + 3 - 2 / 1`
-  - [x] Parenthetical grouping of expressions
-- [x] Untyped variable assignment `let five := 5`
-- [x] Typed variable binding `let five: Int = 5`
-- [x] Booleans
-- [x] `if`/`then`/`else` expressions
-- [x] loop structures `do`/`while`/`for`
-    - `for` postponed
+If you have source code in a stand-alone `.feri` file, you can run it through the interpreter with `ferry run [FILE]`. The return value of the program will be its last expression evaluated.
