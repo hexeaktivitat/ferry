@@ -1,5 +1,7 @@
 ![ferry gbf fwee](img/Stamp57jp.png)
 
+![build](https://github.com/hexeaktivitat/ferry/actions/workflows/rust.yml/badge.svg)
+
 # ferry
 
 Ferry is an expression-oriented interpreted functional programming language developed with the aim of being an educational language, both for learning programming as a beginner and for learning how compilers are structured and function. Ferry is meant to be a simple and straightforward language, and while it should be a capable language, producing efficient production-ready code is not a goal of the project.
