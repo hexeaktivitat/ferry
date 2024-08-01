@@ -22,13 +22,6 @@ env:
   BINARY: ferry
   # The name to use for the packaged application produced by this workflow.
   PACKAGE_NAME: ferry
-  # The itch.io page to upload to, in the format: `user-name/project-name`.
-  # Comment this out to disable.
-  # ITCH_TARGET: hexeaktivitat/bevy-template
-  # The organization or author that owns the rights to the game.
-  # OWNER: hexeaktivitat
-  # The path to the assets directory.
-  # ASSETS_DIR: assets
   # Whether packages produced by this workflow should be uploaded to the Github release.
   UPLOAD_PACKAGES_TO_GITHUB_RELEASE: true
   # Before enabling LFS, please take a look at GitHub's documentation for costs and quota limits:
