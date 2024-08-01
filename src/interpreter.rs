@@ -262,7 +262,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
             state.add_symbol(&assign.name, value.clone());
             Ok(value)
         } else {
-            Ok(Some(FerryValue::Number(0.)))
+            Ok(Some(FerryValue::Number(0)))
         }
     }
 
@@ -303,7 +303,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
             state.add_symbol(&binding.name, value.clone());
             Ok(value)
         } else {
-            Ok(Some(FerryValue::Number(0.)))
+            Ok(Some(FerryValue::Number(0)))
         }
     }
 
@@ -443,7 +443,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 impl FerryValue {
     fn truthiness(&self) -> bool {
         match self {
-            FerryValue::Number(n) => n > &0.,
+            FerryValue::Number(n) => n > &0,
             FerryValue::Str(s) => !s.is_empty(),
             FerryValue::Boolean(b) => *b,
             FerryValue::Unit => false,

@@ -391,7 +391,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 if let Some(assigned_type) = &binding.assigned_type {
                     if assigned_type.check(value_check.get_type()) {
                         let placeholder_value = match value_check.get_type() {
-                            FerryType::Num => FerryValue::Number(0.0),
+                            FerryType::Num => FerryValue::Number(0),
                             FerryType::String => FerryValue::Str("".into()),
                             FerryType::Boolean => FerryValue::Boolean(false),
                             FerryType::List => FerryValue::List(vec![]),
@@ -413,7 +413,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     }
                 } else {
                     let placeholder_value = match value_check.get_type() {
-                        FerryType::Num => FerryValue::Number(0.0),
+                        FerryType::Num => FerryValue::Number(0),
                         FerryType::String => FerryValue::Str("".into()),
                         FerryType::Boolean => FerryValue::Boolean(false),
                         FerryType::List => FerryValue::List(vec![]),
@@ -431,7 +431,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             }
         } else if let Some(assigned_type) = &binding.assigned_type {
             let placeholder_value = match assigned_type {
-                FerryType::Num => FerryValue::Number(0.0),
+                FerryType::Num => FerryValue::Number(0),
                 FerryType::String => FerryValue::Str("".into()),
                 FerryType::Boolean => FerryValue::Boolean(false),
                 FerryType::List => FerryValue::List(vec![]),
@@ -513,7 +513,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             let variable_checked = self.check_types(variable, state)?;
             if let Expr::Variable(var) = &variable_checked {
                 let placeholder_value = match variable_checked.get_type() {
-                    FerryType::Num => FerryValue::Number(0.0),
+                    FerryType::Num => FerryValue::Number(0),
                     FerryType::String => FerryValue::Str("".into()),
                     FerryType::Boolean => FerryValue::Boolean(false),
                     FerryType::List => FerryValue::List(vec![]),

@@ -513,7 +513,7 @@ impl FerryParser {
                     for i in *start..=*end {
                         contents.push(Expr::Literal(SLit::Number {
                             token: self.previous().clone(),
-                            value: i as f64,
+                            value: i,
                             expr_type: FerryTyping::Untyped,
                             span: *self.previous().get_span(),
                         }));
