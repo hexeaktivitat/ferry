@@ -52,7 +52,6 @@ jobs:
           - platform: linux
             targets: x86_64-unknown-linux-gnu
             profile: release-native
-            features: bevy/wayland
             package_ext: .zip
             runner: ubuntu-latest
 
