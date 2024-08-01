@@ -13,7 +13,7 @@ pub struct FerryState {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FerryValue {
-    Number(f64),
+    Number(i64),
     Str(String),
     Boolean(bool),
     List(Vec<FerryValue>),

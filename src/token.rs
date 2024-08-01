@@ -45,7 +45,7 @@ pub enum TokenType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Val {
-    Num(f64),
+    Num(i64),
     String(String),
     Boolean(bool),
     Range(i64, i64),

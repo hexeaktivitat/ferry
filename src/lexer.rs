@@ -262,10 +262,14 @@ impl<'source> FerryLexer<'source> {
         }
 
         if self.peek() == b'.' && self.peek_next().is_ascii_digit() {
-            self.advance();
-            while self.peek().is_ascii_digit() {
-                self.advance();
-            }
+            return Err(FerryLexError::NotANumber {
+                advice: "floats currently unsupported".into(),
+                bad_num: (self.start, self.current - self.start).into(),
+            });
+            // self.advance();
+            // while self.peek().is_ascii_digit() {
+            // self.advance();
+            // }
         } else if self.peek() == b'.' && self.peek_next() == b'.' {
             // consume the .. token
             let start = self
@@ -287,7 +291,7 @@ impl<'source> FerryLexer<'source> {
 
         Ok(TokenType::Value(Val::Num(
             self.substring(self.start, self.current)?
-                .parse::<f64>()
+                .parse::<i64>()
                 .expect("that was not an f64? how"),
         )))
     }

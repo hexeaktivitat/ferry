@@ -27,7 +27,7 @@ pub enum Lit {
     },
     Number {
         token: FerryToken,
-        value: f64,
+        value: i64,
         expr_type: FerryTyping,
         span: SourceSpan,
     },
