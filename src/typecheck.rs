@@ -572,7 +572,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         } else {
             FerryTyping::Inferred(FerryType::Undefined)
         };
-        let mut fn_state = FerryState::new();
+        let mut fn_state = state.clone();
         fn_state.add_symbol(
             &function.name,
             Some(FerryValue::Function {

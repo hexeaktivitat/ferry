@@ -417,7 +417,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         {
             if let Some(params) = &mut function.args {
                 if !call.args.is_empty() {
-                    let mut param_state = FerryState::new();
+                    let mut param_state = state.clone();
                     for (arg, param_var) in call.args.iter_mut().zip(params.iter_mut()) {
                         if let Expr::Binding(var) = param_var {
                             let arg_val = self.evaluate(arg, state)?;
@@ -426,10 +426,10 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                     }
                     return self.evaluate(&mut function.contents, &mut param_state);
                 } else {
-                    return self.evaluate(&mut function.contents, &mut FerryState::new());
+                    return self.evaluate(&mut function.contents, &mut state.clone());
                 }
             } else {
-                return self.evaluate(&mut function.contents, &mut FerryState::new());
+                return self.evaluate(&mut function.contents, &mut state.clone());
             }
         } else {
             Err(FerryInterpreterError::InvalidOperation {
