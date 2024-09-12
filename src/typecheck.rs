@@ -565,12 +565,27 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         function: &mut Function,
         state: &mut FerryState,
     ) -> FerryResult<Expr> {
+        let mut return_type = FerryType::Undefined;
         let expr_type = if let Some(ty) = &function.return_type {
+            return_type = ty.clone();
             FerryTyping::Assigned(ty.clone())
         } else {
             FerryTyping::Inferred(FerryType::Undefined)
         };
         let mut fn_state = FerryState::new();
+        fn_state.add_symbol(
+            &function.name,
+            Some(FerryValue::Function {
+                declaration: Function {
+                    token: function.token.clone(),
+                    name: function.name.clone(),
+                    args: function.args.clone(),
+                    contents: function.contents.clone(),
+                    return_type: Some(return_type),
+                    expr_type: expr_type.clone(),
+                },
+            }),
+        );
         let args = if let Some(arguments) = &mut function.args {
             let mut rets = Vec::new();
             for a in arguments {
