@@ -344,24 +344,33 @@ impl std::fmt::Display for Expr {
                 if f_expr.variable.is_some() {
                     write!(
                         f,
-                        "for {} in {:#?}: {}",
+                        "for {} in {:#?}: {} \n{}",
                         f_expr.variable.clone().unwrap(),
                         f_expr.iterator,
-                        f_expr.expr_type
+                        f_expr.expr_type,
+                        f_expr.contents,
                     )
                 } else {
-                    write!(f, "for {:#?}: {}", f_expr.iterator, f_expr.expr_type)
+                    write!(
+                        f,
+                        "for {:#?}: {}\n{}",
+                        f_expr.iterator, f_expr.expr_type, f_expr.contents
+                    )
                 }
             }
             Expr::Function(func) => {
                 if func.args.is_some() {
                     write!(
                         f,
-                        "{}({:#?}) returns {}",
-                        func.name, func.args, func.expr_type
+                        "{}({:#?}) returns {}\n{}",
+                        func.name, func.args, func.expr_type, func.contents
                     )
                 } else {
-                    write!(f, "{}() returns {}", func.name, func.expr_type)
+                    write!(
+                        f,
+                        "{}() returns {}\n{}",
+                        func.name, func.expr_type, func.contents
+                    )
                 }
             }
             Expr::Call(c) => write!(f, "{}({:?})", c.name, c.args),

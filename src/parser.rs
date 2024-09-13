@@ -139,7 +139,7 @@ impl FerryParser {
                 match id.clone().as_str() {
                     "Int" => Some(crate::types::FerryType::Num),
                     "String" => Some(crate::types::FerryType::String),
-                    _ => None,
+                    _ => Some(FerryType::Num), // coerce all types to Num
                 }
             } else {
                 None
