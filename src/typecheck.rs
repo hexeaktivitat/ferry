@@ -1,3 +1,5 @@
+use std::borrow::Borrow;
+
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
@@ -176,18 +178,30 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     fn visit_binary(&mut self, binary: &mut Binary, state: &mut FerryState) -> FerryResult<Expr> {
         let left = self.check_types(&mut binary.lhs, state)?;
         let right = self.check_types(&mut binary.rhs, state)?;
-        if left.check(&FerryType::Untyped) || right.check(&FerryType::Untyped) {
-            return Err(FerryTypeError::MistypedVariable {
-                advice: "variables were not assigned typed correctly".into(),
-                span: left.get_token().get_span().clone(),
-            });
-        }
+        // if left.check(&FerryType::Untyped) || right.check(&FerryType::Untyped) {
+        //     return Err(FerryTypeError::MistypedVariable {
+        //         advice: "variables were not assigned typed correctly".into(),
+        //         span: left.get_token().get_span().clone(),
+        //     });
+        // }
 
         match binary.operator.get_token_type() {
             TokenType::Operator(o) => match o {
                 Op::Add | Op::Subtract | Op::Multiply | Op::Divide | Op::Equals => {
                     if left.check(right.get_type()) {
                         let expr_type = FerryTyping::Inferred(left.get_type().clone());
+                        Ok(Expr::Binary(Binary {
+                            lhs: Box::new(left.clone()),
+                            operator: binary.operator.clone(),
+                            rhs: Box::new(right),
+                            expr_type: expr_type.clone(),
+                        }))
+                    } else if (left.check(&FerryType::Untyped) && right.check(&FerryType::Num))
+                        || (left.check(&FerryType::Num) && right.check(&FerryType::Untyped))
+                    {
+                        let expr_type = FerryTyping::Inferred(right.get_type().clone());
+                        // need a setter to set type to left without needing to fuss with its internals
+                        println!("hello from visit binary");
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
                             operator: binary.operator.clone(),
@@ -310,6 +324,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 })
             }
         } else if state.get_symbol_value(&variable.name) == None {
+            println!("{}", variable.name);
             // this is currently a hack to make euler1 compile correctly
             let var = Variable {
                 token: variable.token.clone(),
@@ -329,9 +344,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     fn visit_assign(&mut self, assign: &mut Assign, state: &mut FerryState) -> FerryResult<Expr> {
         // type inference first
         if let Some(value) = &mut assign.value {
-            println!("{value}");
             if let Ok(value_check) = self.check_types(value, state) {
-                println!("{value_check}");
                 return Ok(Expr::Assign(Assign {
                     var: assign.var.clone(),
                     name: assign.name.clone(),
@@ -525,6 +538,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     fn visit_for(&mut self, for_expr: &mut For, state: &mut FerryState) -> FerryResult<Expr> {
         let iterator = self.check_types(&mut for_expr.iterator, state)?;
         if let Some(variable) = &mut for_expr.variable {
+            if let Expr::Variable(v) = variable.as_ref() {
+                state.add_symbol(&v.name, None);
+            }
             let variable_checked = self.check_types(variable, state)?;
             if let Expr::Variable(var) = &variable_checked {
                 let placeholder_value = match variable_checked.get_type() {
@@ -532,7 +548,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     FerryType::String => FerryValue::Str("".into()),
                     FerryType::Boolean => FerryValue::Boolean(false),
                     FerryType::List => FerryValue::List(vec![]),
-                    FerryType::Untyped => FerryValue::Unit,
+                    FerryType::Untyped => FerryValue::Number(0), // assume an untyped iterator value is a Num
                     FerryType::Undefined => FerryValue::Unit,
                 };
                 state.add_symbol(&var.name, Some(placeholder_value));

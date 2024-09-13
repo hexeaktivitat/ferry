@@ -205,6 +205,11 @@ impl FerryParser {
     fn for_loop(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
         let token = self.previous();
         let variable = Some(Box::new(self.start(state)?)); //explicitly expect variable decl
+        self.consume(
+            &TT::Control(Ctrl::Colon),
+            "expected ':' after variable iterator name",
+        )?;
+        let iterator_type = Some(Box::new(self.start(state)?));
         self.consume(&TT::Keyword(Kwd::In), "expected 'in' after 'for'")?;
         let iterator = Box::new(self.start(state)?);
         self.consume(
@@ -217,6 +222,7 @@ impl FerryParser {
             token,
             variable,
             iterator,
+            // iterator_type,
             contents,
             expr_type: FerryTyping::Untyped,
         }))
