@@ -1,6 +1,7 @@
 ![ferry gbf fwee](img/Stamp57jp.png)
 
 ![build](https://github.com/hexeaktivitat/ferry/actions/workflows/rust.yml/badge.svg)
+![GitHub Release](https://img.shields.io/github/v/release/hexeaktivitat/ferry?sort=semver)
 
 # ferry
 
