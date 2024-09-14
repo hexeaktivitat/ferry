@@ -107,6 +107,131 @@ impl FerryTypechecker {
     fn check_types(&mut self, code: &mut Expr, state: &mut FerryState) -> FerryResult<Expr> {
         walk_expr(&mut *self, code, state)
     }
+
+    fn infer(
+        &mut self,
+        code: &mut Expr,
+        state: &mut FerryState,
+        infer_type: FerryType,
+    ) -> FerryResult<Expr> {
+        match walk_expr(&mut *self, code, state) {
+            Ok(expr) => match expr {
+                Expr::Literal(l) => match l {
+                    Lit::Undefined { token, expr_type } => todo!(),
+                    Lit::Number {
+                        token,
+                        value,
+                        expr_type,
+                        span,
+                    } => Ok(Expr::Literal(Lit::Number {
+                        token,
+                        value,
+                        expr_type: set_type(expr_type, infer_type),
+                        span,
+                    })),
+                    Lit::Str {
+                        token,
+                        value,
+                        expr_type,
+                        span,
+                    } => todo!(),
+                    Lit::Bool {
+                        token,
+                        value,
+                        expr_type,
+                        span,
+                    } => todo!(),
+                    Lit::List {
+                        token,
+                        contents,
+                        expr_type,
+                        span,
+                    } => todo!(),
+                },
+                Expr::Binary(b) => Ok(Expr::Binary(Binary {
+                    lhs: b.lhs,
+                    operator: b.operator,
+                    rhs: b.rhs,
+                    expr_type: set_type(b.expr_type, infer_type),
+                })),
+                Expr::Unary(u) => Ok(Expr::Unary(Unary {
+                    operator: u.operator,
+                    rhs: u.rhs,
+                    expr_type: set_type(u.expr_type, infer_type),
+                })),
+                Expr::Variable(v) => Ok(Expr::Variable(Variable {
+                    token: v.token,
+                    name: v.name,
+                    assigned_type: v.assigned_type,
+                    expr_type: set_type(v.expr_type, infer_type),
+                })),
+                Expr::Assign(a) => Ok(Expr::Assign(Assign {
+                    token: a.token,
+                    var: a.var,
+                    name: a.name,
+                    value: a.value,
+                    expr_type: set_type(a.expr_type, infer_type),
+                })),
+                Expr::If(i) => Ok(Expr::If(If {
+                    token: i.token,
+                    condition: i.condition,
+                    then_expr: i.then_expr,
+                    else_expr: i.else_expr,
+                    expr_type: set_type(i.expr_type, infer_type),
+                })),
+                Expr::Group(g) => Ok(Expr::Group(Group {
+                    token: g.token,
+                    contents: g.contents,
+                    expr_type: set_type(g.expr_type, infer_type),
+                })),
+                Expr::Binding(b) => Ok(Expr::Binding(Binding {
+                    token: b.token,
+                    name: b.name,
+                    assigned_type: b.assigned_type,
+                    value: b.value,
+                    expr_type: set_type(b.expr_type, infer_type),
+                })),
+                Expr::Loop(l) => Ok(Expr::Loop(Loop {
+                    token: l.token,
+                    condition: l.condition,
+                    contents: l.contents,
+                    expr_type: set_type(l.expr_type, infer_type),
+                })),
+                Expr::For(f) => Ok(Expr::For(For {
+                    token: f.token,
+                    variable: f.variable,
+                    iterator: f.iterator,
+                    contents: f.contents,
+                    expr_type: set_type(f.expr_type, infer_type),
+                })),
+                Expr::Function(f) => Ok(Expr::Function(Function {
+                    token: f.token,
+                    name: f.name,
+                    args: f.args,
+                    contents: f.contents,
+                    return_type: f.return_type,
+                    expr_type: set_type(f.expr_type, infer_type),
+                })),
+                Expr::Call(c) => Ok(Expr::Call(Call {
+                    invoker: c.invoker,
+                    name: c.name,
+                    token: c.token,
+                    args: c.args,
+                    expr_type: set_type(c.expr_type, infer_type),
+                })),
+            },
+            Err(e) => Err(e),
+        }
+    }
+}
+
+fn set_type(expr_type: FerryTyping, infer_type: FerryType) -> FerryTyping {
+    match expr_type {
+        FerryTyping::Assigned(a) => FerryTyping::Assigned(a),
+        FerryTyping::Inferred(i) => FerryTyping::Inferred(i),
+        FerryTyping::Untyped => FerryTyping::Inferred(infer_type),
+        FerryTyping::Undefined => FerryTyping::Undefined,
+    }
 }
 
 impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
@@ -174,8 +299,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     }
 
     fn visit_binary(&mut self, binary: &mut Binary, state: &mut FerryState) -> FerryResult<Expr> {
-        let left = self.check_types(&mut binary.lhs, state)?;
-        let right = self.check_types(&mut binary.rhs, state)?;
+        let left = self.infer(&mut binary.lhs, state, FerryType::Num)?;
+        let right = self.infer(&mut binary.rhs, state, FerryType::Num)?;
         // if left.check(&FerryType::Untyped) || right.check(&FerryType::Untyped) {
         //     return Err(FerryTypeError::MistypedVariable {
         //         advice: "variables were not assigned typed correctly".into(),
@@ -321,16 +446,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     span: *variable.token.get_span(),
                 })
             }
-        } else if state.get_symbol_value(&variable.name) == None {
-            println!("{}", variable.name);
+        } else if state.get_symbol_value(&variable.name).is_none() {
             // this is currently a hack to make euler1 compile correctly
-            let var = Variable {
-                token: variable.token.clone(),
-                name: variable.name.clone(),
-                assigned_type: variable.assigned_type.clone(),
-                expr_type: FerryTyping::Inferred(FerryType::Num),
-            };
-            Ok(Expr::Variable(var))
+            Ok(Expr::Variable(variable.clone()))
         } else {
             Err(FerryTypeError::UnknownType {
                 advice: "variable of unknown type".into(),
@@ -352,13 +470,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 }));
             }
         }
-        return Ok(Expr::Assign(Assign {
+        Ok(Expr::Assign(Assign {
             token: assign.token.clone(),
             var: assign.var.clone(),
             name: assign.name.clone(),
             value: None,
             expr_type: FerryTyping::Undefined,
-        }));
+        }))
     }
 
     fn visit_if_expr(&mut self, if_expr: &mut If, state: &mut FerryState) -> FerryResult<Expr> {
@@ -539,7 +657,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             if let Expr::Variable(v) = variable.as_ref() {
                 state.add_symbol(&v.name, None);
             }
-            let variable_checked = self.check_types(variable, state)?;
+            let variable_checked = self.infer(variable, state, FerryType::Num)?;
             if let Expr::Variable(var) = &variable_checked {
                 let placeholder_value = match variable_checked.get_type() {
                     FerryType::Num => FerryValue::Number(0),
