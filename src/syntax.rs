@@ -121,6 +121,7 @@ pub struct For {
     pub token: FerryToken,
     pub variable: Option<Box<Expr>>,
     pub iterator: Box<Expr>,
+    pub iterator_type: Option<FerryType>,
     pub contents: Box<Expr>,
     pub expr_type: FerryTyping,
 }

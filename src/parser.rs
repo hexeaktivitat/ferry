@@ -90,7 +90,7 @@ impl FerryParser {
             self.synchronize();
         }
 
-        Ok(expr?)
+        expr
     }
 
     fn if_expr(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
@@ -209,7 +209,16 @@ impl FerryParser {
             &TT::Control(Ctrl::Colon),
             "expected ':' after variable iterator name",
         )?;
-        let iterator_type = Some(Box::new(self.start(state)?));
+        let iterator_type = if let TT::Identifier(id) = self.peek().get_token_type() {
+            self.advance();
+            match id.clone().as_str() {
+                "Int" => Some(crate::types::FerryType::Num),
+                "String" => Some(crate::types::FerryType::String),
+                _ => Some(FerryType::Num), // coerce all types to Num
+            }
+        } else {
+            None
+        };
         self.consume(&TT::Keyword(Kwd::In), "expected 'in' after 'for'")?;
         let iterator = Box::new(self.start(state)?);
         self.consume(
@@ -222,7 +231,7 @@ impl FerryParser {
             token,
             variable,
             iterator,
-            // iterator_type,
+            iterator_type,
             contents,
             expr_type: FerryTyping::Untyped,
         }))
@@ -720,7 +729,7 @@ trait MatchToken {
 
 impl MatchToken for TT {
     fn matches(&self, token: &FerryToken) -> bool {
-        &token.get_token_type() == &self
+        token.get_token_type() == self
     }
 }
 

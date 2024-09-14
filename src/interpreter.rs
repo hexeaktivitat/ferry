@@ -318,13 +318,10 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                     if b.truthiness() {
                         loop {
                             self.evaluate(&mut loop_expr.contents.clone(), state)?;
-                            match self.evaluate(cond, state)? {
-                                Some(b) => {
-                                    if !b.truthiness() {
-                                        break;
-                                    }
+                            if let Ok(Some(b)) = self.evaluate(cond, state) {
+                                if !b.truthiness() {
+                                    break;
                                 }
-                                None => (),
                             }
                         }
                         Ok(None)
@@ -339,9 +336,8 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         } else {
             println!("{:?}", loop_expr.contents);
             loop {
-                match self.evaluate(&mut loop_expr.contents, state)? {
-                    Some(res) => println!("{res}"), // this will be replaced with FerryValue::Return
-                    None => (),
+                if let Some(res) = self.evaluate(&mut loop_expr.contents, state)? {
+                    println!("{res}")
                 }
             }
         }
@@ -354,6 +350,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
     ) -> FerryResult<FerryValue> {
         let _right = self.evaluate(&mut unary.rhs, state)?;
 
+        #[expect(clippy::match_single_binding)]
         match unary.operator.get_token_type() {
             _ => Err(FerryInterpreterError::InvalidOperation {
                 help: "Invalid unary operator".into(),
@@ -424,12 +421,12 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                             param_state.add_symbol(&var.name, arg_val);
                         }
                     }
-                    return self.evaluate(&mut function.contents, &mut param_state);
+                    self.evaluate(&mut function.contents, &mut param_state)
                 } else {
-                    return self.evaluate(&mut function.contents, &mut state.clone());
+                    self.evaluate(&mut function.contents, &mut state.clone())
                 }
             } else {
-                return self.evaluate(&mut function.contents, &mut state.clone());
+                self.evaluate(&mut function.contents, &mut state.clone())
             }
         } else {
             Err(FerryInterpreterError::InvalidOperation {

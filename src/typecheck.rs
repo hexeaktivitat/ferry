@@ -117,7 +117,10 @@ impl FerryTypechecker {
         match walk_expr(&mut *self, code, state) {
             Ok(expr) => match expr {
                 Expr::Literal(l) => match l {
-                    Lit::Undefined { token, expr_type } => todo!(),
+                    Lit::Undefined { token, expr_type } => Ok(Expr::Literal(Lit::Undefined {
+                        token,
+                        expr_type: set_type(expr_type, infer_type),
+                    })),
                     Lit::Number {
                         token,
                         value,
@@ -134,19 +137,34 @@ impl FerryTypechecker {
                         value,
                         expr_type,
                         span,
-                    } => todo!(),
+                    } => Ok(Expr::Literal(Lit::Str {
+                        token,
+                        value,
+                        expr_type: set_type(expr_type, infer_type),
+                        span,
+                    })),
                     Lit::Bool {
                         token,
                         value,
                         expr_type,
                         span,
-                    } => todo!(),
+                    } => Ok(Expr::Literal(Lit::Bool {
+                        token,
+                        value,
+                        expr_type: set_type(expr_type, infer_type),
+                        span,
+                    })),
                     Lit::List {
                         token,
                         contents,
                         expr_type,
                         span,
-                    } => todo!(),
+                    } => Ok(Expr::Literal(Lit::List {
+                        token,
+                        contents,
+                        expr_type: set_type(expr_type, infer_type),
+                        span,
+                    })),
                 },
                 Expr::Binary(b) => Ok(Expr::Binary(Binary {
                     lhs: b.lhs,
@@ -203,6 +221,7 @@ impl FerryTypechecker {
                     iterator: f.iterator,
                     contents: f.contents,
                     expr_type: set_type(f.expr_type, infer_type),
+                    iterator_type: f.iterator_type,
                 })),
                 Expr::Function(f) => Ok(Expr::Function(Function {
                     token: f.token,
@@ -447,7 +466,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 })
             }
         } else if state.get_symbol_value(&variable.name).is_none() {
-            // this is currently a hack to make euler1 compile correctly
+            // we do not have enough information to type this variable
+            // this variable will be inferred
             Ok(Expr::Variable(variable.clone()))
         } else {
             Err(FerryTypeError::UnknownType {
@@ -680,6 +700,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     iterator: Box::new(iterator),
                     contents: Box::new(contents),
                     expr_type: FerryTyping::Inferred(inf_type),
+                    iterator_type: for_expr.iterator_type.clone(),
                 }))
             } else {
                 Err(FerryTypeError::MistypedVariable {
@@ -697,6 +718,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     iterator: Box::new(iterator),
                     contents: Box::new(contents),
                     expr_type: FerryTyping::Inferred(inf_type),
+                    iterator_type: for_expr.iterator_type.clone(),
                 }))
             } else {
                 Err(FerryTypeError::MistypedVariable {
@@ -789,30 +811,30 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         //     });
                         // }
                     }
-                    return Ok(Expr::Call(Call {
+                    Ok(Expr::Call(Call {
                         invoker: call.invoker.clone(),
                         name: call.name.clone(),
                         token: call.token.clone(),
                         args: checked_args,
                         expr_type: declaration.expr_type.clone(),
-                    }));
+                    }))
                 } else {
-                    return Ok(Expr::Call(Call {
+                    Ok(Expr::Call(Call {
                         invoker: call.invoker.clone(),
                         name: call.name.clone(),
                         token: call.token.clone(),
                         args: vec![],
                         expr_type: declaration.expr_type.clone(),
-                    }));
+                    }))
                 }
             } else {
-                return Ok(Expr::Call(Call {
+                Ok(Expr::Call(Call {
                     invoker: call.invoker.clone(),
                     name: call.name.clone(),
                     token: call.token.clone(),
                     args: call.args.clone(),
                     expr_type: declaration.expr_type.clone(),
-                }));
+                }))
             }
         } else {
             return Err(FerryTypeError::UnknownType {
