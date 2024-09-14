@@ -37,7 +37,7 @@ pub enum PrintReq {
     Asm,
 }
 
-impl<'source> Ferry {
+impl Ferry {
     pub fn new(source_code: String) -> Self {
         Self {
             source_code,
