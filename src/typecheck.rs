@@ -310,7 +310,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 Ok(Expr::Literal(Lit::List {
                     token: token.clone(),
                     contents: checked_contents,
-                    expr_type: FerryTyping::Inferred(FerryType::List),
+                    expr_type: FerryTyping::Assigned(FerryType::List),
                     span: *span,
                 }))
             }
@@ -318,8 +318,6 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     }
 
     fn visit_binary(&mut self, binary: &mut Binary, state: &mut FerryState) -> FerryResult<Expr> {
-        let left = self.infer(&mut binary.lhs, state, FerryType::Num)?;
-        let right = self.infer(&mut binary.rhs, state, FerryType::Num)?;
         // if left.check(&FerryType::Untyped) || right.check(&FerryType::Untyped) {
         //     return Err(FerryTypeError::MistypedVariable {
         //         advice: "variables were not assigned typed correctly".into(),
@@ -330,6 +328,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         match binary.operator.get_token_type() {
             TokenType::Operator(o) => match o {
                 Op::Add | Op::Subtract | Op::Multiply | Op::Divide | Op::Equals => {
+                    let left = self.infer(&mut binary.lhs, state, FerryType::Num)?;
+                    let right = self.infer(&mut binary.rhs, state, FerryType::Num)?;
                     if left.check(right.get_type()) {
                         let expr_type = FerryTyping::Inferred(left.get_type().clone());
                         Ok(Expr::Binary(Binary {
@@ -364,6 +364,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 | Op::Equality
                 | Op::LessEqual
                 | Op::GreaterEqual => {
+                    let left = self.infer(&mut binary.lhs, state, FerryType::Num)?;
+                    let right = self.infer(&mut binary.rhs, state, FerryType::Num)?;
                     if left.check(right.get_type()) {
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
@@ -381,6 +383,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     }
                 }
                 Op::GetI => {
+                    let left = self.infer(&mut binary.lhs, state, FerryType::List)?;
+                    let right = self.infer(&mut binary.rhs, state, FerryType::Num)?;
                     if left.check(&FerryType::List) {
                         if right.check(&FerryType::Num) {
                             Ok(Expr::Binary(Binary {
@@ -407,6 +411,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     }
                 }
                 Op::Cons => {
+                    let left = self.infer(&mut binary.lhs, state, FerryType::List)?;
+                    let right = self.infer(&mut binary.rhs, state, FerryType::List)?;
                     if left.check(&FerryType::List) {
                         if right.check(&FerryType::List) {
                             Ok(Expr::Binary(Binary {
@@ -480,23 +486,32 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     fn visit_assign(&mut self, assign: &mut Assign, state: &mut FerryState) -> FerryResult<Expr> {
         // type inference first
         if let Some(value) = &mut assign.value {
-            if let Ok(value_check) = self.check_types(value, state) {
-                return Ok(Expr::Assign(Assign {
+            if let Ok(value_check) = self.infer(value, state, FerryType::Undefined) {
+                Ok(Expr::Assign(Assign {
                     var: assign.var.clone(),
                     name: assign.name.clone(),
                     value: Some(Box::new(value_check.clone())),
                     expr_type: FerryTyping::Inferred(value_check.get_type().clone()),
                     token: assign.token.clone(),
-                }));
+                }))
+            } else {
+                Ok(Expr::Assign(Assign {
+                    token: assign.token.clone(),
+                    var: assign.var.clone(),
+                    name: assign.name.clone(),
+                    value: None,
+                    expr_type: FerryTyping::Undefined,
+                }))
             }
+        } else {
+            Ok(Expr::Assign(Assign {
+                token: assign.token.clone(),
+                var: assign.var.clone(),
+                name: assign.name.clone(),
+                value: None,
+                expr_type: FerryTyping::Undefined,
+            }))
         }
-        Ok(Expr::Assign(Assign {
-            token: assign.token.clone(),
-            var: assign.var.clone(),
-            name: assign.name.clone(),
-            value: None,
-            expr_type: FerryTyping::Undefined,
-        }))
     }
 
     fn visit_if_expr(&mut self, if_expr: &mut If, state: &mut FerryState) -> FerryResult<Expr> {
