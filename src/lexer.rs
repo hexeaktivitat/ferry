@@ -1,7 +1,7 @@
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
-#[derive(Error, Diagnostic, Debug)]
+#[derive(Error, Diagnostic, Debug, PartialEq)]
 pub enum FerryLexError {
     #[error("Syntax error: Unexpected character")]
     #[diagnostic(code(syntax::unexpected_character))]
@@ -304,5 +304,25 @@ impl<'source> FerryLexer<'source> {
         }
 
         self.substring(self.start, self.current)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::any::Any;
+
+    use crate::FerryLexErrors;
+
+    use super::*;
+
+    #[test]
+    fn check_invalid() {
+        let invalid_expr = "{";
+        let mut lexer = FerryLexer::new(invalid_expr.as_bytes());
+        let result = lexer.lex().unwrap();
+        assert!(matches!(
+            result,
+            vec![FerryLexError::UnexpectedCharacter { .. }]
+        ));
     }
 }
