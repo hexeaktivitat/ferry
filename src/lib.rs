@@ -12,6 +12,7 @@ use typecheck::{FerryTypeError, FerryTypechecker};
 
 mod interpreter;
 mod lexer;
+mod llvm;
 mod parser;
 mod riscv;
 mod state;
