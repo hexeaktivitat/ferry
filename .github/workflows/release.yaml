@@ -51,20 +51,20 @@ jobs:
         include:
           - platform: linux
             targets: x86_64-unknown-linux-gnu
-            profile: release-native
+            profile: release
             package_ext: .zip
             runner: ubuntu-latest
 
           - platform: windows
             targets: x86_64-pc-windows-msvc
-            profile: release-native
+            profile: release
             binary_ext: .exe
             package_ext: .zip
             runner: windows-latest
 
           - platform: macos
             targets: x86_64-apple-darwin aarch64-apple-darwin
-            profile: release-native
+            profile: release
             out_dir_suffix: .app/Contents/MacOS
             package_ext: .dmg
             runner: macos-latest
@@ -98,7 +98,7 @@ jobs:
       - name: Prepare output directories
         run: rm -rf tmp; mkdir -p tmp/binary '${{ env.OUT_DIR }}'
 
-      - name: Build binaries (non-Web)
+      - name: Build binaries 
         if: ${{ matrix.platform != 'web' }}
         run: |
           for target in ${{ matrix.targets }}; do
@@ -106,7 +106,7 @@ jobs:
             mv target/"${target}"/'${{ matrix.profile }}/${{ env.BINARY }}${{ matrix.binary_ext }}' tmp/binary/"${target}"'${{ matrix.binary_ext }}'
           done
 
-      - name: Add binaries to package (non-Web)
+      - name: Add binaries to package 
         if: ${{ matrix.platform != 'web' }}
         run: |
           if [ '${{ matrix.platform }}' == 'macos' ]; then
@@ -115,7 +115,7 @@ jobs:
             mv tmp/binary/*'${{ matrix.binary_ext }}' '${{ env.OUT_DIR }}/${{ env.PACKAGE_NAME }}${{ matrix.binary_ext }}'
           fi
 
-      - name: Add assets to package (non-Web)
+      - name: Add assets to package 
         if: ${{ matrix.platform != 'web' }}
         run: cp -r '${{ env.ASSETS_DIR }}' '${{ env.OUT_DIR }}' || true # Ignore error if assets folder does not exist
 
