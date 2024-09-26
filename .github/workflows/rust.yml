@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - name: install deps
+      run: echo 'sudo apt-get install -y llvm'
     - name: Build
       run: cargo build --verbose
     - name: Run tests
