@@ -11,6 +11,7 @@ use token::FerryToken;
 use typecheck::{FerryTypeError, FerryTypechecker};
 
 mod interpreter;
+mod ir;
 mod lexer;
 mod parser;
 mod riscv;
@@ -19,6 +20,7 @@ mod syntax;
 mod token;
 mod typecheck;
 mod types;
+mod vm;
 
 pub struct Ferry {
     source_code: String,
