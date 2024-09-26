@@ -82,6 +82,12 @@ jobs:
             echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "${GITHUB_ENV}"
           fi
 
+      - name: Set up dependencies
+        run: |
+          if [ '${{ matrix.platform }}' == 'linux' ]; then
+            echo 'sudo apt-get install -y llvm'
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
