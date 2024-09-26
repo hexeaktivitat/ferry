@@ -19,7 +19,7 @@ jobs:
     - name: install deps
       uses: KyleMayes/install-llvm-action@v2
       with:
-        version: "18.1"
+        version: "18.0"
     - name: Build
       run: cargo build --verbose
     - name: Run tests
