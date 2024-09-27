@@ -4,8 +4,11 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::{
-    state::FerryState,
-    syntax::{Expr, ExprVisitor},
+    state::{FerryState, FerryValue},
+    syntax::{
+        Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If, Lit, Loop,
+        Unary, Variable,
+    },
 };
 
 /// Intermediate Representation for FerryVM
@@ -16,21 +19,15 @@ use crate::{
 pub enum FerryIrError {}
 
 // Register addresses are 8-bit for the VM
-type FerryRegister = u8;
-type Integer = i16;
+// type FerryRegister = u8;
+// type Integer = i16;
 
 pub enum FerryOpCode {
-    LoadLit {
-        dest: FerryRegister,
-        value: Integer,
-    },
-    Add {
-        dest: FerryRegister,
-        a: FerryRegister,
-        b: FerryRegister,
-    },
+    Load(FerryValue),
+    Add,
 }
 
+// Stack-based IR for initial hacking
 pub struct FerryIr {
     // AST to be lowered to this IR
     ast: Vec<Expr>,
@@ -47,7 +44,6 @@ impl FerryIr {
     }
 
     pub fn lower(&mut self) -> FerryResult<Vec<FerryOpCode>> {
-        let registers: HashMap<String, FerryRegister> = HashMap::new();
         let result = vec![];
 
         Ok(result)
@@ -57,15 +53,46 @@ impl FerryIr {
 impl ExprVisitor<FerryResult<FerryOpCode>, &mut FerryState> for FerryIr {
     fn visit_literal(
         &mut self,
-        literal: &mut crate::syntax::Lit,
+        literal: &mut Lit,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
-        todo!()
+        match literal {
+            Lit::Undefined {
+                token: _,
+                expr_type: _,
+            } => Ok(FerryOpCode::Load(FerryValue::Unit)),
+            Lit::Number {
+                token: _,
+                value,
+                expr_type: _,
+                span: _,
+            } => Ok(FerryOpCode::Load(FerryValue::Number(*value))),
+            Lit::Str {
+                token: _,
+                value,
+                expr_type: _,
+                span: _,
+                // } => Ok(FerryOpCode::Load(FerryValue::Str(value.clone()))),
+            } => todo!(),
+            Lit::Bool {
+                token: _,
+                value,
+                expr_type: _,
+                span: _,
+            } => Ok(FerryOpCode::Load(FerryValue::Boolean(*value))),
+            Lit::List {
+                token: _,
+                contents,
+                expr_type: _,
+                span: _,
+                // } => Ok(FerryOpCode::Load(FerryValue::List(contents.clone())))
+            } => todo!(),
+        }
     }
 
     fn visit_binary(
         &mut self,
-        binary: &mut crate::syntax::Binary,
+        binary: &mut Binary,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
         todo!()
@@ -73,7 +100,7 @@ impl ExprVisitor<FerryResult<FerryOpCode>, &mut FerryState> for FerryIr {
 
     fn visit_unary(
         &mut self,
-        unary: &mut crate::syntax::Unary,
+        unary: &mut Unary,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
         todo!()
@@ -81,7 +108,7 @@ impl ExprVisitor<FerryResult<FerryOpCode>, &mut FerryState> for FerryIr {
 
     fn visit_variable(
         &mut self,
-        variable: &mut crate::syntax::Variable,
+        variable: &mut Variable,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
         todo!()
@@ -89,7 +116,7 @@ impl ExprVisitor<FerryResult<FerryOpCode>, &mut FerryState> for FerryIr {
 
     fn visit_assign(
         &mut self,
-        assign: &mut crate::syntax::Assign,
+        assign: &mut Assign,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
         todo!()
@@ -97,7 +124,7 @@ impl ExprVisitor<FerryResult<FerryOpCode>, &mut FerryState> for FerryIr {
 
     fn visit_if_expr(
         &mut self,
-        if_expr: &mut crate::syntax::If,
+        if_expr: &mut If,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
         todo!()
@@ -105,7 +132,7 @@ impl ExprVisitor<FerryResult<FerryOpCode>, &mut FerryState> for FerryIr {
 
     fn visit_group(
         &mut self,
-        group: &mut crate::syntax::Group,
+        group: &mut Group,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
         todo!()
@@ -113,7 +140,7 @@ impl ExprVisitor<FerryResult<FerryOpCode>, &mut FerryState> for FerryIr {
 
     fn visit_binding(
         &mut self,
-        binding: &mut crate::syntax::Binding,
+        binding: &mut Binding,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
         todo!()
@@ -121,7 +148,7 @@ impl ExprVisitor<FerryResult<FerryOpCode>, &mut FerryState> for FerryIr {
 
     fn visit_loop(
         &mut self,
-        loop_expr: &mut crate::syntax::Loop,
+        loop_expr: &mut Loop,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
         todo!()
@@ -129,7 +156,7 @@ impl ExprVisitor<FerryResult<FerryOpCode>, &mut FerryState> for FerryIr {
 
     fn visit_for(
         &mut self,
-        for_expr: &mut crate::syntax::For,
+        for_expr: &mut For,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
         todo!()
@@ -137,29 +164,25 @@ impl ExprVisitor<FerryResult<FerryOpCode>, &mut FerryState> for FerryIr {
 
     fn visit_function(
         &mut self,
-        function: &mut crate::syntax::Function,
+        function: &mut Function,
         state: &mut FerryState,
     ) -> FerryResult<FerryOpCode> {
         todo!()
     }
 
-    fn visit_call(
-        &mut self,
-        call: &mut crate::syntax::Call,
-        state: &mut FerryState,
-    ) -> FerryResult<FerryOpCode> {
+    fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<FerryOpCode> {
         todo!()
     }
 }
 
 mod tests {
-    use super::*;
-    use std::mem::size_of;
+    // use super::*;
+    // use std::mem::size_of;
 
-    /// Checks that FerryOpCode is a 32-bit value
-    /// This is not necessarily a requirement, but important to know
-    #[test]
-    fn check_opcode_size() {
-        assert!(size_of::<FerryOpCode>() == 4);
-    }
+    // / Checks that FerryOpCode is a 32-bit value
+    // / This is not necessarily a requirement, but important to know
+    // #[test]
+    // fn check_opcode_size() {
+    //     assert!(size_of::<FerryOpCode>() == 1);
+    // }
 }
