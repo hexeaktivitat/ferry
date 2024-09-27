@@ -22,12 +22,13 @@ pub enum FerryIrError {}
 // type FerryRegister = u8;
 // type Integer = i16;
 
+#[derive(Debug, Clone)]
 pub enum FerryOpCode {
     Load(FerryValue),
     Add,
 }
 
-// Stack-based IR for initial hacking
+#[derive(Debug)]
 pub struct FerryIr {
     // AST to be lowered to this IR
     ast: Vec<Expr>,
