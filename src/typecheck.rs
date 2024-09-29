@@ -701,6 +701,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     FerryType::List => FerryValue::List(vec![]),
                     FerryType::Untyped => FerryValue::Number(0), // assume an untyped iterator value is a Num
                     FerryType::Undefined => FerryValue::Unit,
+                    FerryType::Pointer => FerryValue::Ptr(0x00),
                 };
                 state.add_symbol(&var.name, Some(placeholder_value));
             }

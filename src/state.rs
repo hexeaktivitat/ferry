@@ -18,6 +18,7 @@ pub enum FerryValue {
     Boolean(bool),
     List(Vec<FerryValue>),
     Function { declaration: Function },
+    Ptr(u8),
     Unit,
 }
 
@@ -41,6 +42,20 @@ impl Convertable<i64> for FerryValue {
         } else {
             // coerce non-Number values to 0
             0
+        }
+    }
+}
+
+impl Convertable<String> for FerryValue {
+    fn convert_from(value: String) -> Self {
+        FerryValue::Str(value)
+    }
+
+    fn convert_to(self) -> String {
+        if let FerryValue::Str(value) = self {
+            value
+        } else {
+            "".into()
         }
     }
 }
@@ -98,6 +113,7 @@ impl Typing for FerryValue {
             FerryValue::Unit => &FerryType::Undefined,
             FerryValue::List(_) => &FerryType::List,
             FerryValue::Function { declaration } => declaration.contents.get_type(),
+            FerryValue::Ptr(_) => &FerryType::Pointer,
         }
     }
 }
@@ -129,6 +145,7 @@ impl std::fmt::Display for FerryValue {
                 write!(f, "{formatting}")
             }
             FerryValue::Function { declaration: _ } => write!(f, "function placeholder"),
+            FerryValue::Ptr(p) => write!(f, "address: {p}"),
         }
     }
 }
