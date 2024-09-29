@@ -130,6 +130,7 @@ impl FerryVm {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 
