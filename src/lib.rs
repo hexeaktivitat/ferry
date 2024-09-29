@@ -1,3 +1,4 @@
+use ir::{FerryIr, FerryOpcode};
 use miette::{Diagnostic, IntoDiagnostic, Result};
 use thiserror::Error;
 
@@ -9,6 +10,7 @@ use state::{FerryState, FerryValue};
 use syntax::Expr;
 use token::FerryToken;
 use typecheck::{FerryTypeError, FerryTypechecker};
+use vm::FerryVm;
 
 mod interpreter;
 mod ir;
@@ -28,6 +30,7 @@ pub struct Ferry {
     state: FerryState,
     ast: Vec<Expr>,
     typed_ast: Vec<Expr>,
+    ferry_ir: Vec<FerryOpcode>,
     riscv_asm: Vec<Instruction>,
 }
 
@@ -47,6 +50,7 @@ impl Ferry {
             state: FerryState::new(),
             ast: Vec::new(),
             typed_ast: Vec::new(),
+            ferry_ir: Vec::new(),
             riscv_asm: Vec::new(),
         }
     }
@@ -72,25 +76,31 @@ impl Ferry {
                 related: err_list,
             })?;
 
-        let mut typechecker = FerryTypechecker::new(self.ast.clone());
-        self.typed_ast =
-            typechecker
-                .typecheck(&mut self.state)
-                .map_err(|err_list| FerryTypeErrors {
-                    source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
-                    related: err_list,
-                })?;
+        // let mut typechecker = FerryTypechecker::new(self.ast.clone());
+        // self.typed_ast =
+        //     typechecker
+        //         .typecheck(&mut self.state)
+        //         .map_err(|err_list| FerryTypeErrors {
+        //             source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
+        //             related: err_list,
+        //         })?;
 
-        let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
-        let result = match interpreter.interpret(&mut self.state).map_err(|err_list| {
-            FerryInterpreterErrors {
-                source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
-                related: err_list,
-            }
-        })? {
-            Some(r) => r,
-            None => FerryValue::Unit,
-        };
+        // let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
+        // let result = match interpreter.interpret(&mut self.state).map_err(|err_list| {
+        //     FerryInterpreterErrors {
+        //         source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
+        //         related: err_list,
+        //     }
+        // })? {
+        //     Some(r) => r,
+        //     None => FerryValue::Unit,
+        // };
+
+        let mut ir = FerryIr::new(self.ast.clone());
+        self.ferry_ir = ir.lower(&mut self.state).unwrap();
+
+        let mut vm = FerryVm::new(self.ferry_ir.clone());
+        let result = vm.interpret().unwrap();
 
         Ok(result)
     }
