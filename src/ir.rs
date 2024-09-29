@@ -302,8 +302,3 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         todo!()
     }
 }
-
-mod tests {
-    use super::*;
-    use std::mem::size_of;
-}
