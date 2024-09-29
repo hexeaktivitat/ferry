@@ -76,14 +76,14 @@ impl Ferry {
                 related: err_list,
             })?;
 
-        // let mut typechecker = FerryTypechecker::new(self.ast.clone());
-        // self.typed_ast =
-        //     typechecker
-        //         .typecheck(&mut self.state)
-        //         .map_err(|err_list| FerryTypeErrors {
-        //             source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
-        //             related: err_list,
-        //         })?;
+        let mut typechecker = FerryTypechecker::new(self.ast.clone());
+        self.typed_ast =
+            typechecker
+                .typecheck(&mut self.state)
+                .map_err(|err_list| FerryTypeErrors {
+                    source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
+                    related: err_list,
+                })?;
 
         // let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
         // let result = match interpreter.interpret(&mut self.state).map_err(|err_list| {
