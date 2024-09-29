@@ -1,13 +1,15 @@
+use std::collections::HashMap;
+
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::{
-    ir::FerryOpcode,
+    ir::{FerryAddr, FerryOpcode},
     state::{Convertable, FerryState, FerryValue},
 };
 
 #[derive(Diagnostic, Debug, Error)]
-enum FerryVmError {
+pub enum FerryVmError {
     #[error("Runtime errors")]
     RuntimeError {
         #[help]
@@ -20,6 +22,8 @@ type FerryResult<T> = Result<T, FerryVmError>;
 pub struct FerryVm {
     instructions: Vec<FerryOpcode>,
     stack: Vec<FerryValue>,
+    heap: HashMap<FerryAddr, FerryValue>,
+    // heap_ptr: u8,
     constants: Vec<i64>,
     pc: usize,
 }
@@ -29,12 +33,14 @@ impl FerryVm {
         Self {
             instructions,
             stack: vec![],
+            heap: HashMap::new(),
+            // heap_ptr: 0x00,
             constants: vec![],
             pc: 0,
         }
     }
 
-    pub fn interpret(&mut self, program: Vec<FerryOpcode>) -> FerryResult<FerryValue> {
+    pub fn interpret(&mut self) -> FerryResult<FerryValue> {
         // self.program = program;
         self.run()
     }
@@ -46,12 +52,22 @@ impl FerryVm {
             match instruction {
                 FerryOpcode::Nop => println!("nop"),
                 FerryOpcode::Halt => println!("HALT!"),
-                FerryOpcode::Return => result = self.stack.pop().unwrap(),
+                FerryOpcode::Return => {
+                    let stack_val = self.stack.pop().unwrap();
+                    if let FerryValue::Ptr(ptr) = stack_val {
+                        result = self.heap.get(&ptr).unwrap().clone();
+                    } else {
+                        result = stack_val;
+                    }
+                }
                 FerryOpcode::Load(c) => self.stack.push(FerryValue::convert_from(*c)),
+                FerryOpcode::Alloc(ptr, a) => {
+                    self.heap.insert(*ptr, a.clone());
+                }
                 FerryOpcode::Add => {
                     if self.stack.len() >= 2 {
-                        let left = self.stack.pop().unwrap().convert_to();
-                        let right = self.stack.pop().unwrap().convert_to();
+                        let left: i64 = self.stack.pop().unwrap().convert_to();
+                        let right: i64 = self.stack.pop().unwrap().convert_to();
                         let res: i64 = left + right;
                         self.stack.push(FerryValue::convert_from(res));
                     } else {
@@ -62,8 +78,8 @@ impl FerryVm {
                 }
                 FerryOpcode::Sub => {
                     if self.stack.len() >= 2 {
-                        let left = self.stack.pop().unwrap().convert_to();
-                        let right = self.stack.pop().unwrap().convert_to();
+                        let left: i64 = self.stack.pop().unwrap().convert_to();
+                        let right: i64 = self.stack.pop().unwrap().convert_to();
                         let res: i64 = left - right;
                         self.stack.push(FerryValue::convert_from(res));
                     } else {
@@ -74,8 +90,8 @@ impl FerryVm {
                 }
                 FerryOpcode::Mul => {
                     if self.stack.len() >= 2 {
-                        let left = self.stack.pop().unwrap().convert_to();
-                        let right = self.stack.pop().unwrap().convert_to();
+                        let left: i64 = self.stack.pop().unwrap().convert_to();
+                        let right: i64 = self.stack.pop().unwrap().convert_to();
                         let res: i64 = left * right;
                         self.stack.push(FerryValue::convert_from(res));
                     } else {
@@ -86,8 +102,8 @@ impl FerryVm {
                 }
                 FerryOpcode::Div => {
                     if self.stack.len() >= 2 {
-                        let left = self.stack.pop().unwrap().convert_to();
-                        let right = self.stack.pop().unwrap().convert_to();
+                        let left: i64 = self.stack.pop().unwrap().convert_to();
+                        let right: i64 = self.stack.pop().unwrap().convert_to();
                         if right == 0 {
                             return Err(FerryVmError::RuntimeError {
                                 advice: "DIVIDE BY ZERO".into(),
