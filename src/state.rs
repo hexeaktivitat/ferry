@@ -21,6 +21,30 @@ pub enum FerryValue {
     Unit,
 }
 
+// i'll make my OWN From<T>! with BLACKJACK! and HOOKERS!
+pub trait Convertable<T>
+where
+    Self: Sized,
+{
+    fn convert_from(value: T) -> Self;
+    fn convert_to(self) -> T;
+}
+
+impl Convertable<i64> for FerryValue {
+    fn convert_from(value: i64) -> Self {
+        FerryValue::Number(value)
+    }
+
+    fn convert_to(self) -> i64 {
+        if let FerryValue::Number(value) = self {
+            value
+        } else {
+            // coerce non-Number values to 0
+            0
+        }
+    }
+}
+
 impl FerryState {
     pub fn new() -> Self {
         Self {
