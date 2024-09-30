@@ -100,7 +100,7 @@ impl Ferry {
         self.ferry_ir = ir.lower(&mut self.state).unwrap();
 
         let mut vm = FerryVm::new(self.ferry_ir.clone());
-        let result = vm.interpret().unwrap();
+        let result = vm.interpret(&mut self.state).unwrap();
 
         Ok(result)
     }

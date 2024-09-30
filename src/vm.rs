@@ -40,12 +40,12 @@ impl FerryVm {
         }
     }
 
-    pub fn interpret(&mut self) -> FerryResult<FerryValue> {
+    pub fn interpret(&mut self, state: &mut FerryState) -> FerryResult<FerryValue> {
         // self.program = program;
-        self.run()
+        self.run(state)
     }
 
-    fn run(&mut self) -> FerryResult<FerryValue> {
+    fn run(&mut self, state: &mut FerryState) -> FerryResult<FerryValue> {
         let mut result = FerryValue::Unit;
 
         for instruction in self.instructions.clone().iter() {
@@ -137,13 +137,13 @@ mod tests {
     #[test]
     fn check_run() {
         let mut vm = FerryVm::new(vec![FerryOpcode::Halt]);
-        assert!(vm.run().unwrap() == FerryValue::Unit);
+        assert!(vm.run(&mut FerryState::new()).unwrap() == FerryValue::Unit);
     }
 
     #[test]
     fn check_load() {
         let mut vm = FerryVm::new(vec![FerryOpcode::Load(1), FerryOpcode::Load(2)]);
-        vm.run().unwrap();
+        vm.run(&mut FerryState::new()).unwrap();
         assert!(vm.stack == vec![FerryValue::Number(1), FerryValue::Number(2)]);
     }
 
@@ -155,6 +155,6 @@ mod tests {
             FerryOpcode::Add,
             FerryOpcode::Return,
         ]);
-        assert!(vm.run().unwrap() == FerryValue::Number(3));
+        assert!(vm.run(&mut FerryState::new()).unwrap() == FerryValue::Number(3));
     }
 }
