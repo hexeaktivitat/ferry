@@ -62,7 +62,6 @@ impl Into<u8> for FerryOpcode {
 pub struct FerryIr {
     // AST to be lowered to this IR
     ast: Vec<Expr>,
-    constants: Vec<FerryValue>,
     heap_ptr: FerryAddr,
 }
 
@@ -72,7 +71,6 @@ impl FerryIr {
     pub fn new(ast: Vec<Expr>) -> Self {
         Self {
             ast,
-            constants: vec![],
             heap_ptr: 0x00,
         }
     }
