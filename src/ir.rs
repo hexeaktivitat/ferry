@@ -32,12 +32,14 @@ pub enum FerryOpcode {
     Return,
     // LOAD: loads designated value (push onto stack)
     Load(i64),
+    Alloc(FerryAddr, FerryValue),
+    Set(String),
+    Get(String),
     // ADD: pops last 2 values, adds, pushes onto stack
     Add,
     Sub,
     Mul,
     Div,
-    Alloc(FerryAddr, FerryValue),
 }
 
 // Into over From due to not being able to effeciently map u8 to fixed enum values
@@ -48,6 +50,8 @@ impl Into<u8> for FerryOpcode {
             FerryOpcode::Nop => 0x00,
             FerryOpcode::Load(_) => 0x01,
             FerryOpcode::Alloc(_, _) => 0x02,
+            FerryOpcode::Set(_) => 0x03,
+            FerryOpcode::Get(_) => 0x04,
             FerryOpcode::Add => 0x10,
             FerryOpcode::Sub => 0x11,
             FerryOpcode::Mul => 0x12,
@@ -86,6 +90,7 @@ impl FerryIr {
         }
 
         program.push(FerryOpcode::Return);
+        program.push(FerryOpcode::Halt);
 
         Ok(program)
     }
@@ -207,7 +212,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
                     Ok(instructions)
                 }
-                crate::token::Op::Equals => todo!(),
+                crate::token::Op::Equals => unreachable!(),
                 crate::token::Op::LessThan => todo!(),
                 crate::token::Op::GreaterThan => todo!(),
                 crate::token::Op::Equality => todo!(),
@@ -241,7 +246,21 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         assign: &mut Assign,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        todo!()
+        let mut instructions = vec![];
+
+        let id = assign.name.clone();
+        let mut var = self.assemble_opcode(&mut assign.var, state)?;
+        let mut value_instructions = if let Some(val) = assign.value.as_mut() {
+            self.assemble_opcode(val, state)?
+        } else {
+            vec![]
+        };
+
+        instructions.append(&mut var);
+        instructions.append(&mut value_instructions);
+        instructions.append(&mut vec![FerryOpcode::Set(id)]);
+
+        Ok(instructions)
     }
 
     fn visit_if_expr(

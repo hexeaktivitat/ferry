@@ -47,11 +47,11 @@ impl FerryVm {
 
     fn run(&mut self, state: &mut FerryState) -> FerryResult<FerryValue> {
         let mut result = FerryValue::Unit;
-
-        for instruction in self.instructions.clone().iter() {
+        loop {
+            let instruction = self.advance().clone();
             match instruction {
                 FerryOpcode::Nop => println!("nop"),
-                FerryOpcode::Halt => println!("HALT!"),
+                FerryOpcode::Halt => break,
                 FerryOpcode::Return => {
                     let stack_val = self.stack.pop().unwrap();
                     if let FerryValue::Ptr(ptr) = stack_val {
@@ -60,9 +60,17 @@ impl FerryVm {
                         result = stack_val;
                     }
                 }
-                FerryOpcode::Load(c) => self.stack.push(FerryValue::convert_from(*c)),
+                FerryOpcode::Load(c) => self.stack.push(FerryValue::convert_from(c)),
                 FerryOpcode::Alloc(ptr, a) => {
-                    self.heap.insert(*ptr, a.clone());
+                    self.heap.insert(ptr, a.clone());
+                }
+                FerryOpcode::Set(id) => {
+                    let value = self.stack.last().unwrap();
+                    state.add_symbol(&id, Some(value.clone()));
+                }
+                FerryOpcode::Get(id) => {
+                    let value = state.get_symbol_value(&id).unwrap();
+                    self.stack.push(value);
                 }
                 FerryOpcode::Add => {
                     if self.stack.len() >= 2 {
@@ -119,7 +127,6 @@ impl FerryVm {
                 }
             }
         }
-
         Ok(result)
     }
 
@@ -142,7 +149,11 @@ mod tests {
 
     #[test]
     fn check_load() {
-        let mut vm = FerryVm::new(vec![FerryOpcode::Load(1), FerryOpcode::Load(2)]);
+        let mut vm = FerryVm::new(vec![
+            FerryOpcode::Load(1),
+            FerryOpcode::Load(2),
+            FerryOpcode::Halt,
+        ]);
         vm.run(&mut FerryState::new()).unwrap();
         assert!(vm.stack == vec![FerryValue::Number(1), FerryValue::Number(2)]);
     }
@@ -154,6 +165,7 @@ mod tests {
             FerryOpcode::Load(2),
             FerryOpcode::Add,
             FerryOpcode::Return,
+            FerryOpcode::Halt,
         ]);
         assert!(vm.run(&mut FerryState::new()).unwrap() == FerryValue::Number(3));
     }
