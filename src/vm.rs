@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use miette::{Diagnostic, Result, SourceSpan};
+use miette::{Diagnostic, Result};
 use thiserror::Error;
 
 use crate::{
@@ -24,7 +24,7 @@ pub struct FerryVm {
     stack: Vec<FerryValue>,
     heap: HashMap<FerryAddr, FerryValue>,
     // heap_ptr: u8,
-    constants: Vec<i64>,
+    // constants: Vec<i64>,
     pc: usize,
 }
 
@@ -35,7 +35,7 @@ impl FerryVm {
             stack: vec![],
             heap: HashMap::new(),
             // heap_ptr: 0x00,
-            constants: vec![],
+            // constants: vec![],
             pc: 0,
         }
     }
@@ -137,7 +137,7 @@ impl FerryVm {
                 }
                 FerryOpcode::And => todo!(),
                 FerryOpcode::Or => todo!(),
-                FerryOpcode::Equality => todo!(),
+
                 FerryOpcode::Jump(offset) => {
                     self.pc += offset;
                 }
