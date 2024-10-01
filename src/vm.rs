@@ -40,6 +40,11 @@ impl FerryVm {
         }
     }
 
+    pub fn set_program(&mut self, instructions: Vec<FerryOpcode>) {
+        self.pc = 0;
+        self.instructions = instructions;
+    }
+
     pub fn interpret(&mut self, state: &mut FerryState) -> FerryResult<FerryValue> {
         // self.program = program;
         self.run(state)
@@ -63,6 +68,7 @@ impl FerryVm {
                 FerryOpcode::Load(c) => self.stack.push(FerryValue::convert_from(c)),
                 FerryOpcode::Alloc(ptr, a) => {
                     self.heap.insert(ptr, a.clone());
+                    self.stack.push(FerryValue::Ptr(ptr));
                 }
                 FerryOpcode::Set(id) => {
                     let value = self.stack.last().unwrap();
@@ -70,7 +76,11 @@ impl FerryVm {
                 }
                 FerryOpcode::Get(id) => {
                     let value = state.get_symbol_value(&id).unwrap();
-                    self.stack.push(value);
+                    if let FerryValue::Ptr(ptr) = value {
+                        self.stack.push(self.heap.get(&ptr).unwrap().clone());
+                    } else {
+                        self.stack.push(value);
+                    }
                 }
                 FerryOpcode::Add => {
                     if self.stack.len() >= 2 {

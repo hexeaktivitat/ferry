@@ -140,10 +140,10 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
             } => {
                 let ptr = self.heap_ptr;
                 self.heap_ptr += 1;
-                Ok(vec![
-                    FerryOpcode::Alloc(ptr, FerryValue::Str(value.clone())),
-                    FerryOpcode::Load(ptr as i64),
-                ])
+                Ok(vec![FerryOpcode::Alloc(
+                    ptr,
+                    FerryValue::Str(value.clone()),
+                )])
             }
             Lit::Bool {
                 token,
@@ -162,10 +162,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 let mut list_interpreter =
                     FerryInterpreter::new(vec![Expr::Literal(literal.clone())]);
                 let values = list_interpreter.interpret(state).unwrap().unwrap();
-                Ok(vec![
-                    FerryOpcode::Alloc(ptr, values),
-                    FerryOpcode::Load(ptr as i64),
-                ])
+                Ok(vec![FerryOpcode::Alloc(ptr, values)])
             }
         }
     }
