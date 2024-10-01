@@ -137,10 +137,31 @@ impl FerryVm {
                 }
                 FerryOpcode::And => todo!(),
                 FerryOpcode::Or => todo!(),
-                FerryOpcode::Not => todo!(),
-                FerryOpcode::Equal => todo!(),
-                FerryOpcode::Greater => todo!(),
-                FerryOpcode::Lesser => todo!(),
+                FerryOpcode::Not => {
+                    if let FerryValue::Boolean(v) = self.stack.pop().unwrap() {
+                        self.stack.push(FerryValue::Boolean(!v));
+                    } else {
+                        self.stack.push(FerryValue::Boolean(false));
+                    }
+                }
+                FerryOpcode::Equal => {
+                    let b: i64 = self.stack.pop().unwrap().convert_to();
+                    let a: i64 = self.stack.pop().unwrap().convert_to();
+                    let res = a == b;
+                    self.stack.push(FerryValue::Boolean(res));
+                }
+                FerryOpcode::Greater => {
+                    let b: i64 = self.stack.pop().unwrap().convert_to();
+                    let a: i64 = self.stack.pop().unwrap().convert_to();
+                    let res = a > b;
+                    self.stack.push(FerryValue::Boolean(res));
+                }
+                FerryOpcode::Lesser => {
+                    let b: i64 = self.stack.pop().unwrap().convert_to();
+                    let a: i64 = self.stack.pop().unwrap().convert_to();
+                    let res = a < b;
+                    self.stack.push(FerryValue::Boolean(res));
+                }
                 FerryOpcode::Jump(offset) => {
                     self.pc += offset;
                 }
