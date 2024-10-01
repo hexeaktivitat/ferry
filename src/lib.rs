@@ -31,6 +31,7 @@ pub struct Ferry {
     ast: Vec<Expr>,
     typed_ast: Vec<Expr>,
     ferry_ir: Vec<FerryOpcode>,
+    vm: FerryVm,
     riscv_asm: Vec<Instruction>,
 }
 
@@ -51,6 +52,7 @@ impl Ferry {
             ast: Vec::new(),
             typed_ast: Vec::new(),
             ferry_ir: Vec::new(),
+            vm: FerryVm::new(vec![]),
             riscv_asm: Vec::new(),
         }
     }
@@ -99,8 +101,8 @@ impl Ferry {
         let mut ir = FerryIr::new(self.ast.clone());
         self.ferry_ir = ir.lower(&mut self.state).unwrap();
 
-        let mut vm = FerryVm::new(self.ferry_ir.clone());
-        let result = vm.interpret(&mut self.state).unwrap();
+        self.vm.set_program(self.ferry_ir.clone());
+        let result = self.vm.interpret(&mut self.state).unwrap();
 
         Ok(result)
     }
