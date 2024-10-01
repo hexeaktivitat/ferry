@@ -32,6 +32,7 @@ pub enum FerryOpcode {
     Return,
     // LOAD: loads designated value (push onto stack)
     Load(i64),
+    // ALLOC: allocates on the heap vs stack
     Alloc(FerryAddr, FerryValue),
     Set(String),
     Get(String),
@@ -40,6 +41,13 @@ pub enum FerryOpcode {
     Sub,
     Mul,
     Div,
+    And,
+    Or,
+    Equality,
+    // JUMP: specifies the offset for a jump operation
+    Jump(usize),
+    // JUMPCOND: only jumps if top stack value is truthy
+    JumpCond(usize),
 }
 
 // Into over From due to not being able to effeciently map u8 to fixed enum values
@@ -56,6 +64,11 @@ impl Into<u8> for FerryOpcode {
             FerryOpcode::Sub => 0x11,
             FerryOpcode::Mul => 0x12,
             FerryOpcode::Div => 0x13,
+            FerryOpcode::And => 0x14,
+            FerryOpcode::Or => 0x15,
+            FerryOpcode::Equality => 0x16,
+            FerryOpcode::Jump(_) => 0x20,
+            FerryOpcode::JumpCond(_) => 0x21,
             FerryOpcode::Return => 0xfe,
             FerryOpcode::Halt => 0xff,
         }
@@ -213,11 +226,57 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                     Ok(instructions)
                 }
                 crate::token::Op::Equals => unreachable!(),
-                crate::token::Op::LessThan => todo!(),
-                crate::token::Op::GreaterThan => todo!(),
+                crate::token::Op::LessThan => {
+                    let mut instructions = vec![];
+
+                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+
+                    instructions.append(&mut left);
+                    instructions.append(&mut right);
+                    instructions.push(FerryOpcode::Sub);
+
+                    Ok(instructions)
+                }
+                crate::token::Op::GreaterThan => {
+                    let mut instructions = vec![];
+
+                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+
+                    instructions.append(&mut right);
+                    instructions.append(&mut left);
+                    instructions.push(FerryOpcode::Sub);
+
+                    Ok(instructions)
+                }
                 crate::token::Op::Equality => todo!(),
-                crate::token::Op::LessEqual => todo!(),
-                crate::token::Op::GreaterEqual => todo!(),
+                crate::token::Op::LessEqual => {
+                    let mut instructions = vec![];
+
+                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+
+                    instructions.append(&mut left);
+                    instructions.append(&mut right);
+                    instructions.push(FerryOpcode::Sub);
+                    instructions.push(FerryOpcode::Equality);
+
+                    Ok(instructions)
+                }
+                crate::token::Op::GreaterEqual => {
+                    let mut instructions = vec![];
+
+                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+
+                    instructions.append(&mut right);
+                    instructions.append(&mut left);
+                    instructions.push(FerryOpcode::Sub);
+                    instructions.push(FerryOpcode::Equality);
+
+                    Ok(instructions)
+                }
                 crate::token::Op::GetI => todo!(),
                 crate::token::Op::Cons => todo!(),
             },
@@ -238,7 +297,9 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         variable: &mut Variable,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        todo!()
+        let instructions = vec![FerryOpcode::Get(variable.name.clone())];
+
+        Ok(instructions)
     }
 
     fn visit_assign(
@@ -249,14 +310,14 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         let mut instructions = vec![];
 
         let id = assign.name.clone();
-        let mut var = self.assemble_opcode(&mut assign.var, state)?;
+        // let mut var = self.assemble_opcode(&mut assign.var, state)?;
         let mut value_instructions = if let Some(val) = assign.value.as_mut() {
             self.assemble_opcode(val, state)?
         } else {
             vec![]
         };
 
-        instructions.append(&mut var);
+        // instructions.append(&mut var);
         instructions.append(&mut value_instructions);
         instructions.append(&mut vec![FerryOpcode::Set(id)]);
 
@@ -268,7 +329,24 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         if_expr: &mut If,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        todo!()
+        let mut instructions = vec![];
+        let mut conditional = self.assemble_opcode(&mut if_expr.condition, state)?;
+        let mut then_expr = self.assemble_opcode(&mut if_expr.then_expr, state)?;
+        let mut else_expr = if let Some(else_expr) = if_expr.else_expr.as_mut() {
+            self.assemble_opcode(else_expr, state)?
+        } else {
+            vec![FerryOpcode::Nop]
+        };
+
+        let else_offset = else_expr.len();
+        then_expr.push(FerryOpcode::Jump(else_offset));
+        let then_offset = then_expr.len();
+        instructions.append(&mut conditional);
+        instructions.push(FerryOpcode::JumpCond(then_offset));
+        instructions.append(&mut then_expr);
+        instructions.append(&mut else_expr);
+
+        Ok(instructions)
     }
 
     fn visit_group(
@@ -284,7 +362,17 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         binding: &mut Binding,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        todo!()
+        let mut instructions = vec![];
+        let mut value = if let Some(v) = &mut binding.value {
+            self.assemble_opcode(v, state)?
+        } else {
+            vec![FerryOpcode::Load(0)]
+        };
+
+        instructions.append(&mut value);
+        instructions.append(&mut vec![FerryOpcode::Set(binding.name.clone())]);
+
+        Ok(instructions)
     }
 
     fn visit_loop(

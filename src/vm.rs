@@ -125,6 +125,18 @@ impl FerryVm {
                         });
                     }
                 }
+                FerryOpcode::And => todo!(),
+                FerryOpcode::Or => todo!(),
+                FerryOpcode::Equality => todo!(),
+                FerryOpcode::Jump(offset) => {
+                    self.pc += offset;
+                }
+                FerryOpcode::JumpCond(offset) => {
+                    let cond = self.stack.last().unwrap();
+                    if !cond.truthiness() {
+                        self.pc += offset;
+                    }
+                }
             }
         }
         Ok(result)

@@ -149,3 +149,17 @@ impl std::fmt::Display for FerryValue {
         }
     }
 }
+
+impl FerryValue {
+    pub fn truthiness(&self) -> bool {
+        match self {
+            FerryValue::Number(n) => n > &0,
+            FerryValue::Str(s) => !s.is_empty(),
+            FerryValue::Boolean(b) => *b,
+            FerryValue::Unit => false,
+            FerryValue::List(l) => !l.is_empty(),
+            FerryValue::Function { declaration: _ } => false,
+            FerryValue::Ptr(p) => !*p == 0xff,
+        }
+    }
+}
