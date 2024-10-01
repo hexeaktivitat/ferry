@@ -43,6 +43,10 @@ pub enum FerryOpcode {
     Div,
     And,
     Or,
+    Not,
+    Equal,
+    Greater,
+    Lesser,
     // JUMP: specifies the offset for a jump operation
     Jump(usize),
     // JUMPCOND: only jumps if top stack value is truthy
@@ -65,6 +69,10 @@ impl Into<u8> for FerryOpcode {
             FerryOpcode::Div => 0x13,
             FerryOpcode::And => 0x14,
             FerryOpcode::Or => 0x15,
+            FerryOpcode::Not => 0x16,
+            FerryOpcode::Equal => 0x17,
+            FerryOpcode::Greater => 0x18,
+            FerryOpcode::Lesser => 0x19,
             FerryOpcode::Jump(_) => 0x20,
             FerryOpcode::JumpCond(_) => 0x21,
             FerryOpcode::Return => 0xfe,
@@ -230,7 +238,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
-                    instructions.push(FerryOpcode::Sub);
+                    instructions.append(&mut vec![FerryOpcode::Lesser]);
 
                     Ok(instructions)
                 }
@@ -240,13 +248,24 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                     let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
                     let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
 
-                    instructions.append(&mut right);
                     instructions.append(&mut left);
-                    instructions.push(FerryOpcode::Sub);
+                    instructions.append(&mut right);
+                    instructions.append(&mut vec![FerryOpcode::Greater]);
 
                     Ok(instructions)
                 }
-                crate::token::Op::Equality => todo!(),
+                crate::token::Op::Equality => {
+                    let mut instructions = vec![];
+
+                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+
+                    instructions.append(&mut left);
+                    instructions.append(&mut right);
+                    instructions.append(&mut vec![FerryOpcode::Equal]);
+
+                    Ok(instructions)
+                }
                 crate::token::Op::LessEqual => {
                     let mut instructions = vec![];
 
@@ -255,7 +274,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
-                    instructions.push(FerryOpcode::Sub);
+                    instructions.append(&mut vec![FerryOpcode::Greater, FerryOpcode::Not]);
 
                     Ok(instructions)
                 }
@@ -265,9 +284,9 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                     let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
                     let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
 
-                    instructions.append(&mut right);
                     instructions.append(&mut left);
-                    instructions.push(FerryOpcode::Sub);
+                    instructions.append(&mut right);
+                    instructions.append(&mut vec![FerryOpcode::Lesser, FerryOpcode::Not]);
 
                     Ok(instructions)
                 }

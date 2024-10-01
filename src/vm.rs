@@ -137,7 +137,10 @@ impl FerryVm {
                 }
                 FerryOpcode::And => todo!(),
                 FerryOpcode::Or => todo!(),
-
+                FerryOpcode::Not => todo!(),
+                FerryOpcode::Equal => todo!(),
+                FerryOpcode::Greater => todo!(),
+                FerryOpcode::Lesser => todo!(),
                 FerryOpcode::Jump(offset) => {
                     self.pc += offset;
                 }
