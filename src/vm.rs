@@ -81,7 +81,7 @@ impl FerryVm {
                 FerryOpcode::Set(id) => {
                     // println!("{:?}", self.stack);
                     // println!("{id}");
-                    let value = self.stack.last().unwrap();
+                    let value = self.stack.pop().unwrap();
                     state.add_symbol(&id, Some(value.clone()));
                 }
                 FerryOpcode::Get(id) => {
@@ -112,9 +112,9 @@ impl FerryVm {
                 }
                 FerryOpcode::Sub => {
                     if self.stack.len() >= 2 {
-                        let left: i64 = self.stack.pop().unwrap().convert_to();
                         let right: i64 = self.stack.pop().unwrap().convert_to();
-                        let res: i64 = right - left;
+                        let left: i64 = self.stack.pop().unwrap().convert_to();
+                        let res: i64 = left - right;
                         println!("{left},{right}");
                         self.stack.push(FerryValue::convert_from(res));
                     } else {
@@ -125,8 +125,8 @@ impl FerryVm {
                 }
                 FerryOpcode::Mul => {
                     if self.stack.len() >= 2 {
-                        let left: i64 = self.stack.pop().unwrap().convert_to();
                         let right: i64 = self.stack.pop().unwrap().convert_to();
+                        let left: i64 = self.stack.pop().unwrap().convert_to();
                         let res: i64 = left * right;
                         self.stack.push(FerryValue::convert_from(res));
                     } else {
@@ -137,8 +137,8 @@ impl FerryVm {
                 }
                 FerryOpcode::Div => {
                     if self.stack.len() >= 2 {
-                        let left: i64 = self.stack.pop().unwrap().convert_to();
                         let right: i64 = self.stack.pop().unwrap().convert_to();
+                        let left: i64 = self.stack.pop().unwrap().convert_to();
                         if right == 0 {
                             return Err(FerryVmError::RuntimeError {
                                 advice: "DIVIDE BY ZERO".into(),
@@ -183,8 +183,8 @@ impl FerryVm {
                     self.pc += offset;
                 }
                 FerryOpcode::JumpCond(offset) => {
-                    // let cond = self.stack.last().unwrap();
-                    let cond = self.stack.pop().unwrap();
+                    let cond = self.stack.last().unwrap();
+                    // let cond = self.stack.pop().unwrap();
                     if !cond.truthiness() {
                         self.pc += offset;
                     }
