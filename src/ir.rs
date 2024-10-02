@@ -31,8 +31,10 @@ pub enum FerryOpcode {
     // HALT: terminate application
     Halt,
     Return,
-    // LOAD: loads designated value (push onto stack)
-    Load(i64),
+    // LOAD: push a FerryValue onto stack
+    Load,
+    // LOADI: loads designated value (push onto stack)
+    LoadI(i64),
     // ALLOC: allocates on the heap vs stack
     Alloc(FerryAddr, FerryValue),
     Set(String),
@@ -68,11 +70,12 @@ impl Into<u8> for FerryOpcode {
     fn into(self) -> u8 {
         match self {
             FerryOpcode::Nop => 0x00,
-            FerryOpcode::Load(_) => 0x01,
-            FerryOpcode::Alloc(_, _) => 0x02,
-            FerryOpcode::Set(_) => 0x03,
-            FerryOpcode::Get(_) => 0x04,
-            FerryOpcode::Pop => 0x05,
+            FerryOpcode::Load => 0x01,
+            FerryOpcode::LoadI(_) => 0x02,
+            FerryOpcode::Alloc(_, _) => 0x03,
+            FerryOpcode::Set(_) => 0x04,
+            FerryOpcode::Get(_) => 0x05,
+            FerryOpcode::Pop => 0x06,
             FerryOpcode::Add => 0x10,
             FerryOpcode::Sub => 0x11,
             FerryOpcode::Mul => 0x12,
@@ -137,7 +140,7 @@ impl FerryIr {
 
         for (idx, inst) in program.clone().iter().enumerate() {
             if let FerryOpcode::Label(name) = inst {
-                state.add_label(name, idx);
+                state.add_label(name, idx + 1);
             }
         }
 
@@ -164,13 +167,13 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
     ) -> FerryResult<Vec<FerryOpcode>> {
         match literal {
             // treat undefined as a 0 for now
-            Lit::Undefined { token, expr_type } => Ok(vec![FerryOpcode::Load(0)]),
+            Lit::Undefined { token, expr_type } => Ok(vec![FerryOpcode::LoadI(0)]),
             Lit::Number {
                 token,
                 value,
                 expr_type,
                 span,
-            } => Ok(vec![FerryOpcode::Load(*value)]),
+            } => Ok(vec![FerryOpcode::LoadI(*value)]),
             Lit::Str {
                 token,
                 value,
@@ -189,7 +192,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 value,
                 expr_type,
                 span,
-            } => Ok(vec![FerryOpcode::Load(*value as i64)]),
+            } => Ok(vec![FerryOpcode::LoadI(*value as i64)]),
             Lit::List {
                 token,
                 contents,
@@ -413,7 +416,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         let mut value = if let Some(v) = &mut binding.value {
             self.assemble_opcode(v, state)?
         } else {
-            vec![FerryOpcode::Load(0)]
+            vec![FerryOpcode::LoadI(0)]
         };
 
         instructions.append(&mut value);
@@ -496,7 +499,6 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         instructions.push(FerryOpcode::Label(function.name.clone()));
         instructions.append(&mut args_inst);
         instructions.append(&mut function_inst);
-        // instructions.push(FerryOpcode::Return);
         instructions.push(FerryOpcode::JumpRet);
 
         Ok(instructions)

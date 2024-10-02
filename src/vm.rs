@@ -27,6 +27,7 @@ pub struct FerryVm {
     // constants: Vec<i64>,
     labels: HashMap<String, usize>,
     pc: usize,
+    fp: usize,
     // return pointer
     ret: Vec<usize>,
 }
@@ -41,6 +42,7 @@ impl FerryVm {
             // constants: vec![],
             labels: HashMap::new(),
             pc: 0,
+            fp: 0,
             ret: vec![],
         }
     }
@@ -70,20 +72,21 @@ impl FerryVm {
                         result = stack_val;
                     }
                 }
-                FerryOpcode::Load(c) => self.stack.push(FerryValue::convert_from(c)),
+                FerryOpcode::Load => todo!(),
+                FerryOpcode::LoadI(c) => self.stack.push(FerryValue::convert_from(c)),
                 FerryOpcode::Alloc(ptr, a) => {
                     self.heap.insert(ptr, a.clone());
                     self.stack.push(FerryValue::Ptr(ptr));
                 }
                 FerryOpcode::Set(id) => {
-                    println!("{:?}", self.stack);
-                    println!("{id}");
+                    // println!("{:?}", self.stack);
+                    // println!("{id}");
                     let value = self.stack.last().unwrap();
                     state.add_symbol(&id, Some(value.clone()));
                 }
                 FerryOpcode::Get(id) => {
-                    println!("{:?}", self.stack);
-                    println!("{id}");
+                    // println!("{:?}", self.stack);
+                    // println!("{id}");
                     let value = state.get_symbol_value(&id).unwrap();
                     if let FerryValue::Ptr(ptr) = value {
                         self.stack.push(self.heap.get(&ptr).unwrap().clone());
@@ -98,6 +101,7 @@ impl FerryVm {
                     if self.stack.len() >= 2 {
                         let left: i64 = self.stack.pop().unwrap().convert_to();
                         let right: i64 = self.stack.pop().unwrap().convert_to();
+                        println!("{left},{right}");
                         let res: i64 = left + right;
                         self.stack.push(FerryValue::convert_from(res));
                     } else {
@@ -111,6 +115,7 @@ impl FerryVm {
                         let left: i64 = self.stack.pop().unwrap().convert_to();
                         let right: i64 = self.stack.pop().unwrap().convert_to();
                         let res: i64 = right - left;
+                        println!("{left},{right}");
                         self.stack.push(FerryValue::convert_from(res));
                     } else {
                         return Err(FerryVmError::RuntimeError {
@@ -178,7 +183,8 @@ impl FerryVm {
                     self.pc += offset;
                 }
                 FerryOpcode::JumpCond(offset) => {
-                    let cond = self.stack.last().unwrap();
+                    // let cond = self.stack.last().unwrap();
+                    let cond = self.stack.pop().unwrap();
                     if !cond.truthiness() {
                         self.pc += offset;
                     }
@@ -210,11 +216,15 @@ impl FerryVm {
                     self.labels.insert(label, self.pc);
                 }
                 FerryOpcode::JumpLabel(label) => {
+                    println!("pc: {}", self.pc);
                     self.ret.push(self.pc);
-                    println!("{:?}", self.ret);
+                    println!("ret: {:?}", self.ret);
+                    println!("stack @ fn jump: {:?}", self.stack);
                     self.pc = state.get_label(&label).unwrap();
                 }
-                FerryOpcode::JumpRet => self.pc = self.ret.pop().unwrap(),
+                FerryOpcode::JumpRet => {
+                    self.pc = self.ret.pop().unwrap();
+                }
             }
         }
         Ok(result)
@@ -240,8 +250,8 @@ mod tests {
     #[test]
     fn check_load() {
         let mut vm = FerryVm::new(vec![
-            FerryOpcode::Load(1),
-            FerryOpcode::Load(2),
+            FerryOpcode::LoadI(1),
+            FerryOpcode::LoadI(2),
             FerryOpcode::Halt,
         ]);
         vm.run(&mut FerryState::new()).unwrap();
@@ -251,8 +261,8 @@ mod tests {
     #[test]
     fn check_add() {
         let mut vm = FerryVm::new(vec![
-            FerryOpcode::Load(1),
-            FerryOpcode::Load(2),
+            FerryOpcode::LoadI(1),
+            FerryOpcode::LoadI(2),
             FerryOpcode::Add,
             FerryOpcode::Return,
             FerryOpcode::Halt,
