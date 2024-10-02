@@ -60,6 +60,20 @@ impl Convertable<String> for FerryValue {
     }
 }
 
+impl Convertable<Vec<FerryValue>> for FerryValue {
+    fn convert_from(value: Vec<FerryValue>) -> Self {
+        FerryValue::List(value)
+    }
+
+    fn convert_to(self) -> Vec<FerryValue> {
+        if let FerryValue::List(value) = self {
+            value
+        } else {
+            vec![]
+        }
+    }
+}
+
 impl FerryState {
     pub fn new() -> Self {
         Self {

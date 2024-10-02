@@ -82,6 +82,9 @@ impl FerryVm {
                         self.stack.push(value);
                     }
                 }
+                FerryOpcode::Pop => {
+                    self.stack.pop().unwrap();
+                }
                 FerryOpcode::Add => {
                     if self.stack.len() >= 2 {
                         let left: i64 = self.stack.pop().unwrap().convert_to();
@@ -170,6 +173,29 @@ impl FerryVm {
                     if !cond.truthiness() {
                         self.pc += offset;
                     }
+                }
+                FerryOpcode::JumpBack(offset) => {
+                    self.pc -= offset;
+                }
+                FerryOpcode::Iter => {
+                    let mut ptr_src = 0;
+                    let iter: Vec<FerryValue> =
+                        if let FerryValue::Ptr(ptr) = self.stack.pop().unwrap() {
+                            ptr_src = ptr;
+                            self.heap.get(&ptr).unwrap().clone()
+                        } else {
+                            FerryValue::List(vec![])
+                        }
+                        .convert_to();
+                    let (head, tail) = iter.split_first().unwrap();
+                    let tail_len = tail.len() as i64;
+                    // push pointer back onto stack
+                    self.stack.push(FerryValue::Ptr(ptr_src));
+                    self.heap.insert(ptr_src, FerryValue::List(tail.into()));
+                    // push len onto stack
+                    self.stack.push(FerryValue::Number(tail_len));
+                    // push value of variable assignment
+                    self.stack.push(head.clone());
                 }
             }
         }

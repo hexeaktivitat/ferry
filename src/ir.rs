@@ -36,6 +36,8 @@ pub enum FerryOpcode {
     Alloc(FerryAddr, FerryValue),
     Set(String),
     Get(String),
+    // POP: pops and discards top stack value
+    Pop,
     // ADD: pops last 2 values, adds, pushes onto stack
     Add,
     Sub,
@@ -51,6 +53,8 @@ pub enum FerryOpcode {
     Jump(usize),
     // JUMPCOND: only jumps if top stack value is truthy
     JumpCond(usize),
+    JumpBack(usize),
+    Iter,
 }
 
 // Into over From due to not being able to effeciently map u8 to fixed enum values
@@ -63,6 +67,7 @@ impl Into<u8> for FerryOpcode {
             FerryOpcode::Alloc(_, _) => 0x02,
             FerryOpcode::Set(_) => 0x03,
             FerryOpcode::Get(_) => 0x04,
+            FerryOpcode::Pop => 0x05,
             FerryOpcode::Add => 0x10,
             FerryOpcode::Sub => 0x11,
             FerryOpcode::Mul => 0x12,
@@ -75,6 +80,8 @@ impl Into<u8> for FerryOpcode {
             FerryOpcode::Lesser => 0x19,
             FerryOpcode::Jump(_) => 0x20,
             FerryOpcode::JumpCond(_) => 0x21,
+            FerryOpcode::JumpBack(_) => 0x22,
+            FerryOpcode::Iter => 0x23,
             FerryOpcode::Return => 0xfe,
             FerryOpcode::Halt => 0xff,
         }
@@ -367,7 +374,9 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         group: &mut Group,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        todo!()
+        let instructions = self.assemble_opcode(&mut group.contents, state)?;
+
+        Ok(instructions)
     }
 
     fn visit_binding(
@@ -393,7 +402,21 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         loop_expr: &mut Loop,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        todo!()
+        let mut instructions = vec![];
+
+        let mut cond_inst = if let Some(cond) = loop_expr.condition.as_mut() {
+            self.assemble_opcode(cond, state)?
+        } else {
+            vec![]
+        };
+        let mut contents = self.assemble_opcode(&mut loop_expr.contents, state)?;
+        instructions.append(&mut cond_inst);
+        instructions.push(FerryOpcode::JumpCond(contents.len() + 3));
+        instructions.push(FerryOpcode::Pop);
+        instructions.append(&mut contents);
+        instructions.push(FerryOpcode::JumpBack(instructions.len() + 4));
+
+        Ok(instructions)
     }
 
     fn visit_for(
@@ -401,7 +424,26 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         for_expr: &mut For,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        todo!()
+        let mut instructions = vec![];
+
+        if let Some(variable) = for_expr.variable.as_mut() {
+            let name = variable.get_token().get_id().unwrap();
+            let mut iter_inst = self.assemble_opcode(&mut for_expr.iterator, state)?;
+            let mut contents_inst = self.assemble_opcode(&mut for_expr.contents, state)?;
+            let contents_len = contents_inst.len();
+
+            instructions.append(&mut iter_inst);
+            instructions.push(FerryOpcode::Iter);
+            instructions.push(FerryOpcode::Set(name.clone()));
+            instructions.push(FerryOpcode::Pop);
+            instructions.append(&mut contents_inst);
+            instructions.push(FerryOpcode::Pop);
+            instructions.push(FerryOpcode::JumpCond(2));
+            instructions.push(FerryOpcode::Pop);
+            instructions.push(FerryOpcode::JumpBack(contents_len + 7));
+        }
+
+        Ok(instructions)
     }
 
     fn visit_function(
