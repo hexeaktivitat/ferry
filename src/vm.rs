@@ -25,7 +25,10 @@ pub struct FerryVm {
     heap: HashMap<FerryAddr, FerryValue>,
     // heap_ptr: u8,
     // constants: Vec<i64>,
+    labels: HashMap<String, usize>,
     pc: usize,
+    // return pointer
+    ret: Vec<usize>,
 }
 
 impl FerryVm {
@@ -36,7 +39,9 @@ impl FerryVm {
             heap: HashMap::new(),
             // heap_ptr: 0x00,
             // constants: vec![],
+            labels: HashMap::new(),
             pc: 0,
+            ret: vec![],
         }
     }
 
@@ -71,10 +76,14 @@ impl FerryVm {
                     self.stack.push(FerryValue::Ptr(ptr));
                 }
                 FerryOpcode::Set(id) => {
+                    println!("{:?}", self.stack);
+                    println!("{id}");
                     let value = self.stack.last().unwrap();
                     state.add_symbol(&id, Some(value.clone()));
                 }
                 FerryOpcode::Get(id) => {
+                    println!("{:?}", self.stack);
+                    println!("{id}");
                     let value = state.get_symbol_value(&id).unwrap();
                     if let FerryValue::Ptr(ptr) = value {
                         self.stack.push(self.heap.get(&ptr).unwrap().clone());
@@ -101,7 +110,7 @@ impl FerryVm {
                     if self.stack.len() >= 2 {
                         let left: i64 = self.stack.pop().unwrap().convert_to();
                         let right: i64 = self.stack.pop().unwrap().convert_to();
-                        let res: i64 = left - right;
+                        let res: i64 = right - left;
                         self.stack.push(FerryValue::convert_from(res));
                     } else {
                         return Err(FerryVmError::RuntimeError {
@@ -197,6 +206,15 @@ impl FerryVm {
                     // push value of variable assignment
                     self.stack.push(head.clone());
                 }
+                FerryOpcode::Label(label) => {
+                    self.labels.insert(label, self.pc);
+                }
+                FerryOpcode::JumpLabel(label) => {
+                    self.ret.push(self.pc);
+                    println!("{:?}", self.ret);
+                    self.pc = state.get_label(&label).unwrap();
+                }
+                FerryOpcode::JumpRet => self.pc = self.ret.pop().unwrap(),
             }
         }
         Ok(result)

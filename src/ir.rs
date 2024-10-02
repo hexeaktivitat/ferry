@@ -10,6 +10,7 @@ use crate::{
         walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If, Lit,
         Loop, Unary, Variable,
     },
+    Ferry,
 };
 
 /// Intermediate Representation for FerryVM
@@ -38,6 +39,7 @@ pub enum FerryOpcode {
     Get(String),
     // POP: pops and discards top stack value
     Pop,
+
     // ADD: pops last 2 values, adds, pushes onto stack
     Add,
     Sub,
@@ -54,6 +56,9 @@ pub enum FerryOpcode {
     // JUMPCOND: only jumps if top stack value is truthy
     JumpCond(usize),
     JumpBack(usize),
+    Label(String),
+    JumpLabel(String),
+    JumpRet,
     Iter,
 }
 
@@ -82,6 +87,9 @@ impl Into<u8> for FerryOpcode {
             FerryOpcode::JumpCond(_) => 0x21,
             FerryOpcode::JumpBack(_) => 0x22,
             FerryOpcode::Iter => 0x23,
+            FerryOpcode::Label(_) => 0x24,
+            FerryOpcode::JumpLabel(_) => 0x25,
+            FerryOpcode::JumpRet => 0x26,
             FerryOpcode::Return => 0xfe,
             FerryOpcode::Halt => 0xff,
         }
@@ -106,17 +114,34 @@ impl FerryIr {
     }
 
     pub fn lower(&mut self, state: &mut FerryState) -> FerryResult<Vec<FerryOpcode>> {
-        let mut program = vec![];
+        let mut program = vec![FerryOpcode::Label("main".into())];
+        let mut functions = vec![];
 
         for expr in self.ast.clone().iter_mut() {
-            match self.assemble_opcode(expr, state) {
-                Ok(mut instructions) => program.append(&mut instructions),
-                Err(e) => println!("{e}"),
+            if let Expr::Function(_) = expr {
+                match self.assemble_opcode(expr, state) {
+                    Ok(mut instructions) => functions.append(&mut instructions),
+                    Err(e) => println!("{e}"),
+                }
+            } else {
+                match self.assemble_opcode(expr, state) {
+                    Ok(mut instructions) => program.append(&mut instructions),
+                    Err(e) => println!("{e}"),
+                }
             }
         }
 
         program.push(FerryOpcode::Return);
         program.push(FerryOpcode::Halt);
+        program.append(&mut functions);
+
+        for (idx, inst) in program.clone().iter().enumerate() {
+            if let FerryOpcode::Label(name) = inst {
+                state.add_label(name, idx);
+            }
+        }
+
+        println!("{:?}", program);
 
         Ok(program)
     }
@@ -451,7 +476,30 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         function: &mut Function,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        todo!()
+        let mut instructions = vec![];
+
+        let mut args_inst = if let Some(args) = function.args.as_mut() {
+            let mut ret = vec![];
+            for arg in args {
+                if let Expr::Binding(binding) = arg {
+                    ret.push(FerryOpcode::Set(binding.name.clone()));
+                }
+            }
+
+            println!("ir: {:?}", ret);
+            ret
+        } else {
+            vec![]
+        };
+        let mut function_inst = self.assemble_opcode(&mut function.contents, state)?;
+
+        instructions.push(FerryOpcode::Label(function.name.clone()));
+        instructions.append(&mut args_inst);
+        instructions.append(&mut function_inst);
+        // instructions.push(FerryOpcode::Return);
+        instructions.push(FerryOpcode::JumpRet);
+
+        Ok(instructions)
     }
 
     fn visit_call(
@@ -459,6 +507,19 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         call: &mut Call,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        todo!()
+        let mut instructions = vec![];
+
+        let mut args_inst = {
+            let mut ret = vec![];
+            for arg in &mut call.args.clone() {
+                ret.append(&mut self.assemble_opcode(arg, state)?);
+            }
+            ret
+        };
+
+        instructions.append(&mut args_inst);
+        instructions.push(FerryOpcode::JumpLabel(call.name.clone()));
+
+        Ok(instructions)
     }
 }

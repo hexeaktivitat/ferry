@@ -27,7 +27,9 @@ fn euler_1() {
                     sum = sum + n
             )
 
-        sum"
+        sum
+        
+        "
     .into();
 
     let mut program = ferry::Ferry::new(source);

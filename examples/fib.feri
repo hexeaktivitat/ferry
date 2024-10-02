@@ -4,4 +4,4 @@ def fn fib(n: Int) -> Int: (
     else: (fib(n - 2) + fib(n - 1))
 )
 
-fib(30)
+fib(5)

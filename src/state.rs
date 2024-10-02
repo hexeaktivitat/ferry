@@ -9,6 +9,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct FerryState {
     symbols: HashMap<String, Option<FerryValue>>,
+    labels: HashMap<String, usize>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -78,6 +79,7 @@ impl FerryState {
     pub fn new() -> Self {
         Self {
             symbols: HashMap::new(),
+            labels: HashMap::new(),
         }
     }
 
@@ -98,6 +100,18 @@ impl FerryState {
     pub fn get_symbol_value(&self, id: &String) -> Option<FerryValue> {
         if self.symbols.contains_key(id) {
             self.symbols.get(id).unwrap().clone()
+        } else {
+            None
+        }
+    }
+
+    pub fn add_label(&mut self, id: &str, value: usize) {
+        self.labels.insert(id.into(), value);
+    }
+
+    pub fn get_label(&self, id: &String) -> Option<usize> {
+        if self.labels.contains_key(id) {
+            Some(*self.labels.get(id).unwrap())
         } else {
             None
         }
