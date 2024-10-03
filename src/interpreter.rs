@@ -401,6 +401,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
             &name,
             Some(FerryValue::Function {
                 declaration: function.clone(),
+                name: name.clone(),
             }),
         );
 
@@ -410,6 +411,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<FerryValue> {
         if let Some(FerryValue::Function {
             declaration: function,
+            name,
         }) = &mut state.get_symbol_value(&call.name)
         {
             if let Some(params) = &mut function.args {

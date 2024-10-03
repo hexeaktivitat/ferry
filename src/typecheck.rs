@@ -769,6 +769,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     return_type: Some(return_type),
                     expr_type: expr_type.clone(),
                 },
+                name: function.name.clone(),
             }),
         );
         let args = if let Some(arguments) = &mut function.args {
@@ -797,6 +798,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             &function.name,
             Some(FerryValue::Function {
                 declaration: function_checked.clone(),
+                name: function.name.clone(),
             }),
         );
 
@@ -804,7 +806,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     }
 
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<Expr> {
-        if let Some(FerryValue::Function { declaration }) = &mut state.get_symbol_value(&call.name)
+        if let Some(FerryValue::Function { declaration, name }) =
+            &mut state.get_symbol_value(&call.name)
         {
             if let Some(decl_args) = &mut declaration.args {
                 if call.args.len() != decl_args.len() {
@@ -829,7 +832,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     }
                     Ok(Expr::Call(Call {
                         invoker: call.invoker.clone(),
-                        name: call.name.clone(),
+                        name: name.clone(),
                         token: call.token.clone(),
                         args: checked_args,
                         expr_type: declaration.expr_type.clone(),
@@ -837,7 +840,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 } else {
                     Ok(Expr::Call(Call {
                         invoker: call.invoker.clone(),
-                        name: call.name.clone(),
+                        name: name.clone(),
                         token: call.token.clone(),
                         args: vec![],
                         expr_type: declaration.expr_type.clone(),
@@ -846,7 +849,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             } else {
                 Ok(Expr::Call(Call {
                     invoker: call.invoker.clone(),
-                    name: call.name.clone(),
+                    name: name.clone(),
                     token: call.token.clone(),
                     args: call.args.clone(),
                     expr_type: declaration.expr_type.clone(),
