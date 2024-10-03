@@ -1,24 +1,30 @@
 use std::collections::HashMap;
 
 use crate::{
+    ir::FerryOpcode,
     syntax::Function,
     types::{FerryType, TypeCheckable, Typing},
 };
 
 // placeholder for program state
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct FerryState {
     symbols: HashMap<String, Option<FerryValue>>,
     labels: HashMap<String, usize>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum FerryValue {
     Number(i64),
     Str(String),
     Boolean(bool),
     List(Vec<FerryValue>),
-    Function { declaration: Function },
+    Function {
+        declaration: Function,
+        name: String,
+        // instructions: Vec<FerryOpcode>,
+        // arity: u8,
+    },
     Ptr(u8),
     Unit,
 }
@@ -140,7 +146,10 @@ impl Typing for FerryValue {
             FerryValue::Boolean(_) => &FerryType::Boolean,
             FerryValue::Unit => &FerryType::Undefined,
             FerryValue::List(_) => &FerryType::List,
-            FerryValue::Function { declaration } => declaration.contents.get_type(),
+            FerryValue::Function {
+                declaration,
+                name: _,
+            } => declaration.contents.get_type(),
             FerryValue::Ptr(_) => &FerryType::Pointer,
         }
     }
@@ -172,7 +181,10 @@ impl std::fmt::Display for FerryValue {
                 formatting.push(']');
                 write!(f, "{formatting}")
             }
-            FerryValue::Function { declaration: _ } => write!(f, "function placeholder"),
+            FerryValue::Function {
+                declaration: _,
+                name: _,
+            } => write!(f, "function placeholder"),
             FerryValue::Ptr(p) => write!(f, "address: {p}"),
         }
     }
@@ -186,7 +198,10 @@ impl FerryValue {
             FerryValue::Boolean(b) => *b,
             FerryValue::Unit => false,
             FerryValue::List(l) => !l.is_empty(),
-            FerryValue::Function { declaration: _ } => false,
+            FerryValue::Function {
+                declaration: _,
+                name: _,
+            } => false,
             FerryValue::Ptr(p) => !*p == 0xff,
         }
     }
