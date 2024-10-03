@@ -1,3 +1,5 @@
+use std::vec;
+
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
@@ -702,6 +704,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     FerryType::Untyped => FerryValue::Number(0), // assume an untyped iterator value is a Num
                     FerryType::Undefined => FerryValue::Unit,
                     FerryType::Pointer => FerryValue::Ptr(0x00),
+                    FerryType::Function => FerryValue::Function {
+                        declaration: None,
+                        name: "".into(),
+                        func_type: FerryType::Function,
+                        instructions: vec![],
+                    },
                 };
                 state.add_symbol(&var.name, Some(placeholder_value));
             }
@@ -761,15 +769,17 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         fn_state.add_symbol(
             &function.name,
             Some(FerryValue::Function {
-                declaration: Function {
+                declaration: Some(Function {
                     token: function.token.clone(),
                     name: function.name.clone(),
                     args: function.args.clone(),
                     contents: function.contents.clone(),
                     return_type: Some(return_type),
                     expr_type: expr_type.clone(),
-                },
+                }),
                 name: function.name.clone(),
+                func_type: FerryType::Function,
+                instructions: vec![],
             }),
         );
         let args = if let Some(arguments) = &mut function.args {
@@ -797,8 +807,10 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         state.add_symbol(
             &function.name,
             Some(FerryValue::Function {
-                declaration: function_checked.clone(),
+                declaration: Some(function_checked.clone()),
                 name: function.name.clone(),
+                func_type: FerryType::Function,
+                instructions: vec![],
             }),
         );
 
@@ -806,9 +818,21 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     }
 
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<Expr> {
-        if let Some(FerryValue::Function { declaration, name }) =
-            &mut state.get_symbol_value(&call.name)
+        if let Some(FerryValue::Function {
+            declaration: decl,
+            name,
+            func_type,
+            instructions,
+        }) = &mut state.get_symbol_value(&call.name)
         {
+            let declaration = if let Some(d) = decl {
+                d
+            } else {
+                return Err(FerryTypeError::MistypedVariable {
+                    advice: "function call wasnt a function".into(),
+                    span: *call.token.get_span(),
+                });
+            };
             if let Some(decl_args) = &mut declaration.args {
                 if call.args.len() != decl_args.len() {
                     return Err(FerryTypeError::UnimplementedFeature {

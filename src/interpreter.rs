@@ -8,6 +8,7 @@ use crate::{
         Lit as SLit, Loop, Unary, Variable,
     },
     token::{Op, TokenType as TT},
+    types::Typing,
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -400,8 +401,10 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         state.add_symbol(
             &name,
             Some(FerryValue::Function {
-                declaration: function.clone(),
+                declaration: Some(function.clone()),
                 name: name.clone(),
+                func_type: function.expr_type.get_type().clone(),
+                instructions: vec![],
             }),
         );
 
@@ -410,8 +413,10 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<FerryValue> {
         if let Some(FerryValue::Function {
-            declaration: function,
+            declaration: Some(function),
             name,
+            func_type,
+            instructions,
         }) = &mut state.get_symbol_value(&call.name)
         {
             if let Some(params) = &mut function.args {

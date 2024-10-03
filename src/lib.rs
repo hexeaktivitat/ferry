@@ -52,7 +52,7 @@ impl Ferry {
             ast: Vec::new(),
             typed_ast: Vec::new(),
             ferry_ir: Vec::new(),
-            vm: FerryVm::new(vec![]),
+            vm: FerryVm::new(),
             riscv_asm: Vec::new(),
         }
     }
@@ -101,8 +101,11 @@ impl Ferry {
         let mut ir = FerryIr::new(self.ast.clone());
         self.ferry_ir = ir.lower(&mut self.state).unwrap();
 
-        self.vm.set_program(self.ferry_ir.clone());
-        let result = self.vm.interpret(&mut self.state).unwrap();
+        // self.vm.set_program(self.ferry_ir.clone());
+        let result = self
+            .vm
+            .interpret(self.ferry_ir.clone(), &mut self.state)
+            .unwrap();
 
         Ok(result)
     }

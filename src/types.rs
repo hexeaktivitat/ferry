@@ -17,6 +17,7 @@ pub enum FerryType {
     Boolean,
     List,
     Pointer,
+    Function,
 }
 
 pub trait Typing {
@@ -120,6 +121,7 @@ impl std::fmt::Display for FerryType {
             FerryType::Boolean => write!(f, "Boolean"),
             FerryType::List => write!(f, "List"),
             FerryType::Pointer => write!(f, "Pointer"),
+            FerryType::Function => write!(f, "Function"),
         }
     }
 }

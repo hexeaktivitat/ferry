@@ -20,9 +20,10 @@ pub enum FerryValue {
     Boolean(bool),
     List(Vec<FerryValue>),
     Function {
-        declaration: Function,
+        declaration: Option<Function>,
         name: String,
-        // instructions: Vec<FerryOpcode>,
+        func_type: FerryType,
+        instructions: Vec<FerryOpcode>,
         // arity: u8,
     },
     Ptr(u8),
@@ -149,7 +150,9 @@ impl Typing for FerryValue {
             FerryValue::Function {
                 declaration,
                 name: _,
-            } => declaration.contents.get_type(),
+                func_type: expr_type,
+                instructions: _,
+            } => expr_type,
             FerryValue::Ptr(_) => &FerryType::Pointer,
         }
     }
@@ -184,6 +187,8 @@ impl std::fmt::Display for FerryValue {
             FerryValue::Function {
                 declaration: _,
                 name: _,
+                func_type: _,
+                instructions: _,
             } => write!(f, "function placeholder"),
             FerryValue::Ptr(p) => write!(f, "address: {p}"),
         }
@@ -201,6 +206,8 @@ impl FerryValue {
             FerryValue::Function {
                 declaration: _,
                 name: _,
+                func_type: _,
+                instructions: _,
             } => false,
             FerryValue::Ptr(p) => !*p == 0xff,
         }

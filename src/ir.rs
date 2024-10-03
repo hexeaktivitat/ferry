@@ -10,6 +10,7 @@ use crate::{
         walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If, Lit,
         Loop, Unary, Variable,
     },
+    types::FerryType,
     Ferry,
 };
 
@@ -32,7 +33,7 @@ pub enum FerryOpcode {
     Halt,
     Return,
     // LOAD: push a FerryValue onto stack
-    Load,
+    // Load,
     // LOADI: loads designated value (push onto stack)
     LoadI(i64),
     // ALLOC: allocates on the heap vs stack
@@ -70,7 +71,7 @@ impl Into<u8> for FerryOpcode {
     fn into(self) -> u8 {
         match self {
             FerryOpcode::Nop => 0x00,
-            FerryOpcode::Load => 0x01,
+            // FerryOpcode::Load => 0x01,
             FerryOpcode::LoadI(_) => 0x02,
             FerryOpcode::Alloc(_, _) => 0x03,
             FerryOpcode::Set(_) => 0x04,
@@ -117,7 +118,7 @@ impl FerryIr {
     }
 
     pub fn lower(&mut self, state: &mut FerryState) -> FerryResult<Vec<FerryOpcode>> {
-        let mut program = vec![FerryOpcode::Label("main".into())];
+        let mut program = vec![];
         let mut functions = vec![];
 
         for expr in self.ast.clone().iter_mut() {
@@ -135,8 +136,18 @@ impl FerryIr {
         }
 
         program.push(FerryOpcode::Return);
-        program.push(FerryOpcode::Halt);
-        program.append(&mut functions);
+
+        // state.add_symbol(
+        //     &"main".to_string(),
+        //     Some(FerryValue::Function {
+        //         declaration: None,
+        //         name: "main".into(),
+        //         func_type: FerryType::Untyped,
+        //         instructions: program,
+        //     }),
+        // );
+
+        // program.append(&mut functions);
 
         for (idx, inst) in program.clone().iter().enumerate() {
             if let FerryOpcode::Label(name) = inst {
@@ -495,12 +506,22 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         };
         let mut function_inst = self.assemble_opcode(&mut function.contents, state)?;
 
-        instructions.push(FerryOpcode::Label(function.name.clone()));
+        // instructions.push(FerryOpcode::Label(function.name.clone()));
         instructions.append(&mut args_inst);
         instructions.append(&mut function_inst);
-        instructions.push(FerryOpcode::JumpRet);
+        instructions.push(FerryOpcode::Return);
 
-        Ok(instructions)
+        state.add_symbol(
+            &function.name,
+            Some(FerryValue::Function {
+                declaration: None,
+                name: function.name.clone(),
+                func_type: FerryType::Function,
+                instructions,
+            }),
+        );
+
+        Ok(vec![])
     }
 
     fn visit_call(
