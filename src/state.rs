@@ -13,7 +13,7 @@ pub struct FerryState {
     labels: HashMap<String, usize>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum FerryValue {
     Number(i64),
     Str(String),

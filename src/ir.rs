@@ -24,7 +24,7 @@ pub enum FerryIrError {}
 // Used for things that live outside the stack
 pub type FerryAddr = u8;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum FerryOpcode {
     // NOP: no operation
     Nop,
