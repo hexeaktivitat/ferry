@@ -259,7 +259,6 @@ impl FerryParser {
             let mut ret = Vec::new();
             while self.peek().get_token_type() != &TT::Control(Ctrl::RightParen) {
                 let param_id = if let TT::Identifier(id) = self.advance().get_token_type() {
-                    println!("{id}");
                     id.clone()
                 } else {
                     return Err(FerryParseError::UnexpectedToken {
@@ -292,7 +291,7 @@ impl FerryParser {
             }
             Some(ret)
         };
-        println!("{:?}", args);
+
         self.consume(&TT::Control(Ctrl::RightParen), "expected ')' after '('")?;
         let return_type = if self.peek().get_token_type() == &TT::Control(Ctrl::RightArrow) {
             self.consume(

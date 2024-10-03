@@ -61,6 +61,10 @@ impl FerryVm {
         let mut result = FerryValue::Unit;
         loop {
             let instruction = self.advance().clone();
+            println!(
+                "inst: {:?} \n pc: {} \n stack: {:?} \n ret: {:?} \n state: {}",
+                instruction, self.pc, self.stack, self.ret, state
+            );
             match instruction {
                 FerryOpcode::Nop => println!("nop"),
                 FerryOpcode::Halt => break,
@@ -81,7 +85,7 @@ impl FerryVm {
                 FerryOpcode::Set(id) => {
                     // println!("{:?}", self.stack);
                     // println!("{id}");
-                    let value = self.stack.pop().unwrap();
+                    let value = self.stack.last().unwrap();
                     state.add_symbol(&id, Some(value.clone()));
                 }
                 FerryOpcode::Get(id) => {
@@ -99,9 +103,8 @@ impl FerryVm {
                 }
                 FerryOpcode::Add => {
                     if self.stack.len() >= 2 {
-                        let left: i64 = self.stack.pop().unwrap().convert_to();
                         let right: i64 = self.stack.pop().unwrap().convert_to();
-                        println!("{left},{right}");
+                        let left: i64 = self.stack.pop().unwrap().convert_to();
                         let res: i64 = left + right;
                         self.stack.push(FerryValue::convert_from(res));
                     } else {
@@ -115,7 +118,6 @@ impl FerryVm {
                         let right: i64 = self.stack.pop().unwrap().convert_to();
                         let left: i64 = self.stack.pop().unwrap().convert_to();
                         let res: i64 = left - right;
-                        println!("{left},{right}");
                         self.stack.push(FerryValue::convert_from(res));
                     } else {
                         return Err(FerryVmError::RuntimeError {
@@ -162,29 +164,29 @@ impl FerryVm {
                     }
                 }
                 FerryOpcode::Equal => {
-                    let b: i64 = self.stack.pop().unwrap().convert_to();
-                    let a: i64 = self.stack.pop().unwrap().convert_to();
-                    let res = a == b;
+                    let right: i64 = self.stack.pop().unwrap().convert_to();
+                    let left: i64 = self.stack.pop().unwrap().convert_to();
+                    let res = left == right;
                     self.stack.push(FerryValue::Boolean(res));
                 }
                 FerryOpcode::Greater => {
-                    let b: i64 = self.stack.pop().unwrap().convert_to();
-                    let a: i64 = self.stack.pop().unwrap().convert_to();
-                    let res = a > b;
+                    let right: i64 = self.stack.pop().unwrap().convert_to();
+                    let left: i64 = self.stack.pop().unwrap().convert_to();
+                    let res = left > right;
                     self.stack.push(FerryValue::Boolean(res));
                 }
                 FerryOpcode::Lesser => {
-                    let b: i64 = self.stack.pop().unwrap().convert_to();
-                    let a: i64 = self.stack.pop().unwrap().convert_to();
-                    let res = a < b;
+                    let right: i64 = self.stack.pop().unwrap().convert_to();
+                    let left: i64 = self.stack.pop().unwrap().convert_to();
+                    let res = left < right;
                     self.stack.push(FerryValue::Boolean(res));
                 }
                 FerryOpcode::Jump(offset) => {
                     self.pc += offset;
                 }
                 FerryOpcode::JumpCond(offset) => {
-                    let cond = self.stack.last().unwrap();
-                    // let cond = self.stack.pop().unwrap();
+                    // let cond = self.stack.last().unwrap();
+                    let cond = self.stack.pop().unwrap();
                     if !cond.truthiness() {
                         self.pc += offset;
                     }
@@ -216,10 +218,10 @@ impl FerryVm {
                     self.labels.insert(label, self.pc);
                 }
                 FerryOpcode::JumpLabel(label) => {
-                    println!("pc: {}", self.pc);
+                    // println!("pc: {}", self.pc);
                     self.ret.push(self.pc);
-                    println!("ret: {:?}", self.ret);
-                    println!("stack @ fn jump: {:?}", self.stack);
+                    // println!("ret: {:?}", self.ret);
+                    // println!("stack @ fn jump: {:?}", self.stack);
                     self.pc = state.get_label(&label).unwrap();
                 }
                 FerryOpcode::JumpRet => {

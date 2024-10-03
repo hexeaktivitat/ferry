@@ -486,10 +486,9 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
             for arg in args {
                 if let Expr::Binding(binding) = arg {
                     ret.push(FerryOpcode::Set(binding.name.clone()));
+                    // ret.push(FerryOpcode::Get(binding.name.clone()));
                 }
             }
-
-            println!("ir: {:?}", ret);
             ret
         } else {
             vec![]
