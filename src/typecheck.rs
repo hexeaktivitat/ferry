@@ -709,6 +709,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         name: "".into(),
                         func_type: FerryType::Function,
                         instructions: vec![],
+                        arity: 0,
                     },
                 };
                 state.add_symbol(&var.name, Some(placeholder_value));
@@ -780,14 +781,17 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 name: function.name.clone(),
                 func_type: FerryType::Function,
                 instructions: vec![],
+                arity: 0,
             }),
         );
+        let mut arity = 0;
         let args = if let Some(arguments) = &mut function.args {
             let mut rets = Vec::new();
             for a in arguments {
                 let arg = self.check_types(a, &mut fn_state);
                 rets.push(arg?);
             }
+            arity = rets.len();
             Some(rets)
         } else {
             None
@@ -811,6 +815,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 name: function.name.clone(),
                 func_type: FerryType::Function,
                 instructions: vec![],
+                arity,
             }),
         );
 
@@ -823,6 +828,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
             name,
             func_type,
             instructions,
+            arity,
         }) = &mut state.get_symbol_value(&call.name)
         {
             let declaration = if let Some(d) = decl {

@@ -3,8 +3,8 @@
 use std::{fs, time::Instant};
 
 fn main() {
-    hello();
-    euler_1();
+    // hello();
+    // euler_1();
     fib();
 }
 

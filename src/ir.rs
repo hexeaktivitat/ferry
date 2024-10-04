@@ -60,7 +60,7 @@ pub enum FerryOpcode {
     JumpCond(usize),
     JumpBack(usize),
     Label(String),
-    JumpLabel(String),
+    Call(String),
     JumpRet,
     Iter,
 }
@@ -92,7 +92,7 @@ impl Into<u8> for FerryOpcode {
             FerryOpcode::JumpBack(_) => 0x22,
             FerryOpcode::Iter => 0x23,
             FerryOpcode::Label(_) => 0x24,
-            FerryOpcode::JumpLabel(_) => 0x25,
+            FerryOpcode::Call(_) => 0x25,
             FerryOpcode::JumpRet => 0x26,
             FerryOpcode::Return => 0xfe,
             FerryOpcode::Halt => 0xff,
@@ -451,7 +451,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         let mut contents = self.assemble_opcode(&mut loop_expr.contents, state)?;
         instructions.append(&mut cond_inst);
         instructions.push(FerryOpcode::JumpCond(contents.len() + 3));
-        instructions.push(FerryOpcode::Pop);
+        // instructions.push(FerryOpcode::Pop);
         instructions.append(&mut contents);
         instructions.push(FerryOpcode::JumpBack(instructions.len() + 4));
 
@@ -492,6 +492,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
     ) -> FerryResult<Vec<FerryOpcode>> {
         let mut instructions = vec![];
 
+        let mut arity = 0;
+
         let mut args_inst = if let Some(args) = function.args.as_mut() {
             let mut ret = vec![];
             for arg in args {
@@ -500,6 +502,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                     // ret.push(FerryOpcode::Get(binding.name.clone()));
                 }
             }
+            arity = ret.len();
             ret
         } else {
             vec![]
@@ -518,6 +521,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 name: function.name.clone(),
                 func_type: FerryType::Function,
                 instructions,
+                arity,
             }),
         );
 
@@ -540,7 +544,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         };
 
         instructions.append(&mut args_inst);
-        instructions.push(FerryOpcode::JumpLabel(call.name.clone()));
+        instructions.push(FerryOpcode::Call(call.name.clone()));
 
         Ok(instructions)
     }

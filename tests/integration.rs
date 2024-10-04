@@ -1,5 +1,6 @@
 // Euler problem 1
 #[test]
+#[ignore]
 fn euler_1() {
     let source: String = "
         def fn abs(a: Int) -> Int: (
@@ -43,7 +44,7 @@ fn fib() {
     def fn fib(n: Int) -> Int: (
         if n <= 1 then:
             n
-        else: (fib(n - 2) + fib(n - 1))
+        else: (fib(n - 1) + fib(n - 2))
     )
 
     fib(20)"

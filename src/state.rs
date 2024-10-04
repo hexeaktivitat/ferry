@@ -24,7 +24,7 @@ pub enum FerryValue {
         name: String,
         func_type: FerryType,
         instructions: Vec<FerryOpcode>,
-        // arity: u8,
+        arity: usize,
     },
     Ptr(u8),
     Unit,
@@ -152,6 +152,7 @@ impl Typing for FerryValue {
                 name: _,
                 func_type: expr_type,
                 instructions: _,
+                arity: _,
             } => expr_type,
             FerryValue::Ptr(_) => &FerryType::Pointer,
         }
@@ -189,6 +190,7 @@ impl std::fmt::Display for FerryValue {
                 name: _,
                 func_type: _,
                 instructions: _,
+                arity: _,
             } => write!(f, "function placeholder"),
             FerryValue::Ptr(p) => write!(f, "address: {p}"),
         }
@@ -208,6 +210,7 @@ impl FerryValue {
                 name: _,
                 func_type: _,
                 instructions: _,
+                arity: _,
             } => false,
             FerryValue::Ptr(p) => !*p == 0xff,
         }

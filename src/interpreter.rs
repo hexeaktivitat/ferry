@@ -398,6 +398,11 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         let name = function.name.clone();
+        let arity = if let Some(args) = function.args.as_ref() {
+            args.len()
+        } else {
+            0
+        };
         state.add_symbol(
             &name,
             Some(FerryValue::Function {
@@ -405,6 +410,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 name: name.clone(),
                 func_type: function.expr_type.get_type().clone(),
                 instructions: vec![],
+                arity,
             }),
         );
 
@@ -417,6 +423,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
             name,
             func_type,
             instructions,
+            arity,
         }) = &mut state.get_symbol_value(&call.name)
         {
             if let Some(params) = &mut function.args {
