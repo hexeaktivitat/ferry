@@ -15,7 +15,7 @@ def fn modulo(a: Int, b: Int) -> Int: (
 
 let sum: Int = 0
 
-for n: Int in 1..1000: 
+for n: Int in 1..10: 
     if modulo(n, 3) == 0 then: 
         sum = sum + n
     else: (
