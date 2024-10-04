@@ -59,6 +59,12 @@ impl FerryVm {
     //     // self.instructions = instructions;
     // }
 
+    fn clear(&mut self) {
+        self.frames.clear();
+        self.ret.clear();
+        self.fp = 0;
+    }
+
     pub fn interpret(
         &mut self,
         instructions: Vec<FerryOpcode>,
