@@ -474,12 +474,13 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
             instructions.append(&mut iter_inst);
             instructions.push(FerryOpcode::Iter);
             instructions.push(FerryOpcode::Set(name.clone()));
-            instructions.push(FerryOpcode::Pop);
+            // instructions.push(FerryOpcode::Pop);
             instructions.append(&mut contents_inst);
-            instructions.push(FerryOpcode::Pop);
+            // instructions.push(FerryOpcode::Pop);
+
             instructions.push(FerryOpcode::JumpCond(2));
-            instructions.push(FerryOpcode::Pop);
-            instructions.push(FerryOpcode::JumpBack(contents_len + 7));
+            // instructions.push(FerryOpcode::Pop);
+            instructions.push(FerryOpcode::JumpBack(contents_len + 5));
         }
 
         Ok(instructions)
