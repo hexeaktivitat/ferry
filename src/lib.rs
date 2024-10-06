@@ -107,6 +107,8 @@ impl Ferry {
             .interpret(self.ferry_ir.clone(), &mut self.state)
             .unwrap();
 
+        // self.print_data(PrintReq::TypedAst);
+
         Ok(result)
     }
 

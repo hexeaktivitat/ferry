@@ -584,7 +584,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                             name: binding.name.clone(),
                             assigned_type: binding.assigned_type.clone(),
                             value: Some(Box::new(value_check.clone())),
-                            expr_type: FerryTyping::Untyped,
+                            expr_type: FerryTyping::Assigned(assigned_type.to_owned()),
                         }));
                     } else {
                         return Err(FerryTypeError::MistypedVariable {
@@ -760,7 +760,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         state: &mut FerryState,
     ) -> FerryResult<Expr> {
         let mut return_type = FerryType::Undefined;
-        let expr_type = if let Some(ty) = &function.return_type {
+        let mut expr_type = if let Some(ty) = &function.return_type {
             return_type = ty.clone();
             FerryTyping::Assigned(ty.clone())
         } else {
@@ -798,6 +798,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         };
 
         let checked_contents = Box::new(self.check_types(&mut function.contents, &mut fn_state)?);
+        if checked_contents.get_type() != expr_type.get_type()
+            && expr_type == FerryTyping::Inferred(FerryType::Undefined)
+        {
+            expr_type = FerryTyping::Inferred(checked_contents.get_type().to_owned());
+        }
 
         let function_checked = Function {
             token: function.token.clone(),
@@ -848,17 +853,17 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 }
                 if !call.args.is_empty() {
                     let mut checked_args = Vec::new();
-                    for (call_arg, _decl_arg) in call.args.iter_mut().zip(decl_args.iter_mut()) {
+                    for (call_arg, decl_arg) in call.args.iter_mut().zip(decl_args.iter_mut()) {
                         let checked_arg = self.check_types(call_arg, state)?;
-                        // let checked_decl_arg = self.check_types(decl_arg, state)?;
-                        // if checked_arg.check(checked_decl_arg.get_type()) {
-                        checked_args.push(checked_arg);
-                        // } else {
-                        //     return Err(FerryTypeError::MistypedVariable {
-                        //         advice: "types do not match".into(),
-                        //         span: *call.token.get_span(),
-                        //     });
-                        // }
+                        let checked_decl_arg = self.check_types(decl_arg, state)?;
+                        if checked_arg.check(checked_decl_arg.get_type()) {
+                            checked_args.push(checked_arg);
+                        } else {
+                            return Err(FerryTypeError::MistypedVariable {
+                                advice: "types do not match".into(),
+                                span: *call.token.get_span(),
+                            });
+                        }
                     }
                     Ok(Expr::Call(Call {
                         invoker: call.invoker.clone(),
