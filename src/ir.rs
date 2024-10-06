@@ -481,11 +481,11 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         };
         let mut contents = self.assemble_opcode(&mut loop_expr.contents, state)?;
         instructions.append(&mut cond_inst);
-        instructions.push(FerryOpcode::JumpCond(contents.len() + 3));
+        instructions.push(FerryOpcode::JumpCond(contents.len() + 1));
         // instructions.push(FerryOpcode::Pop);
         instructions.append(&mut contents);
-        instructions.push(FerryOpcode::Pop);
-        instructions.push(FerryOpcode::JumpBack(instructions.len() + 5));
+        // instructions.push(FerryOpcode::Pop);
+        instructions.push(FerryOpcode::JumpBack(instructions.len() + 1));
 
         Ok(instructions)
     }

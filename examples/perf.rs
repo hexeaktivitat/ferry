@@ -3,12 +3,12 @@
 use std::{fs, time::Instant};
 
 fn main() {
-    // hello();
+    hello();
     euler_1();
     fib();
 }
 
-#[expect(unused)]
+// #[expect(unused)]
 fn hello() {
     let source: String =
         fs::read_to_string("examples/hello_ferry.feri").expect("file should exist");
