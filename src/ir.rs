@@ -337,8 +337,30 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
                     Ok(instructions)
                 }
-                crate::token::Op::GetI => todo!(),
-                crate::token::Op::Cons => todo!(),
+                crate::token::Op::GetI => {
+                    let mut instructions = vec![];
+
+                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+
+                    instructions.append(&mut left);
+                    instructions.append(&mut right);
+                    instructions.push(FerryOpcode::GetI);
+
+                    Ok(instructions)
+                }
+                crate::token::Op::Cons => {
+                    let mut instructions = vec![];
+
+                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+
+                    instructions.append(&mut left);
+                    instructions.append(&mut right);
+                    instructions.push(FerryOpcode::Cons);
+
+                    Ok(instructions)
+                }
             },
             // crate::token::TokenType::Value(val) => todo!(),
             // crate::token::TokenType::Control(ctrl) => todo!(),
