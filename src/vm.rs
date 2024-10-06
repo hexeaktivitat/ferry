@@ -89,10 +89,8 @@ impl FerryVm {
     }
 
     fn run(&mut self, state: &mut FerryState) -> FerryResult<FerryValue> {
-        let mut result = FerryValue::Unit;
-        let mut add_count = 0;
         loop {
-            let instruction = self.advance(self.frames[self.fp].function.clone());
+            let instruction = self.advance(&self.frames[self.fp].function.clone());
             // if self.fp == 1 {
             //     println!("stack: {:?}", self.frames[self.fp].stack);
             //     println!("frame: {}", self.fp);
@@ -101,16 +99,16 @@ impl FerryVm {
 
             match instruction {
                 FerryOpcode::Nop => println!("nop"),
-                FerryOpcode::Halt => break,
+                FerryOpcode::Halt => {
+                    return Ok(FerryValue::Unit);
+                }
                 FerryOpcode::Return => {
-                    let stack_val = match self.frames[self.fp].stack.pop() {
+                    let mut result = match self.frames[self.fp].stack.pop() {
                         Some(v) => v,
                         None => FerryValue::Unit,
                     };
-                    if let FerryValue::Ptr(ptr) = stack_val {
+                    if let FerryValue::Ptr(ptr) = result {
                         result = self.heap.get(&ptr).unwrap().clone();
-                    } else {
-                        result = stack_val;
                     }
                     if self.fp == 0 {
                         self.frames[self.fp].stack.clear();
@@ -121,7 +119,7 @@ impl FerryVm {
 
                         // println!("result : {:?}", result);
                         self.frames.pop();
-                        self.frames[self.fp].stack.push(result.clone());
+                        self.frames[self.fp].stack.push(result);
                     }
                 }
                 // FerryOpcode::Load => self.frames[self.fp].pop,
@@ -137,30 +135,24 @@ impl FerryVm {
                     // println!("{:?}", self.frames[self.fp].stack);
                     // println!("{id}");
                     let value = self.frames[self.fp].stack.pop().unwrap();
-                    self.frames[self.fp].locals.insert(id, value.clone());
+                    self.frames[self.fp].locals.insert(id, value);
                 }
                 FerryOpcode::Get(id) => {
                     // println!("{:?}", self.frames[self.fp].stack);
                     // println!("getting {id}");
-                    let value = self.frames[self.fp]
-                        .locals
-                        .get(&id.clone())
-                        .unwrap()
-                        .clone();
+                    let value = self.frames[self.fp].locals.get(&id).unwrap().clone();
                     if let FerryValue::Ptr(ptr) = value {
                         self.frames[self.fp]
                             .stack
                             .push(self.heap.get(&ptr).unwrap().clone());
                     } else {
-                        self.frames[self.fp].stack.push(value.clone());
+                        self.frames[self.fp].stack.push(value);
                     }
                 }
                 FerryOpcode::Pop => {
                     self.frames[self.fp].stack.pop().unwrap();
                 }
                 FerryOpcode::Add => {
-                    add_count += 1;
-                    // println!("adds: {add_count}");
                     if self.frames[self.fp].stack.len() >= 2 {
                         let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
                         let left: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
@@ -305,7 +297,7 @@ impl FerryVm {
                         .stack
                         .pop()
                         .unwrap()
-                        .clone()
+                        // .clone()
                         .convert_to();
 
                     let (head, tail) = iter.split_first().unwrap();
@@ -368,13 +360,11 @@ impl FerryVm {
                 }
             }
         }
-        Ok(result)
     }
 
-    fn advance(&mut self, instructions: Vec<FerryOpcode>) -> FerryOpcode {
-        let opcode = instructions[self.frames[self.fp].pc].clone();
+    fn advance(&mut self, instructions: &[FerryOpcode]) -> FerryOpcode {
         self.frames[self.fp].pc += 1;
-        opcode
+        instructions[self.frames[self.fp].pc - 1].clone()
     }
 }
 
