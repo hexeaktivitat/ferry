@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 
 use miette::{Diagnostic, Result};
 use thiserror::Error;
@@ -11,7 +10,6 @@ use crate::{
         Loop, Unary, Variable,
     },
     types::FerryType,
-    Ferry,
 };
 
 /// Intermediate Representation for FerryVM

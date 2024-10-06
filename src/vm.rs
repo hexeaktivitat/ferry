@@ -279,7 +279,7 @@ impl FerryVm {
                     self.frames[self.fp].pc -= offset;
                 }
                 FerryOpcode::Iter => {
-                    let mut ptr_src = 0;
+                    let ptr_src = 0;
                     // let iter: Vec<FerryValue> =
                     //     if let Some(FerryValue::Ptr(ptr)) = self.frames[self.fp].stack.pop() {
                     //         ptr_src = ptr;
