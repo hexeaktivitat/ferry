@@ -19,6 +19,7 @@ pub enum FerryVmError {
 
 type FerryResult<T> = Result<T, FerryVmError>;
 
+#[derive(Debug)]
 struct FerryFrame {
     pub stack: Vec<FerryValue>,
     pub pc: usize,
@@ -81,6 +82,7 @@ impl FerryVm {
         let result = self.run(state);
         if !self.frames[self.fp].stack.is_empty() {
             println!("STACK DID NOT CLEAR");
+            println!("STACK: {:?}", self.frames[self.fp].stack);
             self.frames[self.fp].stack = vec![];
         }
         result
@@ -96,6 +98,7 @@ impl FerryVm {
             //     println!("frame: {}", self.fp);
             //     println!("next op: {:?}", instruction);
             // }
+
             match instruction {
                 FerryOpcode::Nop => println!("nop"),
                 FerryOpcode::Halt => break,
@@ -110,9 +113,12 @@ impl FerryVm {
                         result = stack_val;
                     }
                     if self.fp == 0 {
+                        self.frames[self.fp].stack.clear();
                         return Ok(result);
                     } else {
+                        self.frames[self.fp].stack.clear();
                         self.fp -= 1;
+
                         // println!("result : {:?}", result);
                         self.frames.pop();
                         self.frames[self.fp].stack.push(result.clone());
@@ -123,8 +129,9 @@ impl FerryVm {
                     self.frames[self.fp].stack.push(FerryValue::convert_from(c))
                 }
                 FerryOpcode::Alloc(ptr, a) => {
-                    self.heap.insert(ptr, a.clone());
-                    self.frames[self.fp].stack.push(FerryValue::Ptr(ptr));
+                    // self.heap.insert(ptr, a.clone());
+                    // self.frames[self.fp].stack.push(FerryValue::Ptr(ptr));
+                    self.frames[self.fp].stack.push(a);
                 }
                 FerryOpcode::Set(id) => {
                     // println!("{:?}", self.frames[self.fp].stack);
@@ -134,7 +141,7 @@ impl FerryVm {
                 }
                 FerryOpcode::Get(id) => {
                     // println!("{:?}", self.frames[self.fp].stack);
-                    // println!("{id}");
+                    // println!("getting {id}");
                     let value = self.frames[self.fp]
                         .locals
                         .get(&id.clone())
@@ -158,6 +165,7 @@ impl FerryVm {
                         let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
                         let left: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
                         let res: i64 = left + right;
+
                         self.frames[self.fp]
                             .stack
                             .push(FerryValue::convert_from(res));
@@ -241,8 +249,27 @@ impl FerryVm {
                     let res = left < right;
                     self.frames[self.fp].stack.push(FerryValue::Boolean(res));
                 }
+                FerryOpcode::GetI => {
+                    let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
+                    let left: Vec<FerryValue> =
+                        self.frames[self.fp].stack.pop().unwrap().convert_to();
+                    let res: FerryValue = left[right as usize].clone();
+                    self.frames[self.fp].stack.push(res);
+                }
+                FerryOpcode::Cons => {
+                    let right: Vec<FerryValue> =
+                        self.frames[self.fp].stack.pop().unwrap().convert_to();
+                    let left: Vec<FerryValue> =
+                        self.frames[self.fp].stack.pop().unwrap().convert_to();
+                    let res = [left, right].concat();
+                    self.frames[self.fp].stack.push(FerryValue::List(res));
+                }
                 FerryOpcode::Jump(offset) => {
                     self.frames[self.fp].pc += offset;
+                    // println!(
+                    //     "next instruction: {:?}",
+                    //     self.frames[self.fp].function[self.frames[self.fp].pc]
+                    // );
                 }
                 FerryOpcode::JumpCond(offset) => {
                     // let cond = self.frames[self.fp].stack.last().unwrap();
@@ -250,25 +277,46 @@ impl FerryVm {
                     if !cond.truthiness() {
                         self.frames[self.fp].pc += offset;
                     }
+                    // println!(
+                    //     "conditional: {} next instruction: {:?}",
+                    //     !cond.truthiness(),
+                    //     self.frames[self.fp].function[self.frames[self.fp].pc]
+                    // );
                 }
                 FerryOpcode::JumpBack(offset) => {
                     self.frames[self.fp].pc -= offset;
                 }
                 FerryOpcode::Iter => {
                     let mut ptr_src = 0;
-                    let iter: Vec<FerryValue> =
-                        if let FerryValue::Ptr(ptr) = self.frames[self.fp].stack.pop().unwrap() {
-                            ptr_src = ptr;
-                            self.heap.get(&ptr).unwrap().clone()
-                        } else {
-                            FerryValue::List(vec![])
-                        }
+                    // let iter: Vec<FerryValue> =
+                    //     if let Some(FerryValue::Ptr(ptr)) = self.frames[self.fp].stack.pop() {
+                    //         ptr_src = ptr;
+                    //         self.heap.get(&ptr).unwrap().clone()
+                    //     } else {
+                    //         FerryValue::List(vec![])
+                    //     }
+                    //     .convert_to();
+                    // println!("{:?}", self.frames[self.fp].stack);
+                    // println!("frame stack {:?}", self.frames[self.fp].stack);
+                    // println!("frame {:?}", self.frames[self.fp].function);
+                    // // println!(" iter value: {:?}", );
+                    // println!("actual value: {:?}", self.frames[self.fp].stack.last());
+                    let iter: Vec<FerryValue> = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .clone()
                         .convert_to();
+
                     let (head, tail) = iter.split_first().unwrap();
+                    // println!("{:?}, {:?}", head, tail);
                     let tail_len = tail.len() as i64;
                     // push pointer back onto stack
-                    self.frames[self.fp].stack.push(FerryValue::Ptr(ptr_src));
-                    self.heap.insert(ptr_src, FerryValue::List(tail.into()));
+                    // self.frames[self.fp].stack.push(FerryValue::Ptr(ptr_src));
+                    // self.heap.insert(ptr_src, FerryValue::List(tail.into()));
+                    self.frames[self.fp]
+                        .stack
+                        .push(FerryValue::List(tail.into()));
                     // push len onto stack
                     self.frames[self.fp]
                         .stack
@@ -292,12 +340,17 @@ impl FerryVm {
                     {
                         // println!("arity: {arity}");
                         let stack_len = self.frames[self.fp].stack.len();
-                        let stack = self.frames[self.fp]
-                            .stack
-                            // .clone()
-                            .split_off(stack_len - arity);
-                        let mut frame = FerryFrame {
-                            stack,
+                        let mut frame_stack = vec![];
+                        for _ in (stack_len - arity)..stack_len {
+                            frame_stack.push(self.frames[self.fp].stack.pop().unwrap());
+                        }
+
+                        // println!(
+                        //     "stack: {:?} \n split: {:?}",
+                        //     self.frames[self.fp].stack, stack
+                        // );
+                        let frame = FerryFrame {
+                            stack: frame_stack,
                             pc: 0,
                             function: instructions,
                             locals: HashMap::new(),

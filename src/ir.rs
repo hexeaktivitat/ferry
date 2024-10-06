@@ -54,6 +54,8 @@ pub enum FerryOpcode {
     Equal,
     Greater,
     Lesser,
+    GetI,
+    Cons,
     // JUMP: specifies the offset for a jump operation
     Jump(usize),
     // JUMPCOND: only jumps if top stack value is truthy
@@ -87,6 +89,8 @@ impl Into<u8> for FerryOpcode {
             FerryOpcode::Equal => 0x17,
             FerryOpcode::Greater => 0x18,
             FerryOpcode::Lesser => 0x19,
+            FerryOpcode::GetI => 0x40,
+            FerryOpcode::Cons => 0x41,
             FerryOpcode::Jump(_) => 0x20,
             FerryOpcode::JumpCond(_) => 0x21,
             FerryOpcode::JumpBack(_) => 0x22,
@@ -155,7 +159,7 @@ impl FerryIr {
             }
         }
 
-        println!("{:?}", program);
+        // println!("{:?}", program);
 
         Ok(program)
     }
@@ -339,6 +343,12 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 crate::token::Op::GetI => todo!(),
                 crate::token::Op::Cons => todo!(),
             },
+            // crate::token::TokenType::Value(val) => todo!(),
+            // crate::token::TokenType::Control(ctrl) => todo!(),
+            // crate::token::TokenType::Keyword(kwd) => todo!(),
+            // crate::token::TokenType::Identifier(_) => todo!(),
+            // crate::token::TokenType::Comment(_) => todo!(),
+            // crate::token::TokenType::End => todo!(),
             _ => Ok(vec![FerryOpcode::Nop]),
         }
     }
@@ -394,7 +404,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         let mut else_expr = if let Some(else_expr) = if_expr.else_expr.as_mut() {
             self.assemble_opcode(else_expr, state)?
         } else {
-            vec![FerryOpcode::Nop]
+            vec![]
         };
 
         let else_offset = else_expr.len();
@@ -404,6 +414,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         instructions.push(FerryOpcode::JumpCond(then_offset));
         instructions.append(&mut then_expr);
         instructions.append(&mut else_expr);
+
+        // println!("if instructions ONLY: {:?}", instructions);
 
         Ok(instructions)
     }
@@ -453,7 +465,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         instructions.push(FerryOpcode::JumpCond(contents.len() + 3));
         // instructions.push(FerryOpcode::Pop);
         instructions.append(&mut contents);
-        instructions.push(FerryOpcode::JumpBack(instructions.len() + 4));
+        instructions.push(FerryOpcode::Pop);
+        instructions.push(FerryOpcode::JumpBack(instructions.len() + 5));
 
         Ok(instructions)
     }
@@ -474,13 +487,13 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
             instructions.append(&mut iter_inst);
             instructions.push(FerryOpcode::Iter);
             instructions.push(FerryOpcode::Set(name.clone()));
-            // instructions.push(FerryOpcode::Pop);
             instructions.append(&mut contents_inst);
             // instructions.push(FerryOpcode::Pop);
 
-            instructions.push(FerryOpcode::JumpCond(2));
+            instructions.push(FerryOpcode::JumpCond(1));
             // instructions.push(FerryOpcode::Pop);
-            instructions.push(FerryOpcode::JumpBack(contents_len + 5));
+            instructions.push(FerryOpcode::JumpBack(contents_len + 4));
+            // instructions.push(FerryOpcode::Pop);
         }
 
         Ok(instructions)

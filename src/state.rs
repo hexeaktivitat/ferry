@@ -82,6 +82,20 @@ impl Convertable<Vec<FerryValue>> for FerryValue {
     }
 }
 
+impl Convertable<bool> for FerryValue {
+    fn convert_from(value: bool) -> Self {
+        FerryValue::Boolean(value)
+    }
+
+    fn convert_to(self) -> bool {
+        if let FerryValue::Boolean(value) = self {
+            value
+        } else {
+            false
+        }
+    }
+}
+
 impl FerryState {
     pub fn new() -> Self {
         Self {
