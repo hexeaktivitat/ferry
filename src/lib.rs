@@ -203,6 +203,7 @@ struct FerryTypeErrors {
     related: Vec<FerryTypeError>,
 }
 
+#[expect(unused)]
 #[derive(Error, Debug, Diagnostic)]
 #[error("Encountered interpreter errors")]
 #[diagnostic()]

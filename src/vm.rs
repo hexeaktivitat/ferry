@@ -60,7 +60,7 @@ impl FerryVm {
     //     // self.instructions = instructions;
     // }
 
-    fn clear(&mut self) {
+    fn _clear(&mut self) {
         self.frames.clear();
         self.ret.clear();
         self.fp = 0;
@@ -126,7 +126,7 @@ impl FerryVm {
                 FerryOpcode::LoadI(c) => {
                     self.frames[self.fp].stack.push(FerryValue::convert_from(c))
                 }
-                FerryOpcode::Alloc(ptr, a) => {
+                FerryOpcode::Alloc(_ptr, a) => {
                     // self.heap.insert(ptr, a.clone());
                     // self.frames[self.fp].stack.push(FerryValue::Ptr(ptr));
                     self.frames[self.fp].stack.push(a);
@@ -279,7 +279,7 @@ impl FerryVm {
                     self.frames[self.fp].pc -= offset;
                 }
                 FerryOpcode::Iter => {
-                    let ptr_src = 0;
+                    // let ptr_src = 0;
                     // let iter: Vec<FerryValue> =
                     //     if let Some(FerryValue::Ptr(ptr)) = self.frames[self.fp].stack.pop() {
                     //         ptr_src = ptr;
@@ -316,16 +316,16 @@ impl FerryVm {
                     // push value of variable assignment
                     self.frames[self.fp].stack.push(head.clone());
                 }
-                FerryOpcode::Label(label) => {
+                FerryOpcode::Label(_label) => {
                     // self.locals.insert(label, self.frames[self.fp].pc);
                     println!("lol");
                 }
                 FerryOpcode::Call(label) => {
                     self.ret.push(self.frames[self.fp].pc);
                     if let Some(FerryValue::Function {
-                        declaration,
-                        name,
-                        func_type,
+                        declaration: _,
+                        name: _,
+                        func_type: _,
                         instructions,
                         arity,
                     }) = state.get_symbol_value(&label)

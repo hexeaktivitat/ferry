@@ -130,7 +130,7 @@ impl FerryState {
         self.labels.insert(id.into(), value);
     }
 
-    pub fn get_label(&self, id: &String) -> Option<usize> {
+    pub fn _get_label(&self, id: &String) -> Option<usize> {
         if self.labels.contains_key(id) {
             Some(*self.labels.get(id).unwrap())
         } else {
@@ -162,7 +162,7 @@ impl Typing for FerryValue {
             FerryValue::Unit => &FerryType::Undefined,
             FerryValue::List(_) => &FerryType::List,
             FerryValue::Function {
-                declaration,
+                declaration: _,
                 name: _,
                 func_type: expr_type,
                 instructions: _,

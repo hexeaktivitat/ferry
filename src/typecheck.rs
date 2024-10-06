@@ -826,9 +826,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         if let Some(FerryValue::Function {
             declaration: decl,
             name,
-            func_type,
-            instructions,
-            arity,
+            func_type: _,
+            instructions: _,
+            arity: _,
         }) = &mut state.get_symbol_value(&call.name)
         {
             let declaration = if let Some(d) = decl {

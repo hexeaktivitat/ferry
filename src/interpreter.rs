@@ -420,10 +420,10 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<FerryValue> {
         if let Some(FerryValue::Function {
             declaration: Some(function),
-            name,
-            func_type,
-            instructions,
-            arity,
+            name: _,
+            func_type: _,
+            instructions: _,
+            arity: _,
         }) = &mut state.get_symbol_value(&call.name)
         {
             if let Some(params) = &mut function.args {

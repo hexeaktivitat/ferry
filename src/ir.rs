@@ -1,4 +1,3 @@
-
 use miette::{Diagnostic, Result};
 use thiserror::Error;
 

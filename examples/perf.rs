@@ -3,7 +3,7 @@
 use std::{fs, time::Instant};
 
 fn main() {
-    // hello();
+    hello();
     euler_1();
     fib();
 }
