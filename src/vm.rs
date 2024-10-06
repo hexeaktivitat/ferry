@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use miette::{Diagnostic, Result};
 use thiserror::Error;
@@ -23,7 +23,8 @@ type FerryResult<T> = Result<T, FerryVmError>;
 struct FerryFrame {
     pub stack: Vec<FerryValue>,
     pub pc: usize,
-    pub function: Vec<FerryOpcode>,
+    // pub function: Vec<FerryOpcode>,
+    pub function: Rc<RefCell<Vec<FerryOpcode>>>,
     pub locals: HashMap<String, FerryValue>,
 }
 
@@ -72,12 +73,14 @@ impl FerryVm {
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         // self.program = program;
+        let program = Rc::new(RefCell::new(instructions));
         let frame = FerryFrame {
             stack: vec![],
             pc: 0,
-            function: instructions,
+            function: program,
             locals: HashMap::new(),
         };
+
         self.frames.push(frame);
         let result = self.run(state);
         if !self.frames[self.fp].stack.is_empty() {
@@ -90,7 +93,8 @@ impl FerryVm {
 
     fn run(&mut self, state: &mut FerryState) -> FerryResult<FerryValue> {
         loop {
-            let instruction = self.advance(&self.frames[self.fp].function.clone());
+            let instruction = self.advance(Rc::clone(&self.frames[self.fp].function));
+
             // if self.fp == 1 {
             //     println!("stack: {:?}", self.frames[self.fp].stack);
             //     println!("frame: {}", self.fp);
@@ -344,7 +348,7 @@ impl FerryVm {
                         let frame = FerryFrame {
                             stack: frame_stack,
                             pc: 0,
-                            function: instructions,
+                            function: Rc::new(RefCell::new(instructions)),
                             locals: HashMap::new(),
                         };
 
@@ -362,9 +366,9 @@ impl FerryVm {
         }
     }
 
-    fn advance(&mut self, instructions: &[FerryOpcode]) -> FerryOpcode {
+    fn advance(&mut self, instructions: Rc<RefCell<Vec<FerryOpcode>>>) -> FerryOpcode {
         self.frames[self.fp].pc += 1;
-        instructions[self.frames[self.fp].pc - 1].clone()
+        instructions.borrow_mut()[self.frames[self.fp].pc - 1].to_owned()
     }
 }
 
