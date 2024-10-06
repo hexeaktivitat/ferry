@@ -1,0 +1,7 @@
+let val := 26
+
+while val >= 3 do: (
+    val = val - 3
+)
+
+val

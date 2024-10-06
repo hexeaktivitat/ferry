@@ -291,6 +291,7 @@ impl FerryParser {
             }
             Some(ret)
         };
+
         self.consume(&TT::Control(Ctrl::RightParen), "expected ')' after '('")?;
         let return_type = if self.peek().get_token_type() == &TT::Control(Ctrl::RightArrow) {
             self.consume(

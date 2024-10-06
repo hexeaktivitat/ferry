@@ -8,6 +8,7 @@ fn main() {
     fib();
 }
 
+// #[expect(unused)]
 fn hello() {
     let source: String =
         fs::read_to_string("examples/hello_ferry.feri").expect("file should exist");
