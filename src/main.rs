@@ -60,7 +60,7 @@ fn repl() -> Result<(), Error> {
     let mut input = String::new();
     let mut program = Ferry::new(input.clone());
 
-    println!("\nFERRY 0.2.3");
+    println!("\nFERRY 0.2.4");
     println!("===========");
     println!("Language Design Experiment");
     println!("Type !help for commands, or !quit to quit\n");
