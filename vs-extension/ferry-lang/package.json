@@ -2,6 +2,7 @@
   "name": "ferry-lang",
   "displayName": "Ferry-lang",
   "description": "",
+  "icon": "Stamp63.png",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.90.0"
@@ -10,16 +11,25 @@
     "Programming Languages"
   ],
   "contributes": {
-    "languages": [{
-      "id": "ferry",
-      "aliases": ["Ferry", "ferry"],
-      "extensions": [".feri"],
-      "configuration": "./language-configuration.json"
-    }],
-    "grammars": [{
-      "language": "ferry",
-      "scopeName": "source.ferry",
-      "path": "./syntaxes/ferry.tmLanguage.json"
-    }]
+    "languages": [
+      {
+        "id": "ferry",
+        "aliases": [
+          "Ferry",
+          "ferry"
+        ],
+        "extensions": [
+          ".feri"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ferry",
+        "scopeName": "source.ferry",
+        "path": "./syntaxes/ferry.tmLanguage.json"
+      }
+    ]
   }
 }

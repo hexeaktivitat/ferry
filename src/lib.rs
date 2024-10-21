@@ -1,7 +1,8 @@
+use ir::{FerryIr, FerryOpcode};
 use miette::{Diagnostic, IntoDiagnostic, Result};
 use thiserror::Error;
 
-use interpreter::{FerryInterpreter, FerryInterpreterError};
+use interpreter::FerryInterpreterError;
 use lexer::{FerryLexError, FerryLexer};
 use parser::{FerryParseError, FerryParser};
 use riscv::{FerryAsmError, FerryRiscVAssembler, Instruction};
@@ -9,8 +10,10 @@ use state::{FerryState, FerryValue};
 use syntax::Expr;
 use token::FerryToken;
 use typecheck::{FerryTypeError, FerryTypechecker};
+use vm::FerryVm;
 
 mod interpreter;
+mod ir;
 mod lexer;
 mod parser;
 mod riscv;
@@ -19,6 +22,7 @@ mod syntax;
 mod token;
 mod typecheck;
 mod types;
+mod vm;
 
 pub struct Ferry {
     source_code: String,
@@ -26,6 +30,8 @@ pub struct Ferry {
     state: FerryState,
     ast: Vec<Expr>,
     typed_ast: Vec<Expr>,
+    ferry_ir: Vec<FerryOpcode>,
+    vm: FerryVm,
     riscv_asm: Vec<Instruction>,
 }
 
@@ -45,6 +51,8 @@ impl Ferry {
             state: FerryState::new(),
             ast: Vec::new(),
             typed_ast: Vec::new(),
+            ferry_ir: Vec::new(),
+            vm: FerryVm::new(),
             riscv_asm: Vec::new(),
         }
     }
@@ -79,16 +87,27 @@ impl Ferry {
                     related: err_list,
                 })?;
 
-        let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
-        let result = match interpreter.interpret(&mut self.state).map_err(|err_list| {
-            FerryInterpreterErrors {
-                source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
-                related: err_list,
-            }
-        })? {
-            Some(r) => r,
-            None => FerryValue::Unit,
-        };
+        // let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
+        // let result = match interpreter.interpret(&mut self.state).map_err(|err_list| {
+        //     FerryInterpreterErrors {
+        //         source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
+        //         related: err_list,
+        //     }
+        // })? {
+        //     Some(r) => r,
+        //     None => FerryValue::Unit,
+        // };
+
+        let mut ir = FerryIr::new(self.ast.clone());
+        self.ferry_ir = ir.lower(&mut self.state).unwrap();
+
+        // self.vm.set_program(self.ferry_ir.clone());
+        let result = self
+            .vm
+            .interpret(self.ferry_ir.clone(), &mut self.state)
+            .unwrap();
+
+        // self.print_data(PrintReq::TypedAst);
 
         Ok(result)
     }
@@ -186,6 +205,7 @@ struct FerryTypeErrors {
     related: Vec<FerryTypeError>,
 }
 
+#[expect(unused)]
 #[derive(Error, Debug, Diagnostic)]
 #[error("Encountered interpreter errors")]
 #[diagnostic()]

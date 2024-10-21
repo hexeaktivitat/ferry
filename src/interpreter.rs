@@ -8,6 +8,7 @@ use crate::{
         Lit as SLit, Loop, Unary, Variable,
     },
     token::{Op, TokenType as TT},
+    types::Typing,
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -397,10 +398,19 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         let name = function.name.clone();
+        let arity = if let Some(args) = function.args.as_ref() {
+            args.len()
+        } else {
+            0
+        };
         state.add_symbol(
             &name,
             Some(FerryValue::Function {
-                declaration: function.clone(),
+                declaration: Some(function.clone()),
+                name: name.clone(),
+                func_type: function.expr_type.get_type().clone(),
+                instructions: vec![],
+                arity,
             }),
         );
 
@@ -409,7 +419,11 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<FerryValue> {
         if let Some(FerryValue::Function {
-            declaration: function,
+            declaration: Some(function),
+            name: _,
+            func_type: _,
+            instructions: _,
+            arity: _,
         }) = &mut state.get_symbol_value(&call.name)
         {
             if let Some(params) = &mut function.args {
@@ -433,19 +447,6 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                 help: "function does not exist".into(),
                 span: *call.token.get_span(),
             })
-        }
-    }
-}
-
-impl FerryValue {
-    fn truthiness(&self) -> bool {
-        match self {
-            FerryValue::Number(n) => n > &0,
-            FerryValue::Str(s) => !s.is_empty(),
-            FerryValue::Boolean(b) => *b,
-            FerryValue::Unit => false,
-            FerryValue::List(l) => !l.is_empty(),
-            FerryValue::Function { declaration: _ } => false,
         }
     }
 }
