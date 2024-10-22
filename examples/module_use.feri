@@ -1,0 +1,74 @@
+# experiments for syntax
+# import syntax
+
+use std
+use Ferry.std
+use Ferry::std
+use Ferry:std
+
+import std
+import Ferry:std
+
+from Ferry.std import (fn1, fn2)
+from Ferry.std import (fn1, fn2, fn3 as fn_)
+
+import (fn1, fn2) from Ferry.std
+import (fn3) from Ferry.std as (fn_)
+
+# call syntax
+
+Ferry.std.fn1()
+Ferry:std.fn1()
+
+Ferry.std[fn1]()
+
+std.fn1()
+std:fn1()
+
+std[fn1]()
+
+fn1()
+
+# declaration syntax
+
+module Ferry.std:
+	|> def fn1
+	|> def fn2
+	|> def fn3
+
+module Ferry.std:
+	export: def fn1
+	export: def fn2
+	export: def fn3
+
+def fn1
+def fn2
+def fn3
+export [fn1, fn2, fn3] as Ferry.std
+
+export:
+	def fn1
+	def fn2
+	def fn3
+as: Ferry.std
+
+export as Ferry.std:
+	def fn1
+	def fn2
+	def fn3
+
+as Ferry.std:
+	def fn1
+	def fn2
+	def fn3
+export (fn1, fn2, fn3)
+
+# export AND program
+
+def fn1()
+def fn2()
+def fn3()
+def main()
+def fn4()
+
+export [fn1, fn2, fn3] as Ferry.std # exports 1-3, does not export main or fn4
