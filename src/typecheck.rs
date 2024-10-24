@@ -240,6 +240,7 @@ impl FerryTypechecker {
                     args: c.args,
                     expr_type: set_type(c.expr_type, infer_type),
                 })),
+                Expr::Module(m) => Ok(Expr::Module(m.to_owned())),
             },
             Err(e) => Err(e),
         }

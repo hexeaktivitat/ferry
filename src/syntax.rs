@@ -17,6 +17,7 @@ pub enum Expr {
     For(For),
     Function(Function),
     Call(Call),
+    Module(Module),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -145,6 +146,13 @@ pub struct Call {
     pub expr_type: FerryTyping,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Module {
+    pub name: String,
+    pub token: FerryToken,
+    pub functions: Vec<Expr>,
+}
+
 pub trait ExprVisitor<T, S> {
     fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
     fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
@@ -174,6 +182,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::For(for_expr) => visitor.visit_for(for_expr, state),
         Expr::Function(function) => visitor.visit_function(function, state),
         Expr::Call(call) => visitor.visit_call(call, state),
+        Expr::Module(module) => todo!(),
     }
 }
 
@@ -221,6 +230,7 @@ impl Expr {
             Expr::For(f) => &f.token,
             Expr::Function(f) => &f.token,
             Expr::Call(c) => &c.token,
+            Expr::Module(m) => &m.token,
         }
     }
 }
@@ -375,6 +385,7 @@ impl std::fmt::Display for Expr {
                 }
             }
             Expr::Call(c) => write!(f, "{}({:?})", c.name, c.args),
+            Expr::Module(m) => write!(f, "{}", m.name),
         }
     }
 }
