@@ -128,6 +128,13 @@ impl FerryIr {
                     Ok(mut instructions) => functions.append(&mut instructions),
                     Err(e) => println!("{e}"),
                 }
+            } else if let Expr::Module(module) = expr {
+                for function in module.functions.clone() {
+                    match self.assemble_opcode(&mut Expr::Function(function), state) {
+                        Ok(mut instructions) => functions.append(&mut instructions),
+                        Err(e) => println!("{e}"),
+                    }
+                }
             } else {
                 match self.assemble_opcode(expr, state) {
                     Ok(mut instructions) => program.append(&mut instructions),
@@ -550,7 +557,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         state.add_symbol(
             &function.name,
             Some(FerryValue::Function {
-                declaration: None,
+                declaration: Some(function.clone()),
                 name: function.name.clone(),
                 func_type: FerryType::Function,
                 instructions,

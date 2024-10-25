@@ -830,6 +830,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     }
 
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<Expr> {
+        // println!("state: {:?}", state);
         if let Some(FerryValue::Function {
             declaration: decl,
             name,

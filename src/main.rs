@@ -39,6 +39,7 @@ fn main() -> ExitCode {
                     Ok(r) => println!("{r}"),
                     Err(e) => eprintln!("{:?}", e),
                 }
+                program.print_data(PrintReq::State);
                 // program.print_data(PrintReq::TypedAst);
                 ExitCode::SUCCESS
             }
