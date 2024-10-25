@@ -7,10 +7,11 @@ use crate::{
     state::{FerryState, FerryValue},
     syntax::{
         walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If, Lit,
-        Loop, Unary, Variable,
+        Loop, Module, Unary, Variable,
     },
     token::{Op, TokenType},
     types::{FerryType, FerryTyping, TypeCheckable, Typing},
+    FerryTypeErrors,
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -897,5 +898,28 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 span: *call.token.get_span(),
             });
         }
+    }
+
+    fn visit_module(&mut self, module: &mut Module, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut checked_fns = vec![];
+
+        for function in module.functions.clone() {
+            if let Expr::Function(checked_function) =
+                self.check_types(&mut Expr::Function(function), state)?
+            {
+                checked_fns.push(checked_function);
+            } else {
+                return Err(FerryTypeError::UnimplementedFeature {
+                    advice: "not supported".into(),
+                    span: *module.token.get_span(),
+                });
+            };
+        }
+
+        Ok(Expr::Module(Module {
+            name: module.name.clone(),
+            token: module.token.clone(),
+            functions: checked_fns,
+        }))
     }
 }

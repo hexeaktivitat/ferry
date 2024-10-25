@@ -449,4 +449,12 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
             })
         }
     }
+
+    fn visit_module(
+        &mut self,
+        module: &mut crate::syntax::Module,
+        state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
+        todo!()
+    }
 }

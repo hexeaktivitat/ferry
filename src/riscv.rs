@@ -310,6 +310,14 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
             span: *call.token.get_span(),
         })
     }
+
+    fn visit_module(
+        &mut self,
+        module: &mut crate::syntax::Module,
+        state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        todo!()
+    }
 }
 
 /// `Instruction`

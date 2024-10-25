@@ -581,4 +581,12 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
         Ok(instructions)
     }
+
+    fn visit_module(
+        &mut self,
+        module: &mut crate::syntax::Module,
+        state: &mut FerryState,
+    ) -> FerryResult<Vec<FerryOpcode>> {
+        todo!()
+    }
 }

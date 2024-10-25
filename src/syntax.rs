@@ -166,6 +166,7 @@ pub trait ExprVisitor<T, S> {
     fn visit_for(&mut self, for_expr: &mut For, state: S) -> T;
     fn visit_function(&mut self, function: &mut Function, state: S) -> T;
     fn visit_call(&mut self, call: &mut Call, state: S) -> T;
+    fn visit_module(&mut self, module: &mut Module, state: S) -> T;
 }
 
 pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, state: S) -> T {
@@ -182,7 +183,7 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::For(for_expr) => visitor.visit_for(for_expr, state),
         Expr::Function(function) => visitor.visit_function(function, state),
         Expr::Call(call) => visitor.visit_call(call, state),
-        Expr::Module(module) => todo!(),
+        Expr::Module(module) => visitor.visit_module(module, state),
     }
 }
 

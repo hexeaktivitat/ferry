@@ -363,6 +363,10 @@ impl FerryParser {
         let mut functions = vec![];
         while let Ok(Expr::Function(function)) = self.start(state) {
             functions.push(function);
+
+            if self.peek().get_token_type() == &TT::End {
+                break;
+            }
         }
 
         Ok(Expr::Module(Module {
