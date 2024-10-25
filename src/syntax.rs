@@ -150,7 +150,7 @@ pub struct Call {
 pub struct Module {
     pub name: String,
     pub token: FerryToken,
-    pub functions: Vec<Expr>,
+    pub functions: Vec<Function>,
 }
 
 pub trait ExprVisitor<T, S> {

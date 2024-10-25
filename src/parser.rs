@@ -3,7 +3,8 @@ use thiserror::Error;
 
 use crate::state::FerryState;
 use crate::syntax::{
-    Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Lit as SLit, Loop, Variable,
+    Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Lit as SLit, Loop, Module,
+    Variable,
 };
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
@@ -80,6 +81,8 @@ impl FerryParser {
             self.for_loop(state)
         } else if self.matches(&[TT::Keyword(Kwd::Def)]) {
             self.function(state)
+        } else if self.matches(&[TT::Keyword(Kwd::Export)]) {
+            self.module(state)
         } else {
             self.s_expression(state)
         };
@@ -333,6 +336,39 @@ impl FerryParser {
             contents,
             return_type,
             expr_type: FerryTyping::Untyped,
+        }))
+    }
+
+    // export as <ID>:
+    // def fn fn1()
+    // def fn fn2()
+    // def fn fn3()
+    fn module(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let token = self.previous();
+        self.consume(
+            &TT::Keyword(Kwd::As),
+            "expected 'as' after 'export' keyword",
+        )?;
+
+        let name = if let Some(id) = self.advance().get_id() {
+            id
+        } else {
+            return Err(FerryParseError::UnexpectedToken {
+                msg: "expected identifier for module".into(),
+                span: *self.previous().get_span(),
+            });
+        };
+        self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'as'")?;
+
+        let mut functions = vec![];
+        while let Ok(Expr::Function(function)) = self.start(state) {
+            functions.push(function);
+        }
+
+        Ok(Expr::Module(Module {
+            name,
+            token,
+            functions,
         }))
     }
 
