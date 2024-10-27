@@ -392,8 +392,18 @@ impl FerryParser {
             });
         };
 
-        let module = std::fs::read_to_string(format!("examples/{}.feri", name))
-            .expect("couldn't find module");
+        let module = if std::path::Path::exists(std::path::Path::new(&format!("{}.feri", name))) {
+            std::fs::read_to_string(format!("{}.feri", name)).expect("couldn't find module")
+        } else if std::path::Path::exists(std::path::Path::new(&format!("examples/{}.feri", name)))
+        {
+            std::fs::read_to_string(format!("examples/{}.feri", name))
+                .expect("couldn't find module")
+        } else {
+            return Err(FerryParseError::UnexpectedToken {
+                msg: "Invalid path for module".into(),
+                span: *self.previous().get_span(),
+            });
+        };
 
         let mut lexer = crate::lexer::FerryLexer::new(module.as_bytes());
         let mut parser = FerryParser::new(lexer.lex().expect("module did not lex"));
