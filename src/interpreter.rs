@@ -457,4 +457,12 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
     ) -> FerryResult<FerryValue> {
         todo!()
     }
+
+    fn visit_import(
+        &mut self,
+        import: &mut crate::syntax::Import,
+        state: &mut FerryState,
+    ) -> FerryResult<FerryValue> {
+        todo!()
+    }
 }

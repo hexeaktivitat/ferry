@@ -318,6 +318,14 @@ impl ExprVisitor<FerryResult<Instruction>, &mut Vec<Instruction>> for &mut Ferry
     ) -> FerryResult<Instruction> {
         todo!()
     }
+
+    fn visit_import(
+        &mut self,
+        import: &mut crate::syntax::Import,
+        state: &mut Vec<Instruction>,
+    ) -> FerryResult<Instruction> {
+        todo!()
+    }
 }
 
 /// `Instruction`

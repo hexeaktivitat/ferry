@@ -596,4 +596,18 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
     ) -> FerryResult<Vec<FerryOpcode>> {
         todo!()
     }
+
+    fn visit_import(
+        &mut self,
+        import: &mut crate::syntax::Import,
+        state: &mut FerryState,
+    ) -> FerryResult<Vec<FerryOpcode>> {
+        let instructions = vec![];
+
+        for function in import.functions.clone() {
+            self.assemble_opcode(&mut Expr::Function(function), state)?;
+        }
+
+        Ok(instructions)
+    }
 }

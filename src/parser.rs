@@ -1,10 +1,12 @@
+use std::io::Read;
+
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::state::FerryState;
 use crate::syntax::{
-    Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Lit as SLit, Loop, Module,
-    Variable,
+    Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Import, Lit as SLit, Loop,
+    Module, Variable,
 };
 use crate::token::{Ctrl, Kwd};
 use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
@@ -83,6 +85,8 @@ impl FerryParser {
             self.function(state)
         } else if self.matches(&[TT::Keyword(Kwd::Export)]) {
             self.module(state)
+        } else if self.matches(&[TT::Keyword(Kwd::Import)]) {
+            self.import(state)
         } else {
             self.s_expression(state)
         };
@@ -370,6 +374,45 @@ impl FerryParser {
         }
 
         Ok(Expr::Module(Module {
+            name,
+            token,
+            functions,
+        }))
+    }
+
+    fn import(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+        let token = self.previous();
+
+        let name = if let Some(id) = self.advance().get_id() {
+            id
+        } else {
+            return Err(FerryParseError::UnexpectedToken {
+                msg: "expected identifier for module to import".into(),
+                span: *self.previous().get_span(),
+            });
+        };
+
+        let module = std::fs::read_to_string(format!("examples/{}.feri", name))
+            .expect("couldn't find module");
+
+        let mut lexer = crate::lexer::FerryLexer::new(module.as_bytes());
+        let mut parser = FerryParser::new(lexer.lex().expect("module did not lex"));
+        let module_parse = parser.parse(state).expect("module parsing errors");
+
+        let mut functions = vec![];
+
+        if let Some(Expr::Module(module)) = module_parse.first() {
+            for function in module.functions.clone() {
+                functions.push(function.clone());
+            }
+        } else {
+            return Err(FerryParseError::UnexpectedToken {
+                msg: "Provided module was not module".into(),
+                span: *self.previous().get_span(),
+            });
+        }
+
+        Ok(Expr::Import(Import {
             name,
             token,
             functions,
