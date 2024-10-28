@@ -1,0 +1,14 @@
+export as std
+
+def fn modulo(l: Int, r: Int) -> Int: (
+	if l >= r then: (
+		modulo((l - r), r)
+	) else: l
+)
+
+def fn abs(i: Int) -> Int: (
+	if a < 0 then:
+		a * (0 - 1)
+	else:
+		a
+)
