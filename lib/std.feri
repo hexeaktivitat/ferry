@@ -1,4 +1,4 @@
-export as std
+export as std:
 
 def fn modulo(l: Int, r: Int) -> Int: (
 	if l >= r then: (
@@ -7,8 +7,8 @@ def fn modulo(l: Int, r: Int) -> Int: (
 )
 
 def fn abs(i: Int) -> Int: (
-	if a < 0 then:
-		a * (0 - 1)
+	if i < 0 then:
+		i * (0 - 1)
 	else:
-		a
+		i
 )
