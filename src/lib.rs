@@ -1,5 +1,5 @@
 use ir::{FerryIr, FerryOpcode};
-use miette::{Diagnostic, IntoDiagnostic, Result};
+use miette::{Diagnostic, Result};
 use thiserror::Error;
 
 use interpreter::FerryInterpreterError;

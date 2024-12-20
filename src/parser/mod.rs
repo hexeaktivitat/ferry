@@ -1,5 +1,3 @@
-use std::io::Read;
-
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 

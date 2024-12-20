@@ -650,10 +650,10 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     expr_type,
                 }))
             } else {
-                return Err(FerryTypeError::ConditionalNotBool {
+                Err(FerryTypeError::ConditionalNotBool {
                     advice: "loop condition was not boolean".into(),
                     span: *loop_expr.token.get_span(),
-                });
+                })
             }
         } else {
             let contents = Box::new(self.check_types(&mut loop_expr.contents, state)?);
@@ -890,10 +890,10 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 }))
             }
         } else {
-            return Err(FerryTypeError::UnknownType {
+            Err(FerryTypeError::UnknownType {
                 advice: "function type unknown at compile time".into(),
                 span: *call.token.get_span(),
-            });
+            })
         }
     }
 
