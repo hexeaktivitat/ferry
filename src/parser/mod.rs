@@ -3,14 +3,16 @@ use std::io::Read;
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
+use crate::lexer::token::{Ctrl, Kwd};
+use crate::lexer::token::{FerryToken, Op, TokenType as TT, Val as TLit};
+use crate::state::types::{FerryType, FerryTyping};
 use crate::state::FerryState;
-use crate::syntax::{
+use syntax::{
     Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Import, Lit as SLit, Loop,
     Module, Variable,
 };
-use crate::token::{Ctrl, Kwd};
-use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
-use crate::types::{FerryType, FerryTyping};
+
+pub(crate) mod syntax;
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryParseError {
@@ -114,10 +116,7 @@ impl FerryParser {
         let else_expr = if self.peek().get_token_type() == &TT::Keyword(Kwd::Else) {
             self.consume(&TT::Keyword(Kwd::Else), "idk how you got this")?;
             if self.peek().get_token_type() == &TT::Control(Ctrl::Colon) {
-                self.consume(
-                    &TT::Control(crate::token::Ctrl::Colon),
-                    "colon not consumed",
-                )?;
+                self.consume(&TT::Control(Ctrl::Colon), "colon not consumed")?;
             }
             self.consume_newline()?;
             Some(Box::new(self.s_expression(state)?))
@@ -144,8 +143,8 @@ impl FerryParser {
             let assigned_type = if let TT::Identifier(id) = self.peek().get_token_type() {
                 self.advance();
                 match id.clone().as_str() {
-                    "Int" => Some(crate::types::FerryType::Num),
-                    "String" => Some(crate::types::FerryType::String),
+                    "Int" => Some(FerryType::Num),
+                    "String" => Some(FerryType::String),
                     "List" => Some(FerryType::List),
                     _ => Some(FerryType::Untyped), // allowing for inference
                 }
@@ -220,8 +219,8 @@ impl FerryParser {
         let iterator_type = if let TT::Identifier(id) = self.peek().get_token_type() {
             self.advance();
             match id.clone().as_str() {
-                "Int" => Some(crate::types::FerryType::Num),
-                "String" => Some(crate::types::FerryType::String),
+                "Int" => Some(FerryType::Num),
+                "String" => Some(FerryType::String),
                 _ => Some(FerryType::Num), // coerce all types to Num
             }
         } else {
@@ -277,8 +276,8 @@ impl FerryParser {
                 let param_type = if let TT::Identifier(id) = self.peek().get_token_type() {
                     self.advance();
                     match id.clone().as_str() {
-                        "Int" => Some(crate::types::FerryType::Num),
-                        "String" => Some(crate::types::FerryType::String),
+                        "Int" => Some(FerryType::Num),
+                        "String" => Some(FerryType::String),
                         _ => None,
                     }
                 } else {

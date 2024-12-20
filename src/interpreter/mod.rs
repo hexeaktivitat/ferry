@@ -2,13 +2,13 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::{
-    state::{FerryState, FerryValue},
-    syntax::{
+    lexer::token::{Op, TokenType as TT},
+    parser::syntax::{
         walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
-        Lit as SLit, Loop, Unary, Variable,
+        Import, Lit as SLit, Loop, Module, Unary, Variable,
     },
-    token::{Op, TokenType as TT},
-    types::Typing,
+    state::types::Typing,
+    state::{FerryState, FerryValue},
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -452,7 +452,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_module(
         &mut self,
-        module: &mut crate::syntax::Module,
+        module: &mut Module,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         todo!()
@@ -460,7 +460,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_import(
         &mut self,
-        import: &mut crate::syntax::Import,
+        import: &mut Import,
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         todo!()

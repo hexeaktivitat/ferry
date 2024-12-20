@@ -1,4 +1,4 @@
-use crate::syntax::{Expr, Lit};
+use crate::parser::syntax::{Expr, Lit};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FerryTyping {

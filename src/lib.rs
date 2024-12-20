@@ -3,11 +3,11 @@ use miette::{Diagnostic, IntoDiagnostic, Result};
 use thiserror::Error;
 
 use interpreter::FerryInterpreterError;
+use lexer::token::FerryToken;
 use lexer::{FerryLexError, FerryLexer};
+use parser::syntax::Expr;
 use parser::{FerryParseError, FerryParser};
 use state::{FerryState, FerryValue};
-use syntax::Expr;
-use token::FerryToken;
 use typecheck::{FerryTypeError, FerryTypechecker};
 use vm::FerryVm;
 
@@ -16,10 +16,7 @@ mod ir;
 mod lexer;
 mod parser;
 mod state;
-mod syntax;
-mod token;
 mod typecheck;
-mod types;
 mod vm;
 
 pub struct Ferry {

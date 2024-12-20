@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use crate::{
-    ir::FerryOpcode,
-    syntax::Function,
-    types::{FerryType, TypeCheckable, Typing},
-};
+use crate::{ir::FerryOpcode, parser::syntax::Function};
+
+use types::{FerryType, TypeCheckable, Typing};
+
+pub(crate) mod types;
 
 // placeholder for program state
 #[derive(Debug, Clone)]

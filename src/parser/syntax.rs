@@ -1,7 +1,7 @@
 use miette::SourceSpan;
 
-use crate::token::{FerryToken, Op, TokenType as TT};
-use crate::types::{FerryType, FerryTyping};
+use crate::lexer::token::{FerryToken, Op, TokenType as TT};
+use crate::state::types::{FerryType, FerryTyping};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {

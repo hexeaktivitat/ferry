@@ -4,13 +4,13 @@ use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::{
-    state::{FerryState, FerryValue},
-    syntax::{
+    lexer::token::{Op, TokenType},
+    parser::syntax::{
         walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
         Import, Lit, Loop, Module, Unary, Variable,
     },
-    token::{Op, TokenType},
-    types::{FerryType, FerryTyping, TypeCheckable, Typing},
+    state::types::{FerryType, FerryTyping, TypeCheckable, Typing},
+    state::{FerryState, FerryValue},
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -667,11 +667,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         }
     }
 
-    fn visit_unary(
-        &mut self,
-        unary: &mut crate::syntax::Unary,
-        state: &mut FerryState,
-    ) -> FerryResult<Expr> {
+    fn visit_unary(&mut self, unary: &mut Unary, state: &mut FerryState) -> FerryResult<Expr> {
         let right = self.check_types(&mut unary.rhs, state)?;
 
         if right.get_type() == &FerryType::Num {
