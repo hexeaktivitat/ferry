@@ -1,0 +1,31 @@
+export as std:
+
+def fn modulo(l: Int, r: Int) -> Int: (
+	if l >= r then: (
+		modulo((l - r), r)
+	) else: l
+)
+
+def fn abs(i: Int) -> Int: (
+	if i < 0 then:
+		i * (0 - 1)
+	else:
+		i
+)
+
+def fn square(i: Int) -> Int: (
+	i * i
+)
+
+def fn exp(i: Int, p: Int) -> Int: (
+	if p == 2 then:
+		(square(i))
+	else: (if p == 1 then:
+		(1)
+	else: (if modulo(p, 2) == 1 then:
+		(i * exp(i, p - 1))
+	else: (if modulo(p, 2) == 0 then:
+		(square(i) * exp(i, p - 2))
+	else:
+		(1)
+))))

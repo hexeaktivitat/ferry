@@ -398,6 +398,8 @@ impl FerryParser {
         {
             std::fs::read_to_string(format!("examples/{}.feri", name))
                 .expect("couldn't find module")
+        } else if std::path::Path::exists(std::path::Path::new(&format!("lib/{}.feri", name))) {
+            std::fs::read_to_string(format!("lib/{}.feri", name)).expect("couldn't find module")
         } else {
             return Err(FerryParseError::UnexpectedToken {
                 msg: "Invalid path for module".into(),
