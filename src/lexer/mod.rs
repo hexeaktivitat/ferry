@@ -155,6 +155,10 @@ impl<'source> FerryLexer<'source> {
                     "def" => Some(TT::Keyword(Kwd::Def)),
                     "fn" => Some(TT::Keyword(Kwd::Fn)),
                     "return" => Some(TT::Keyword(Kwd::Return)),
+                    "from" => Some(TT::Keyword(Kwd::From)),
+                    "import" => Some(TT::Keyword(Kwd::Import)),
+                    "export" => Some(TT::Keyword(Kwd::Export)),
+                    "as" => Some(TT::Keyword(Kwd::As)),
 
                     // reserved boolean keywords
                     "true" => Some(TT::Value(Val::Boolean(true))),

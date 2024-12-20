@@ -6,8 +6,8 @@ use thiserror::Error;
 use crate::{
     state::{FerryState, FerryValue},
     syntax::{
-        walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If, Lit,
-        Loop, Unary, Variable,
+        walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
+        Import, Lit, Loop, Module, Unary, Variable,
     },
     token::{Op, TokenType},
     types::{FerryType, FerryTyping, TypeCheckable, Typing},
@@ -240,6 +240,8 @@ impl FerryTypechecker {
                     args: c.args,
                     expr_type: set_type(c.expr_type, infer_type),
                 })),
+                Expr::Module(m) => Ok(Expr::Module(m.to_owned())),
+                Expr::Import(i) => Ok(Expr::Import(i.to_owned())),
             },
             Err(e) => Err(e),
         }
@@ -828,6 +830,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     }
 
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<Expr> {
+        // println!("state: {:?}", state);
         if let Some(FerryValue::Function {
             declaration: decl,
             name,
@@ -896,5 +899,51 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 span: *call.token.get_span(),
             });
         }
+    }
+
+    fn visit_module(&mut self, module: &mut Module, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut checked_fns = vec![];
+
+        for function in module.functions.clone() {
+            if let Expr::Function(checked_function) =
+                self.check_types(&mut Expr::Function(function), state)?
+            {
+                checked_fns.push(checked_function);
+            } else {
+                return Err(FerryTypeError::UnimplementedFeature {
+                    advice: "not supported".into(),
+                    span: *module.token.get_span(),
+                });
+            };
+        }
+
+        Ok(Expr::Module(Module {
+            name: module.name.clone(),
+            token: module.token.clone(),
+            functions: checked_fns,
+        }))
+    }
+
+    fn visit_import(&mut self, import: &mut Import, state: &mut FerryState) -> FerryResult<Expr> {
+        let mut checked_fns = vec![];
+
+        for function in import.functions.clone() {
+            if let Expr::Function(checked_function) =
+                self.check_types(&mut Expr::Function(function), state)?
+            {
+                checked_fns.push(checked_function);
+            } else {
+                return Err(FerryTypeError::UnimplementedFeature {
+                    advice: "module import error - typecheck".into(),
+                    span: *import.token.get_span(),
+                });
+            }
+        }
+
+        Ok(Expr::Import(Import {
+            name: import.name.clone(),
+            token: import.token.clone(),
+            functions: checked_fns,
+        }))
     }
 }

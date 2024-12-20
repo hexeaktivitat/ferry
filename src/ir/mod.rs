@@ -128,6 +128,13 @@ impl FerryIr {
                     Ok(mut instructions) => functions.append(&mut instructions),
                     Err(e) => println!("{e}"),
                 }
+            } else if let Expr::Module(module) = expr {
+                for function in module.functions.clone() {
+                    match self.assemble_opcode(&mut Expr::Function(function), state) {
+                        Ok(mut instructions) => functions.append(&mut instructions),
+                        Err(e) => println!("{e}"),
+                    }
+                }
             } else {
                 match self.assemble_opcode(expr, state) {
                     Ok(mut instructions) => program.append(&mut instructions),
@@ -550,7 +557,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         state.add_symbol(
             &function.name,
             Some(FerryValue::Function {
-                declaration: None,
+                declaration: Some(function.clone()),
                 name: function.name.clone(),
                 func_type: FerryType::Function,
                 instructions,
@@ -578,6 +585,28 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
         instructions.append(&mut args_inst);
         instructions.push(FerryOpcode::Call(call.name.clone()));
+
+        Ok(instructions)
+    }
+
+    fn visit_module(
+        &mut self,
+        module: &mut crate::syntax::Module,
+        state: &mut FerryState,
+    ) -> FerryResult<Vec<FerryOpcode>> {
+        todo!()
+    }
+
+    fn visit_import(
+        &mut self,
+        import: &mut crate::syntax::Import,
+        state: &mut FerryState,
+    ) -> FerryResult<Vec<FerryOpcode>> {
+        let instructions = vec![];
+
+        for function in import.functions.clone() {
+            self.assemble_opcode(&mut Expr::Function(function), state)?;
+        }
 
         Ok(instructions)
     }

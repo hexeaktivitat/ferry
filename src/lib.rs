@@ -5,7 +5,6 @@ use thiserror::Error;
 use interpreter::FerryInterpreterError;
 use lexer::{FerryLexError, FerryLexer};
 use parser::{FerryParseError, FerryParser};
-use riscv::{FerryAsmError, FerryRiscVAssembler, Instruction};
 use state::{FerryState, FerryValue};
 use syntax::Expr;
 use token::FerryToken;
@@ -16,7 +15,6 @@ mod interpreter;
 mod ir;
 mod lexer;
 mod parser;
-mod riscv;
 mod state;
 mod syntax;
 mod token;
@@ -32,7 +30,6 @@ pub struct Ferry {
     typed_ast: Vec<Expr>,
     ferry_ir: Vec<FerryOpcode>,
     vm: FerryVm,
-    riscv_asm: Vec<Instruction>,
 }
 
 pub enum PrintReq {
@@ -53,7 +50,6 @@ impl Ferry {
             typed_ast: Vec::new(),
             ferry_ir: Vec::new(),
             vm: FerryVm::new(),
-            riscv_asm: Vec::new(),
         }
     }
 
@@ -107,6 +103,8 @@ impl Ferry {
             .interpret(self.ferry_ir.clone(), &mut self.state)
             .unwrap();
 
+        self.vm.clear();
+
         // self.print_data(PrintReq::TypedAst);
 
         Ok(result)
@@ -145,28 +143,7 @@ impl Ferry {
                 }
             }
             PrintReq::Asm => {
-                println!("\nRISC-V ASM");
-                println!("==========\n");
-
-                self.riscv_asm = Vec::new();
-
-                let mut assembler = FerryRiscVAssembler::new();
-                match assembler
-                    .assemble(self.typed_ast.clone(), &mut self.state)
-                    .map_err(|err_list| FerryAsmErrors {
-                        source_code: String::from_utf8(self.source_code.as_bytes().to_vec())
-                            .unwrap(),
-                        related: err_list,
-                    })
-                    .into_diagnostic()
-                {
-                    Ok(o) => self.riscv_asm = o,
-                    Err(e) => eprintln!("{:?}", e),
-                }
-
-                for op in &self.riscv_asm {
-                    println!("{}", op);
-                }
+                unimplemented!()
             }
         }
         println!();
@@ -214,14 +191,4 @@ struct FerryInterpreterErrors {
     source_code: String,
     #[related]
     related: Vec<FerryInterpreterError>,
-}
-
-#[derive(Error, Debug, Diagnostic)]
-#[error("Encountered assembler errrors")]
-#[diagnostic()]
-struct FerryAsmErrors {
-    #[source_code]
-    source_code: String,
-    #[related]
-    related: Vec<FerryAsmError>,
 }

@@ -94,6 +94,10 @@ pub enum Kwd {
     Def,
     Fn,
     Return,
+    From,
+    Import,
+    Export,
+    As,
 }
 
 impl std::fmt::Display for FerryToken {
@@ -149,6 +153,10 @@ impl std::fmt::Display for TokenType {
                 Kwd::Def => write!(f, "Keyword<Def>"),
                 Kwd::Fn => write!(f, "Keyword<Fn>"),
                 Kwd::Return => write!(f, "Keyword<Return>"),
+                Kwd::From => write!(f, "Keyword<From>"),
+                Kwd::Import => write!(f, "Keyword<Import>"),
+                Kwd::Export => write!(f, "Keyword<Export>"),
+                Kwd::As => write!(f, "Keyword<As>"),
             },
             TokenType::Identifier(i) => write!(f, "Identifier {i}"),
             TokenType::End => write!(f, "END"),

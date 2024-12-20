@@ -95,6 +95,8 @@ impl Typing for Expr {
             Expr::For(f) => f.expr_type.get_type(),
             Expr::Function(f) => f.expr_type.get_type(),
             Expr::Call(c) => c.expr_type.get_type(),
+            Expr::Module(_) => &FerryType::Untyped,
+            Expr::Import(_) => &FerryType::Untyped,
         }
     }
 }

@@ -61,7 +61,7 @@ impl FerryVm {
     //     // self.instructions = instructions;
     // }
 
-    fn _clear(&mut self) {
+    pub fn clear(&mut self) {
         self.frames.clear();
         self.ret.clear();
         self.fp = 0;
@@ -80,6 +80,8 @@ impl FerryVm {
             function: program,
             locals: HashMap::new(),
         };
+
+        println!("program: {:?}", frame.function);
 
         self.frames.push(frame);
         let result = self.run(state);
@@ -355,6 +357,10 @@ impl FerryVm {
                         self.frames.push(frame);
                         self.fp += 1;
                         // println!("called: frame count: {}", self.fp);
+                    } else {
+                        return Err(FerryVmError::RuntimeError {
+                            advice: "Function call did not succeed".into(),
+                        });
                     }
 
                     // self.frames[self.fp].pc = state.get_label(&label).unwrap();
