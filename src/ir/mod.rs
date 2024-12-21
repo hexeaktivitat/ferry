@@ -237,8 +237,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         binary: &mut Binary,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        match binary.operator.get_token_type() {
-            TokenType::Operator(op) => match op {
+        if let TokenType::Operator(op) = binary.operator.get_token_type() {
+            match op {
                 Op::Add => {
                     let mut instructions = vec![];
 
@@ -372,14 +372,15 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
                     Ok(instructions)
                 }
-            },
+            }
             // crate::token::TokenType::Value(val) => todo!(),
             // crate::token::TokenType::Control(ctrl) => todo!(),
             // crate::token::TokenType::Keyword(kwd) => todo!(),
             // crate::token::TokenType::Identifier(_) => todo!(),
             // crate::token::TokenType::Comment(_) => todo!(),
             // crate::token::TokenType::End => todo!(),
-            _ => Ok(vec![FerryOpcode::Nop]),
+        } else {
+            Ok(vec![FerryOpcode::Nop])
         }
     }
 
@@ -388,7 +389,18 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         unary: &mut Unary,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        todo!()
+        match unary.operator.get_token_type() {
+            TokenType::Operator(Op::Subtract) => {
+                let mut instructions = vec![];
+
+                let mut right = self.assemble_opcode(&mut unary.rhs, state)?;
+                instructions.append(&mut right);
+                instructions.append(&mut vec![FerryOpcode::LoadI(-1), FerryOpcode::Mul]);
+
+                Ok(instructions)
+            }
+            _ => unreachable!(),
+        }
     }
 
     fn visit_variable(

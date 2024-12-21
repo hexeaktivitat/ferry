@@ -7,7 +7,7 @@ use crate::state::types::{FerryType, FerryTyping};
 use crate::state::FerryState;
 use syntax::{
     Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Import, Lit as SLit, Loop,
-    Module, Variable,
+    Module, Unary, Variable,
 };
 
 pub(crate) mod syntax;
@@ -571,7 +571,17 @@ impl FerryParser {
     }
 
     fn unary(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let expr = self.call(state)?;
+        let expr = if self.matches(&[TT::Operator(Op::Subtract)]) {
+            let operator = self.previous();
+            let rhs = Box::new(self.unary(state)?);
+            Expr::Unary(Unary {
+                operator,
+                rhs,
+                expr_type: FerryTyping::Untyped,
+            })
+        } else {
+            self.call(state)?
+        };
 
         Ok(expr)
     }
