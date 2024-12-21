@@ -9,35 +9,35 @@ pub(crate) mod value;
 // placeholder for program state
 #[derive(Debug, Clone)]
 pub struct FerryState {
-    symbols: HashMap<String, Option<FerryValue>>,
+    variables: HashMap<String, Option<FerryValue>>,
     labels: HashMap<String, usize>,
 }
 
 impl FerryState {
     pub fn new() -> Self {
         Self {
-            symbols: HashMap::new(),
+            variables: HashMap::new(),
             labels: HashMap::new(),
         }
     }
 
     pub fn add_symbol(&mut self, id: &String, value: Option<FerryValue>) {
-        if !self.symbols.contains_key(id) {
-            self.symbols.insert(id.clone(), value);
+        if !self.variables.contains_key(id) {
+            self.variables.insert(id.clone(), value);
         } else {
             self.update_symbol(id, value);
         }
     }
 
     fn update_symbol(&mut self, id: &String, value: Option<FerryValue>) {
-        if self.symbols.contains_key(id) {
-            self.symbols.get_mut(id).unwrap().clone_from(&value);
+        if self.variables.contains_key(id) {
+            self.variables.get_mut(id).unwrap().clone_from(&value);
         }
     }
 
     pub fn get_symbol_value(&self, id: &String) -> Option<FerryValue> {
-        if self.symbols.contains_key(id) {
-            self.symbols.get(id).unwrap().clone()
+        if self.variables.contains_key(id) {
+            self.variables.get(id).unwrap().clone()
         } else {
             None
         }
@@ -58,8 +58,8 @@ impl FerryState {
 
 impl std::fmt::Display for FerryState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for k in self.symbols.keys() {
-            if let Some(v) = self.symbols.get(k).unwrap() {
+        for k in self.variables.keys() {
+            if let Some(v) = self.variables.get(k).unwrap() {
                 writeln!(f, "{}: {}", k, v)?;
             } else {
                 writeln!(f, "{}: undefined", k)?;

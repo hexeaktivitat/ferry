@@ -227,7 +227,22 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 let mut list_interpreter =
                     FerryInterpreter::new(vec![Expr::Literal(literal.clone())]);
                 let values = list_interpreter.interpret(state).unwrap().unwrap();
+
                 Ok(vec![FerryOpcode::Alloc(ptr, values)])
+
+                // let mut value_insts = vec![];
+                // for expr in contents.iter_mut() {
+                //     value_insts.append(&mut self.assemble_opcode(expr, state)?);
+                // }
+
+                // let value_iter = value_insts.iter();
+                // let mut instructions = vec![FerryOpcode::Alloc(ptr, FerryValue::List(Vec::new()))];
+                // for inst in value_insts {
+                //     instructions.append(&mut vec![inst.clone()]);
+                //     instructions.append(&mut vec![FerryOpcode::Cons]);
+                // }
+
+                // Ok(instructions)
             }
         }
     }

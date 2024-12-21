@@ -81,7 +81,7 @@ impl FerryVm {
             locals: HashMap::new(),
         };
 
-        println!("program: {:?}", frame.function);
+        // println!("program: {:?}", frame.function);
 
         self.frames.push(frame);
         let result = self.run(state);
@@ -128,7 +128,7 @@ impl FerryVm {
                         self.frames[self.fp].stack.push(result);
                     }
                 }
-                // FerryOpcode::Load => self.frames[self.fp].pop,
+                // FerryOpcode::Load => self.frames[self.fp].pop(),
                 FerryOpcode::LoadI(c) => self.frames[self.fp].stack.push(c.into()),
                 FerryOpcode::Alloc(_ptr, a) => {
                     // self.heap.insert(ptr, a.clone());
