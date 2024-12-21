@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use crate::{
     ir::{FerryAddr, FerryOpcode},
-    state::{Convertable, FerryState, FerryValue},
+    state::{value::FerryValue, FerryState},
 };
 
 #[derive(Diagnostic, Debug, Error)]
@@ -129,9 +129,7 @@ impl FerryVm {
                     }
                 }
                 // FerryOpcode::Load => self.frames[self.fp].pop,
-                FerryOpcode::LoadI(c) => {
-                    self.frames[self.fp].stack.push(FerryValue::convert_from(c))
-                }
+                FerryOpcode::LoadI(c) => self.frames[self.fp].stack.push(c.into()),
                 FerryOpcode::Alloc(_ptr, a) => {
                     // self.heap.insert(ptr, a.clone());
                     // self.frames[self.fp].stack.push(FerryValue::Ptr(ptr));
@@ -160,13 +158,21 @@ impl FerryVm {
                 }
                 FerryOpcode::Add => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
-                        let left: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
+                        let right: i64 = self.frames[self.fp]
+                            .stack
+                            .pop()
+                            .unwrap()
+                            .try_into()
+                            .unwrap();
+                        let left: i64 = self.frames[self.fp]
+                            .stack
+                            .pop()
+                            .unwrap()
+                            .try_into()
+                            .unwrap();
                         let res: i64 = left + right;
 
-                        self.frames[self.fp]
-                            .stack
-                            .push(FerryValue::convert_from(res));
+                        self.frames[self.fp].stack.push(res.into());
                     } else {
                         return Err(FerryVmError::RuntimeError {
                             advice: "Invalid addition".into(),
@@ -175,12 +181,20 @@ impl FerryVm {
                 }
                 FerryOpcode::Sub => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
-                        let left: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
-                        let res: i64 = left - right;
-                        self.frames[self.fp]
+                        let right: i64 = self.frames[self.fp]
                             .stack
-                            .push(FerryValue::convert_from(res));
+                            .pop()
+                            .unwrap()
+                            .try_into()
+                            .unwrap();
+                        let left: i64 = self.frames[self.fp]
+                            .stack
+                            .pop()
+                            .unwrap()
+                            .try_into()
+                            .unwrap();
+                        let res: i64 = left - right;
+                        self.frames[self.fp].stack.push(res.into());
                     } else {
                         return Err(FerryVmError::RuntimeError {
                             advice: "Invalid subtraction".into(),
@@ -189,12 +203,20 @@ impl FerryVm {
                 }
                 FerryOpcode::Mul => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
-                        let left: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
-                        let res: i64 = left * right;
-                        self.frames[self.fp]
+                        let right: i64 = self.frames[self.fp]
                             .stack
-                            .push(FerryValue::convert_from(res));
+                            .pop()
+                            .unwrap()
+                            .try_into()
+                            .unwrap();
+                        let left: i64 = self.frames[self.fp]
+                            .stack
+                            .pop()
+                            .unwrap()
+                            .try_into()
+                            .unwrap();
+                        let res: i64 = left * right;
+                        self.frames[self.fp].stack.push(res.into());
                     } else {
                         return Err(FerryVmError::RuntimeError {
                             advice: "Invalid multiplication".into(),
@@ -203,17 +225,25 @@ impl FerryVm {
                 }
                 FerryOpcode::Div => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
-                        let left: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
+                        let right: i64 = self.frames[self.fp]
+                            .stack
+                            .pop()
+                            .unwrap()
+                            .try_into()
+                            .unwrap();
+                        let left: i64 = self.frames[self.fp]
+                            .stack
+                            .pop()
+                            .unwrap()
+                            .try_into()
+                            .unwrap();
                         if right == 0 {
                             return Err(FerryVmError::RuntimeError {
                                 advice: "DIVIDE BY ZERO".into(),
                             });
                         }
                         let res: i64 = left / right;
-                        self.frames[self.fp]
-                            .stack
-                            .push(FerryValue::convert_from(res));
+                        self.frames[self.fp].stack.push(res.into());
                     } else {
                         return Err(FerryVmError::RuntimeError {
                             advice: "Invalid division".into(),
@@ -230,35 +260,82 @@ impl FerryVm {
                     }
                 }
                 FerryOpcode::Equal => {
-                    let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
-                    let left: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
+                    let right: i64 = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
+                    let left: i64 = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
                     let res = left == right;
-                    self.frames[self.fp].stack.push(FerryValue::Boolean(res));
+                    self.frames[self.fp].stack.push(res.into());
                 }
                 FerryOpcode::Greater => {
-                    let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
-                    let left: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
+                    let right: i64 = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
+                    let left: i64 = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
                     let res = left > right;
-                    self.frames[self.fp].stack.push(FerryValue::Boolean(res));
+                    self.frames[self.fp].stack.push(res.into());
                 }
                 FerryOpcode::Lesser => {
-                    let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
-                    let left: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
+                    let right: i64 = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
+                    let left: i64 = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
                     let res = left < right;
-                    self.frames[self.fp].stack.push(FerryValue::Boolean(res));
+                    self.frames[self.fp].stack.push(res.into());
                 }
                 FerryOpcode::GetI => {
-                    let right: i64 = self.frames[self.fp].stack.pop().unwrap().convert_to();
-                    let left: Vec<FerryValue> =
-                        self.frames[self.fp].stack.pop().unwrap().convert_to();
+                    let right: i64 = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
+                    let left: Vec<FerryValue> = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
                     let res: FerryValue = left[right as usize].clone();
                     self.frames[self.fp].stack.push(res);
                 }
                 FerryOpcode::Cons => {
-                    let right: Vec<FerryValue> =
-                        self.frames[self.fp].stack.pop().unwrap().convert_to();
-                    let left: Vec<FerryValue> =
-                        self.frames[self.fp].stack.pop().unwrap().convert_to();
+                    let right: Vec<FerryValue> = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
+                    let left: Vec<FerryValue> = self.frames[self.fp]
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .try_into()
+                        .unwrap();
                     let res = [left, right].concat();
                     self.frames[self.fp].stack.push(FerryValue::List(res));
                 }
@@ -304,7 +381,8 @@ impl FerryVm {
                         .pop()
                         .unwrap()
                         // .clone()
-                        .convert_to();
+                        .try_into()
+                        .unwrap();
 
                     let (head, tail) = iter.split_first().unwrap();
                     // println!("{:?}, {:?}", head, tail);
@@ -328,18 +406,11 @@ impl FerryVm {
                 }
                 FerryOpcode::Call(label) => {
                     self.ret.push(self.frames[self.fp].pc);
-                    if let Some(FerryValue::Function {
-                        declaration: _,
-                        name: _,
-                        func_type: _,
-                        instructions,
-                        arity,
-                    }) = state.get_symbol_value(&label)
-                    {
+                    if let Some(FerryValue::Function(f)) = state.get_symbol_value(&label) {
                         // println!("arity: {arity}");
                         let stack_len = self.frames[self.fp].stack.len();
                         let mut frame_stack = vec![];
-                        for _ in (stack_len - arity)..stack_len {
+                        for _ in (stack_len - f.arity)..stack_len {
                             frame_stack.push(self.frames[self.fp].stack.pop().unwrap());
                         }
 
@@ -350,7 +421,7 @@ impl FerryVm {
                         let frame = FerryFrame {
                             stack: frame_stack,
                             pc: 0,
-                            function: Rc::new(RefCell::new(instructions)),
+                            function: Rc::new(RefCell::new(f.instructions)),
                             locals: HashMap::new(),
                         };
 

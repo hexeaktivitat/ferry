@@ -7,8 +7,11 @@ use crate::{
         walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
         Import, Lit as SLit, Loop, Module, Unary, Variable,
     },
-    state::types::Typing,
-    state::{FerryState, FerryValue},
+    state::{
+        types::Typing,
+        value::{FerryValue, FuncVal},
+        FerryState,
+    },
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -405,26 +408,26 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         };
         state.add_symbol(
             &name,
-            Some(FerryValue::Function {
+            Some(FerryValue::Function(FuncVal {
                 declaration: Some(function.clone()),
                 name: name.clone(),
                 func_type: function.expr_type.get_type().clone(),
                 instructions: vec![],
                 arity,
-            }),
+            })),
         );
 
         Ok(None)
     }
 
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<FerryValue> {
-        if let Some(FerryValue::Function {
+        if let Some(FerryValue::Function(FuncVal {
             declaration: Some(function),
             name: _,
             func_type: _,
             instructions: _,
             arity: _,
-        }) = &mut state.get_symbol_value(&call.name)
+        })) = &mut state.get_symbol_value(&call.name)
         {
             if let Some(params) = &mut function.args {
                 if !call.args.is_empty() {

@@ -9,8 +9,11 @@ use crate::{
         walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
         Import, Lit, Loop, Module, Unary, Variable,
     },
-    state::types::{FerryType, FerryTyping, TypeCheckable, Typing},
-    state::{FerryState, FerryValue},
+    state::{
+        types::{FerryType, FerryTyping, TypeCheckable, Typing},
+        value::{FerryValue, FuncVal},
+        FerryState,
+    },
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -702,13 +705,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     FerryType::Untyped => FerryValue::Number(0), // assume an untyped iterator value is a Num
                     FerryType::Undefined => FerryValue::Unit,
                     FerryType::Pointer => FerryValue::Ptr(0x00),
-                    FerryType::Function => FerryValue::Function {
+                    FerryType::Function => FerryValue::Function(FuncVal {
                         declaration: None,
                         name: "".into(),
                         func_type: FerryType::Function,
                         instructions: vec![],
                         arity: 0,
-                    },
+                    }),
                 };
                 state.add_symbol(&var.name, Some(placeholder_value));
             }
@@ -767,7 +770,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         let mut fn_state = state.clone();
         fn_state.add_symbol(
             &function.name,
-            Some(FerryValue::Function {
+            Some(FerryValue::Function(FuncVal {
                 declaration: Some(Function {
                     token: function.token.clone(),
                     name: function.name.clone(),
@@ -780,7 +783,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 func_type: FerryType::Function,
                 instructions: vec![],
                 arity: 0,
-            }),
+            })),
         );
         let mut arity = 0;
         let args = if let Some(arguments) = &mut function.args {
@@ -813,13 +816,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
 
         state.add_symbol(
             &function.name,
-            Some(FerryValue::Function {
+            Some(FerryValue::Function(FuncVal {
                 declaration: Some(function_checked.clone()),
                 name: function.name.clone(),
                 func_type: FerryType::Function,
                 instructions: vec![],
                 arity,
-            }),
+            })),
         );
 
         Ok(Expr::Function(function_checked))
@@ -827,13 +830,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
 
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<Expr> {
         // println!("state: {:?}", state);
-        if let Some(FerryValue::Function {
+        if let Some(FerryValue::Function(FuncVal {
             declaration: decl,
             name,
             func_type: _,
             instructions: _,
             arity: _,
-        }) = &mut state.get_symbol_value(&call.name)
+        })) = &mut state.get_symbol_value(&call.name)
         {
             let declaration = if let Some(d) = decl {
                 d

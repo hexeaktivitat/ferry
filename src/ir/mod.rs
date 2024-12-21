@@ -8,8 +8,11 @@ use crate::{
         walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
         Import, Lit, Loop, Module, Unary, Variable,
     },
-    state::types::FerryType,
-    state::{FerryState, FerryValue},
+    state::{
+        types::FerryType,
+        value::{FerryValue, FuncVal},
+        FerryState,
+    },
 };
 
 /// Intermediate Representation for FerryVM
@@ -557,13 +560,13 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
         state.add_symbol(
             &function.name,
-            Some(FerryValue::Function {
+            Some(FerryValue::Function(FuncVal {
                 declaration: Some(function.clone()),
                 name: function.name.clone(),
                 func_type: FerryType::Function,
                 instructions,
                 arity,
-            }),
+            })),
         );
 
         Ok(vec![])

@@ -1,99 +1,16 @@
 use std::collections::HashMap;
 
-use crate::{ir::FerryOpcode, parser::syntax::Function};
-
 use types::{FerryType, TypeCheckable, Typing};
+use value::FerryValue;
 
 pub(crate) mod types;
+pub(crate) mod value;
 
 // placeholder for program state
 #[derive(Debug, Clone)]
 pub struct FerryState {
     symbols: HashMap<String, Option<FerryValue>>,
     labels: HashMap<String, usize>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum FerryValue {
-    Number(i64),
-    Str(String),
-    Boolean(bool),
-    List(Vec<FerryValue>),
-    Function {
-        declaration: Option<Function>,
-        name: String,
-        func_type: FerryType,
-        instructions: Vec<FerryOpcode>,
-        arity: usize,
-    },
-    Ptr(u8),
-    Unit,
-}
-
-// i'll make my OWN From<T>! with BLACKJACK! and HOOKERS!
-pub trait Convertable<T>
-where
-    Self: Sized,
-{
-    fn convert_from(value: T) -> Self;
-    fn convert_to(self) -> T;
-}
-
-impl Convertable<i64> for FerryValue {
-    fn convert_from(value: i64) -> Self {
-        FerryValue::Number(value)
-    }
-
-    fn convert_to(self) -> i64 {
-        if let FerryValue::Number(value) = self {
-            value
-        } else {
-            // coerce non-Number values to 0
-            0
-        }
-    }
-}
-
-impl Convertable<String> for FerryValue {
-    fn convert_from(value: String) -> Self {
-        FerryValue::Str(value)
-    }
-
-    fn convert_to(self) -> String {
-        if let FerryValue::Str(value) = self {
-            value
-        } else {
-            "".into()
-        }
-    }
-}
-
-impl Convertable<Vec<FerryValue>> for FerryValue {
-    fn convert_from(value: Vec<FerryValue>) -> Self {
-        FerryValue::List(value)
-    }
-
-    fn convert_to(self) -> Vec<FerryValue> {
-        if let FerryValue::List(value) = self {
-            value
-        } else {
-            vec![]
-        }
-    }
-}
-
-impl Convertable<bool> for FerryValue {
-    fn convert_from(value: bool) -> Self {
-        FerryValue::Boolean(value)
-    }
-
-    fn convert_to(self) -> bool {
-        if let FerryValue::Boolean(value) = self {
-            value
-        } else {
-            false
-        }
-    }
 }
 
 impl FerryState {
@@ -161,13 +78,7 @@ impl Typing for FerryValue {
             FerryValue::Boolean(_) => &FerryType::Boolean,
             FerryValue::Unit => &FerryType::Undefined,
             FerryValue::List(_) => &FerryType::List,
-            FerryValue::Function {
-                declaration: _,
-                name: _,
-                func_type: expr_type,
-                instructions: _,
-                arity: _,
-            } => expr_type,
+            FerryValue::Function(f) => &f.func_type,
             FerryValue::Ptr(_) => &FerryType::Pointer,
         }
     }
@@ -199,13 +110,7 @@ impl std::fmt::Display for FerryValue {
                 formatting.push(']');
                 write!(f, "{formatting}")
             }
-            FerryValue::Function {
-                declaration: _,
-                name: _,
-                func_type: _,
-                instructions: _,
-                arity: _,
-            } => write!(f, "function placeholder"),
+            FerryValue::Function(_) => write!(f, "function placeholder"),
             FerryValue::Ptr(p) => write!(f, "address: {p}"),
         }
     }
@@ -219,13 +124,7 @@ impl FerryValue {
             FerryValue::Boolean(b) => *b,
             FerryValue::Unit => false,
             FerryValue::List(l) => !l.is_empty(),
-            FerryValue::Function {
-                declaration: _,
-                name: _,
-                func_type: _,
-                instructions: _,
-                arity: _,
-            } => false,
+            FerryValue::Function(_) => false,
             FerryValue::Ptr(p) => !*p == 0xff,
         }
     }

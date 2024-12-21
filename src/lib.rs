@@ -7,7 +7,7 @@ use lexer::token::FerryToken;
 use lexer::{FerryLexError, FerryLexer};
 use parser::syntax::Expr;
 use parser::{FerryParseError, FerryParser};
-use state::{FerryState, FerryValue};
+use state::{value::FerryValue, FerryState};
 use typecheck::{FerryTypeError, FerryTypechecker};
 use vm::FerryVm;
 
