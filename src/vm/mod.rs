@@ -103,6 +103,9 @@ impl FerryVm {
             //     println!("next op: {:?}", instruction);
             // }
 
+            // println!("{:?}", instruction);
+            // println!("{:?}", self.frames[self.fp].stack);
+
             match instruction {
                 FerryOpcode::Nop => println!("nop"),
                 FerryOpcode::Halt => {
@@ -324,19 +327,20 @@ impl FerryVm {
                     self.frames[self.fp].stack.push(res);
                 }
                 FerryOpcode::Cons => {
-                    let right: Vec<FerryValue> = self.frames[self.fp]
+                    let right: FerryValue = self.frames[self.fp].stack.pop().unwrap();
+                    let mut left: Vec<FerryValue> = self.frames[self.fp]
                         .stack
                         .pop()
                         .unwrap()
                         .try_into()
                         .unwrap();
-                    let left: Vec<FerryValue> = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
-                    let res = [left, right].concat();
+                    let mut res = vec![];
+                    if let FerryValue::List(l) = right {
+                        res = [left, l].concat();
+                    } else {
+                        left.push(right);
+                        res = left;
+                    }
                     self.frames[self.fp].stack.push(FerryValue::List(res));
                 }
                 FerryOpcode::Jump(offset) => {
