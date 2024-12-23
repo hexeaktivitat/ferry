@@ -1,3 +1,5 @@
+// Interpreter is deprecated
+
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
@@ -34,10 +36,12 @@ pub enum FerryInterpreterError {
 
 type FerryResult<T> = Result<Option<T>, FerryInterpreterError>;
 
+#[allow(dead_code)]
 pub struct FerryInterpreter {
     syntax: Vec<Expr>,
 }
 
+#[allow(dead_code)]
 impl FerryInterpreter {
     pub fn new(syntax: Vec<Expr>) -> Self {
         Self { syntax }
@@ -455,16 +459,16 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_module(
         &mut self,
-        module: &mut Module,
-        state: &mut FerryState,
+        _module: &mut Module,
+        _state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         todo!()
     }
 
     fn visit_import(
         &mut self,
-        import: &mut Import,
-        state: &mut FerryState,
+        _import: &mut Import,
+        _state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         todo!()
     }

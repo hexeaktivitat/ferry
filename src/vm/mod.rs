@@ -334,7 +334,7 @@ impl FerryVm {
                         .unwrap()
                         .try_into()
                         .unwrap();
-                    let mut res = vec![];
+                    let res: Vec<FerryValue>;
                     if let FerryValue::List(l) = right {
                         res = [left, l].concat();
                     } else {

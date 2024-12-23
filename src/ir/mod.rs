@@ -2,7 +2,6 @@ use miette::{Diagnostic, Result};
 use thiserror::Error;
 
 use crate::{
-    interpreter::FerryInterpreter,
     lexer::token::{Op, TokenType},
     parser::syntax::{
         walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
