@@ -782,8 +782,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         let args = if let Some(arguments) = &mut function.args {
             let mut rets = Vec::new();
             for a in arguments {
-                let arg = self.check_types(a, &mut fn_state);
-                rets.push(arg?);
+                let arg = self.check_types(a, &mut fn_state)?;
+                println!("{}", arg.get_type());
+                rets.push(arg);
             }
             arity = rets.len();
             Some(rets)

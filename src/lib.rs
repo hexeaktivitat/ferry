@@ -80,18 +80,9 @@ impl Ferry {
                     related: err_list,
                 })?;
 
-        // let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
-        // let result = match interpreter.interpret(&mut self.state).map_err(|err_list| {
-        //     FerryInterpreterErrors {
-        //         source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
-        //         related: err_list,
-        //     }
-        // })? {
-        //     Some(r) => r,
-        //     None => FerryValue::Unit,
-        // };
+        self.print_data(PrintReq::State);
 
-        let mut ir = FerryIr::new(self.ast.clone());
+        let mut ir = FerryIr::new(self.typed_ast.clone());
         self.ferry_ir = ir.lower(&mut self.state).unwrap();
 
         // self.vm.set_program(self.ferry_ir.clone());
@@ -101,8 +92,6 @@ impl Ferry {
             .unwrap();
 
         self.vm.clear();
-
-        // self.print_data(PrintReq::TypedAst);
 
         Ok(result)
     }

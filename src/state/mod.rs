@@ -110,7 +110,29 @@ impl std::fmt::Display for FerryValue {
                 formatting.push(']');
                 write!(f, "{formatting}")
             }
-            FerryValue::Function(_) => write!(f, "function placeholder"),
+            FerryValue::Function(function) => {
+                let mut formatting = String::new();
+                formatting.push('(');
+                if let Some(func) = &function.declaration {
+                    if let Some(args) = &func.args {
+                        let mut args_iter = args.iter().peekable();
+                        while let Some(arg) = args_iter.next() {
+                            formatting.push_str(format!("{}", arg.get_type()).as_str());
+                            if args_iter.peek().is_some() {
+                                formatting.push_str(", ");
+                            }
+                        }
+                    }
+                    formatting.push(')');
+                    if let Some(return_type) = &func.return_type {
+                        formatting.push_str(format!(" -> {}", return_type).as_str());
+                    } else {
+                        formatting.push_str("[unit]");
+                    }
+                }
+
+                write!(f, "{formatting}")
+            }
             FerryValue::Ptr(p) => write!(f, "address: {p}"),
         }
     }
