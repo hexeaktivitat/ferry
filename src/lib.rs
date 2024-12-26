@@ -57,22 +57,26 @@ impl Ferry {
     pub fn run(&mut self) -> Result<FerryValue> {
         let mut ferry_lexer = FerryLexer::new(self.source_code.as_bytes());
 
-        self.tokens = ferry_lexer.lex().map_err(|err_list| FerryLexErrors {
+        let tokens = ferry_lexer.lex().map_err(|err_list| FerryLexErrors {
             source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
             related: err_list,
         })?;
 
-        let mut ferry_parser = FerryParser::new(self.tokens.clone());
+        self.tokens = tokens.clone();
 
-        self.ast = ferry_parser
+        let mut ferry_parser = FerryParser::new(tokens);
+
+        let ast = ferry_parser
             .parse(&mut self.state)
             .map_err(|err_list| FerryParseErrors {
                 source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
                 related: err_list,
             })?;
 
-        let mut typechecker = FerryTypechecker::new(self.ast.clone());
-        self.typed_ast =
+        self.ast = ast.clone();
+
+        let mut typechecker = FerryTypechecker::new(ast);
+        let typed_ast =
             typechecker
                 .typecheck(&mut self.state)
                 .map_err(|err_list| FerryTypeErrors {
@@ -80,16 +84,14 @@ impl Ferry {
                     related: err_list,
                 })?;
 
-        self.print_data(PrintReq::State);
+        self.typed_ast = typed_ast.clone();
 
-        let mut ir = FerryIr::new(self.typed_ast.clone());
-        self.ferry_ir = ir.lower(&mut self.state).unwrap();
+        let mut ir = FerryIr::new(typed_ast);
+        let ferry_ir = ir.lower(&mut self.state).unwrap();
+        self.ferry_ir = ferry_ir.clone();
 
         // self.vm.set_program(self.ferry_ir.clone());
-        let result = self
-            .vm
-            .interpret(self.ferry_ir.clone(), &mut self.state)
-            .unwrap();
+        let result = self.vm.interpret(ferry_ir, &mut self.state).unwrap();
 
         self.vm.clear();
 
