@@ -325,13 +325,6 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     }
 
     fn visit_binary(&mut self, binary: &mut Binary, state: &mut FerryState) -> FerryResult<Expr> {
-        // if left.check(&FerryType::Untyped) || right.check(&FerryType::Untyped) {
-        //     return Err(FerryTypeError::MistypedVariable {
-        //         advice: "variables were not assigned typed correctly".into(),
-        //         span: left.get_token().get_span().clone(),
-        //     });
-        // }
-
         match binary.operator.get_token_type() {
             TokenType::Operator(o) => match o {
                 Op::Add | Op::Subtract | Op::Multiply | Op::Divide | Op::Equals => {
