@@ -80,3 +80,37 @@ impl Into<u8> for FerryOpcode {
         }
     }
 }
+
+impl std::fmt::Display for FerryOpcode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FerryOpcode::Nop => write!(f, "nop"),
+            FerryOpcode::Halt => write!(f, "halt"),
+            FerryOpcode::Return => write!(f, "return"),
+            FerryOpcode::LoadI(i) => write!(f, "loadi {i}"),
+            FerryOpcode::Alloc(p, ferry_value) => write!(f, "alloc @{p} {ferry_value}"),
+            FerryOpcode::Set(v) => write!(f, "set {v}"),
+            FerryOpcode::Get(v) => write!(f, "get {v}"),
+            FerryOpcode::Pop => write!(f, "pop"),
+            FerryOpcode::Add => write!(f, "add"),
+            FerryOpcode::Sub => write!(f, "sub"),
+            FerryOpcode::Mul => write!(f, "mul"),
+            FerryOpcode::Div => write!(f, "div"),
+            FerryOpcode::And => write!(f, "and"),
+            FerryOpcode::Or => write!(f, "or"),
+            FerryOpcode::Not => write!(f, "not"),
+            FerryOpcode::Equal => write!(f, "eq"),
+            FerryOpcode::Greater => write!(f, "greater"),
+            FerryOpcode::Lesser => write!(f, "lesser"),
+            FerryOpcode::GetI => write!(f, "geti"),
+            FerryOpcode::Cons => write!(f, "cons"),
+            FerryOpcode::Jump(d) => write!(f, "jump {d}"),
+            FerryOpcode::JumpCond(d) => write!(f, "jumpc {d}"),
+            FerryOpcode::JumpBack(d) => write!(f, "jumpb {d}"),
+            FerryOpcode::Label(l) => write!(f, "label #{l}"),
+            FerryOpcode::Call(func) => write!(f, "call #{func}"),
+            FerryOpcode::JumpRet => write!(f, "jumpr"),
+            FerryOpcode::Iter => write!(f, "iter"),
+        }
+    }
+}

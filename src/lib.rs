@@ -34,7 +34,7 @@ pub enum PrintReq {
     State,
     Ast,
     TypedAst,
-    Asm,
+    Ir,
 }
 
 impl Ferry {
@@ -128,7 +128,7 @@ impl Ferry {
                 println!("===\n");
 
                 for e in &self.ast {
-                    println!("{}", e);
+                    println!("{e}");
                 }
             }
             PrintReq::TypedAst => {
@@ -136,11 +136,16 @@ impl Ferry {
                 println!("======\n");
 
                 for t in &self.typed_ast {
-                    println!("{}", t);
+                    println!("{t}");
                 }
             }
-            PrintReq::Asm => {
-                unimplemented!()
+            PrintReq::Ir => {
+                println!("\nLINEAR IR");
+                println!("=========\n");
+
+                for i in &self.ferry_ir {
+                    println!("{i}");
+                }
             }
         }
         println!();
