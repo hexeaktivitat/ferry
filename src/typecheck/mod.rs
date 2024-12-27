@@ -565,18 +565,22 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     ) -> FerryResult<Expr> {
         // type inference first
         if let Some(value) = &mut binding.value {
-            println!("binding.value");
             if let Ok(value_check) = self.check_types(value, state) {
-                println!("value_check");
                 if let Some(assigned_type) = &binding.assigned_type {
-                    println!("assigned type");
+                    println!("{assigned_type}, {:?}", binding.assigned_type);
                     if assigned_type.check(value_check.get_type()) {
-                        println!("assigned type check");
                         let placeholder_value = match value_check.get_type() {
                             FerryType::Num => FerryValue::Number(0),
                             FerryType::String => FerryValue::Str("".into()),
                             FerryType::Boolean => FerryValue::Boolean(false),
                             FerryType::List => FerryValue::List(vec![]),
+                            FerryType::Function => FerryValue::Function(FuncVal {
+                                declaration: None,
+                                name: "".into(),
+                                func_type: FerryType::Undefined,
+                                instructions: vec![],
+                                arity: 0,
+                            }),
                             _ => unreachable!(),
                         };
                         state.add_symbol(&binding.name, Some(placeholder_value));
@@ -599,6 +603,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                         FerryType::String => FerryValue::Str("".into()),
                         FerryType::Boolean => FerryValue::Boolean(false),
                         FerryType::List => FerryValue::List(vec![]),
+                        FerryType::Function => FerryValue::Function(FuncVal {
+                            declaration: None,
+                            name: "".into(),
+                            func_type: FerryType::Undefined,
+                            instructions: vec![],
+                            arity: 0,
+                        }),
                         _ => unreachable!(),
                     };
                     state.add_symbol(&binding.name, Some(placeholder_value));
@@ -756,13 +767,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         function: &mut Function,
         state: &mut FerryState,
     ) -> FerryResult<Expr> {
-        let mut return_type = FerryType::Undefined;
-        let mut expr_type = if let Some(ty) = &function.return_type {
-            return_type = ty.clone();
-            FerryTyping::Assigned(ty.clone())
+        let expr_type = FerryTyping::Assigned(FerryType::Function);
+        let return_type = if let Some(ty) = &function.return_type {
+            ty.clone()
         } else {
-            FerryTyping::Inferred(FerryType::Undefined)
+            FerryType::Undefined
         };
+
         let mut fn_state = state.clone();
         fn_state.add_symbol(
             &function.name,
@@ -781,6 +792,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                 arity: 0,
             })),
         );
+
         let mut arity = 0;
         let args = if let Some(arguments) = &mut function.args {
             let mut rets = Vec::new();
@@ -795,13 +807,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         };
 
         let checked_contents = Box::new(self.check_types(&mut function.contents, &mut fn_state)?);
-        if checked_contents.get_type() != expr_type.get_type()
-            && expr_type == FerryTyping::Inferred(FerryType::Undefined)
-        {
-            expr_type = FerryTyping::Inferred(checked_contents.get_type().to_owned());
-        }
+        // if checked_contents.get_type() != expr_type.get_type()
+        //     && expr_type == FerryTyping::Inferred(FerryType::Undefined)
+        // {
+        //     expr_type = FerryTyping::Inferred(checked_contents.get_type().to_owned());
+        // }
 
-        expr_type = FerryTyping::Inferred(FerryType::Function);
+        let expr_type = FerryTyping::Inferred(FerryType::Function);
 
         let function_checked = Function {
             token: function.token.clone(),

@@ -144,6 +144,7 @@ impl FerryParser {
                     "Int" => Some(FerryType::Num),
                     "String" => Some(FerryType::String),
                     "List" => Some(FerryType::List),
+                    "Function" => Some(FerryType::Function),
                     _ => Some(FerryType::Untyped), // allowing for inference
                 }
             } else {
@@ -306,6 +307,7 @@ impl FerryParser {
                 match id.clone().as_str() {
                     "Int" => Some(FerryType::Num),
                     "String" => Some(FerryType::String),
+                    "Function:" => Some(FerryType::Function),
                     _ => None,
                 }
             } else {

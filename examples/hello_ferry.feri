@@ -15,6 +15,7 @@
 let foo: Int = 10
 let bar: String = "Hello, world!"
 let list: List = 1..10
+let x: Function = def fn dbl(a: Int) -> Int: a * a
 
 // Implicit type
 
