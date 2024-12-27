@@ -567,7 +567,6 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         if let Some(value) = &mut binding.value {
             if let Ok(value_check) = self.check_types(value, state) {
                 if let Some(assigned_type) = &binding.assigned_type {
-                    println!("{assigned_type}, {:?}", binding.assigned_type);
                     if assigned_type.check(value_check.get_type()) {
                         let placeholder_value = match value_check.get_type() {
                             FerryType::Num => FerryValue::Number(0),
@@ -767,11 +766,15 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         function: &mut Function,
         state: &mut FerryState,
     ) -> FerryResult<Expr> {
-        let expr_type = FerryTyping::Assigned(FerryType::Function);
-        let return_type = if let Some(ty) = &function.return_type {
-            ty.clone()
+        // let expr_type = FerryTyping::Assigned(FerryType::Function);
+        // Need to rework logic of functions in general to enable first-class functions
+        let (expr_type, return_type) = if let Some(ty) = &function.return_type {
+            (FerryTyping::Assigned(ty.clone()), ty.clone())
         } else {
-            FerryType::Undefined
+            (
+                FerryTyping::Assigned(FerryType::Undefined),
+                FerryType::Undefined,
+            )
         };
 
         let mut fn_state = state.clone();
@@ -810,10 +813,10 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         // if checked_contents.get_type() != expr_type.get_type()
         //     && expr_type == FerryTyping::Inferred(FerryType::Undefined)
         // {
-        //     expr_type = FerryTyping::Inferred(checked_contents.get_type().to_owned());
+        //     FerryTyping::Inferred(checked_contents.get_type().to_owned());
         // }
 
-        let expr_type = FerryTyping::Inferred(FerryType::Function);
+        // let expr_type = FerryTyping::Inferred(FerryType::Function);
 
         let function_checked = Function {
             token: function.token.clone(),
