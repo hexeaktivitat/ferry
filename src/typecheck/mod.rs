@@ -343,7 +343,6 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
                     {
                         let expr_type = FerryTyping::Inferred(right.get_type().clone());
                         // need a setter to set type to left without needing to fuss with its internals
-                        println!("hello from visit binary");
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
                             operator: binary.operator.clone(),
@@ -566,9 +565,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
     ) -> FerryResult<Expr> {
         // type inference first
         if let Some(value) = &mut binding.value {
+            println!("binding.value");
             if let Ok(value_check) = self.check_types(value, state) {
+                println!("value_check");
                 if let Some(assigned_type) = &binding.assigned_type {
+                    println!("assigned type");
                     if assigned_type.check(value_check.get_type()) {
+                        println!("assigned type check");
                         let placeholder_value = match value_check.get_type() {
                             FerryType::Num => FerryValue::Number(0),
                             FerryType::String => FerryValue::Str("".into()),
@@ -797,6 +800,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
         {
             expr_type = FerryTyping::Inferred(checked_contents.get_type().to_owned());
         }
+
+        expr_type = FerryTyping::Inferred(FerryType::Function);
 
         let function_checked = Function {
             token: function.token.clone(),
