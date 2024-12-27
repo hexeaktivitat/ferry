@@ -39,7 +39,6 @@ fn main() -> ExitCode {
                     Ok(r) => println!("{r}"),
                     Err(e) => eprintln!("{:?}", e),
                 }
-                program.print_data(PrintReq::State);
                 // program.print_data(PrintReq::TypedAst);
                 ExitCode::SUCCESS
             }
@@ -92,7 +91,7 @@ fn repl() -> Result<(), Error> {
                 FerryRepl::State => program.print_data(PrintReq::State),
                 FerryRepl::Ast => program.print_data(PrintReq::Ast),
                 FerryRepl::Type => program.print_data(PrintReq::TypedAst),
-                FerryRepl::Asm => program.print_data(PrintReq::Asm),
+                FerryRepl::Ir => program.print_data(PrintReq::Ir),
                 FerryRepl::Help => print_help(),
             },
             None => {
@@ -110,7 +109,7 @@ enum FerryRepl {
     State,
     Ast,
     Type,
-    Asm,
+    Ir,
     Help,
 }
 
@@ -124,7 +123,7 @@ fn repl_input_process(input: &str) -> Option<FerryRepl> {
             "state" => Some(FerryRepl::State),
             "ast" => Some(FerryRepl::Ast),
             "type" => Some(FerryRepl::Type),
-            "asm" => Some(FerryRepl::Asm),
+            "ir" => Some(FerryRepl::Ir),
             "help" => Some(FerryRepl::Help),
             _ => None,
         }

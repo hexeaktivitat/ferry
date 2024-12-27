@@ -1,6 +1,8 @@
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
+pub(crate) mod token;
+
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryLexError {
     #[error("Syntax error: Unexpected character")]
@@ -29,7 +31,7 @@ pub enum FerryLexError {
     },
 }
 
-use crate::token::{TokenType as TT, *};
+use token::{TokenType as TT, *};
 
 type FerryResult<T> = Result<T, FerryLexError>;
 type FerryLexResult<T> = Result<Vec<T>, Vec<FerryLexError>>;

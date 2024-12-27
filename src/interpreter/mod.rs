@@ -1,14 +1,19 @@
+// Interpreter is deprecated
+
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::{
-    state::{FerryState, FerryValue},
-    syntax::{
+    lexer::token::{Op, TokenType as TT},
+    parser::syntax::{
         walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
-        Lit as SLit, Loop, Unary, Variable,
+        Import, Lit as SLit, Loop, Module, Unary, Variable,
     },
-    token::{Op, TokenType as TT},
-    types::Typing,
+    state::{
+        types::Typing,
+        value::{FerryValue, FuncVal},
+        FerryState,
+    },
 };
 
 #[derive(Error, Diagnostic, Debug)]
@@ -31,10 +36,12 @@ pub enum FerryInterpreterError {
 
 type FerryResult<T> = Result<Option<T>, FerryInterpreterError>;
 
+#[allow(dead_code)]
 pub struct FerryInterpreter {
     syntax: Vec<Expr>,
 }
 
+#[allow(dead_code)]
 impl FerryInterpreter {
     pub fn new(syntax: Vec<Expr>) -> Self {
         Self { syntax }
@@ -405,26 +412,26 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
         };
         state.add_symbol(
             &name,
-            Some(FerryValue::Function {
+            Some(FerryValue::Function(FuncVal {
                 declaration: Some(function.clone()),
                 name: name.clone(),
                 func_type: function.expr_type.get_type().clone(),
                 instructions: vec![],
                 arity,
-            }),
+            })),
         );
 
         Ok(None)
     }
 
     fn visit_call(&mut self, call: &mut Call, state: &mut FerryState) -> FerryResult<FerryValue> {
-        if let Some(FerryValue::Function {
+        if let Some(FerryValue::Function(FuncVal {
             declaration: Some(function),
             name: _,
             func_type: _,
             instructions: _,
             arity: _,
-        }) = &mut state.get_symbol_value(&call.name)
+        })) = &mut state.get_symbol_value(&call.name)
         {
             if let Some(params) = &mut function.args {
                 if !call.args.is_empty() {
@@ -452,16 +459,16 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
 
     fn visit_module(
         &mut self,
-        module: &mut crate::syntax::Module,
-        state: &mut FerryState,
+        _module: &mut Module,
+        _state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         todo!()
     }
 
     fn visit_import(
         &mut self,
-        import: &mut crate::syntax::Import,
-        state: &mut FerryState,
+        _import: &mut Import,
+        _state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         todo!()
     }

@@ -1,126 +1,43 @@
 use std::collections::HashMap;
 
-use crate::{
-    ir::FerryOpcode,
-    syntax::Function,
-    types::{FerryType, TypeCheckable, Typing},
-};
+use types::{FerryType, TypeCheckable, Typing};
+use value::FerryValue;
+
+pub(crate) mod types;
+pub(crate) mod value;
 
 // placeholder for program state
 #[derive(Debug, Clone)]
 pub struct FerryState {
-    symbols: HashMap<String, Option<FerryValue>>,
+    variables: HashMap<String, Option<FerryValue>>,
     labels: HashMap<String, usize>,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum FerryValue {
-    Number(i64),
-    Str(String),
-    Boolean(bool),
-    List(Vec<FerryValue>),
-    Function {
-        declaration: Option<Function>,
-        name: String,
-        func_type: FerryType,
-        instructions: Vec<FerryOpcode>,
-        arity: usize,
-    },
-    Ptr(u8),
-    Unit,
-}
-
-// i'll make my OWN From<T>! with BLACKJACK! and HOOKERS!
-pub trait Convertable<T>
-where
-    Self: Sized,
-{
-    fn convert_from(value: T) -> Self;
-    fn convert_to(self) -> T;
-}
-
-impl Convertable<i64> for FerryValue {
-    fn convert_from(value: i64) -> Self {
-        FerryValue::Number(value)
-    }
-
-    fn convert_to(self) -> i64 {
-        if let FerryValue::Number(value) = self {
-            value
-        } else {
-            // coerce non-Number values to 0
-            0
-        }
-    }
-}
-
-impl Convertable<String> for FerryValue {
-    fn convert_from(value: String) -> Self {
-        FerryValue::Str(value)
-    }
-
-    fn convert_to(self) -> String {
-        if let FerryValue::Str(value) = self {
-            value
-        } else {
-            "".into()
-        }
-    }
-}
-
-impl Convertable<Vec<FerryValue>> for FerryValue {
-    fn convert_from(value: Vec<FerryValue>) -> Self {
-        FerryValue::List(value)
-    }
-
-    fn convert_to(self) -> Vec<FerryValue> {
-        if let FerryValue::List(value) = self {
-            value
-        } else {
-            vec![]
-        }
-    }
-}
-
-impl Convertable<bool> for FerryValue {
-    fn convert_from(value: bool) -> Self {
-        FerryValue::Boolean(value)
-    }
-
-    fn convert_to(self) -> bool {
-        if let FerryValue::Boolean(value) = self {
-            value
-        } else {
-            false
-        }
-    }
 }
 
 impl FerryState {
     pub fn new() -> Self {
         Self {
-            symbols: HashMap::new(),
+            variables: HashMap::new(),
             labels: HashMap::new(),
         }
     }
 
     pub fn add_symbol(&mut self, id: &String, value: Option<FerryValue>) {
-        if !self.symbols.contains_key(id) {
-            self.symbols.insert(id.clone(), value);
+        if !self.variables.contains_key(id) {
+            self.variables.insert(id.clone(), value);
         } else {
             self.update_symbol(id, value);
         }
     }
 
     fn update_symbol(&mut self, id: &String, value: Option<FerryValue>) {
-        if self.symbols.contains_key(id) {
-            self.symbols.get_mut(id).unwrap().clone_from(&value);
+        if self.variables.contains_key(id) {
+            self.variables.get_mut(id).unwrap().clone_from(&value);
         }
     }
 
     pub fn get_symbol_value(&self, id: &String) -> Option<FerryValue> {
-        if self.symbols.contains_key(id) {
-            self.symbols.get(id).unwrap().clone()
+        if self.variables.contains_key(id) {
+            self.variables.get(id).unwrap().clone()
         } else {
             None
         }
@@ -128,6 +45,11 @@ impl FerryState {
 
     pub fn add_label(&mut self, id: &str, value: usize) {
         self.labels.insert(id.into(), value);
+    }
+
+    // currently simply clones the variables instance for consumption via drain()
+    pub fn load_memory(&self) -> HashMap<String, Option<FerryValue>> {
+        self.variables.clone()
     }
 
     pub fn _get_label(&self, id: &String) -> Option<usize> {
@@ -141,8 +63,8 @@ impl FerryState {
 
 impl std::fmt::Display for FerryState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for k in self.symbols.keys() {
-            if let Some(v) = self.symbols.get(k).unwrap() {
+        for k in self.variables.keys() {
+            if let Some(v) = self.variables.get(k).unwrap() {
                 writeln!(f, "{}: {}", k, v)?;
             } else {
                 writeln!(f, "{}: undefined", k)?;
@@ -161,13 +83,7 @@ impl Typing for FerryValue {
             FerryValue::Boolean(_) => &FerryType::Boolean,
             FerryValue::Unit => &FerryType::Undefined,
             FerryValue::List(_) => &FerryType::List,
-            FerryValue::Function {
-                declaration: _,
-                name: _,
-                func_type: expr_type,
-                instructions: _,
-                arity: _,
-            } => expr_type,
+            FerryValue::Function(f) => &f.func_type,
             FerryValue::Ptr(_) => &FerryType::Pointer,
         }
     }
@@ -199,13 +115,29 @@ impl std::fmt::Display for FerryValue {
                 formatting.push(']');
                 write!(f, "{formatting}")
             }
-            FerryValue::Function {
-                declaration: _,
-                name: _,
-                func_type: _,
-                instructions: _,
-                arity: _,
-            } => write!(f, "function placeholder"),
+            FerryValue::Function(function) => {
+                let mut formatting = String::new();
+                formatting.push('(');
+                if let Some(func) = &function.declaration {
+                    if let Some(args) = &func.args {
+                        let mut args_iter = args.iter().peekable();
+                        while let Some(arg) = args_iter.next() {
+                            formatting.push_str(format!("{}", arg.get_type()).as_str());
+                            if args_iter.peek().is_some() {
+                                formatting.push_str(", ");
+                            }
+                        }
+                    }
+                    formatting.push(')');
+                    if let Some(return_type) = &func.return_type {
+                        formatting.push_str(format!(" -> {}", return_type).as_str());
+                    } else {
+                        formatting.push_str("[unit]");
+                    }
+                }
+
+                write!(f, "{formatting}")
+            }
             FerryValue::Ptr(p) => write!(f, "address: {p}"),
         }
     }
@@ -219,13 +151,7 @@ impl FerryValue {
             FerryValue::Boolean(b) => *b,
             FerryValue::Unit => false,
             FerryValue::List(l) => !l.is_empty(),
-            FerryValue::Function {
-                declaration: _,
-                name: _,
-                func_type: _,
-                instructions: _,
-                arity: _,
-            } => false,
+            FerryValue::Function(_) => false,
             FerryValue::Ptr(p) => !*p == 0xff,
         }
     }

@@ -1,13 +1,13 @@
 use ir::{FerryIr, FerryOpcode};
-use miette::{Diagnostic, IntoDiagnostic, Result};
+use miette::{Diagnostic, Result};
 use thiserror::Error;
 
 use interpreter::FerryInterpreterError;
+use lexer::token::FerryToken;
 use lexer::{FerryLexError, FerryLexer};
+use parser::syntax::Expr;
 use parser::{FerryParseError, FerryParser};
-use state::{FerryState, FerryValue};
-use syntax::Expr;
-use token::FerryToken;
+use state::{value::FerryValue, FerryState};
 use typecheck::{FerryTypeError, FerryTypechecker};
 use vm::FerryVm;
 
@@ -16,10 +16,7 @@ mod ir;
 mod lexer;
 mod parser;
 mod state;
-mod syntax;
-mod token;
 mod typecheck;
-mod types;
 mod vm;
 
 pub struct Ferry {
@@ -37,7 +34,7 @@ pub enum PrintReq {
     State,
     Ast,
     TypedAst,
-    Asm,
+    Ir,
 }
 
 impl Ferry {
@@ -60,22 +57,26 @@ impl Ferry {
     pub fn run(&mut self) -> Result<FerryValue> {
         let mut ferry_lexer = FerryLexer::new(self.source_code.as_bytes());
 
-        self.tokens = ferry_lexer.lex().map_err(|err_list| FerryLexErrors {
+        let tokens = ferry_lexer.lex().map_err(|err_list| FerryLexErrors {
             source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
             related: err_list,
         })?;
 
-        let mut ferry_parser = FerryParser::new(self.tokens.clone());
+        self.tokens = tokens.clone();
 
-        self.ast = ferry_parser
+        let mut ferry_parser = FerryParser::new(tokens);
+
+        let ast = ferry_parser
             .parse(&mut self.state)
             .map_err(|err_list| FerryParseErrors {
                 source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
                 related: err_list,
             })?;
 
-        let mut typechecker = FerryTypechecker::new(self.ast.clone());
-        self.typed_ast =
+        self.ast = ast.clone();
+
+        let mut typechecker = FerryTypechecker::new(ast);
+        let typed_ast =
             typechecker
                 .typecheck(&mut self.state)
                 .map_err(|err_list| FerryTypeErrors {
@@ -83,29 +84,16 @@ impl Ferry {
                     related: err_list,
                 })?;
 
-        // let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
-        // let result = match interpreter.interpret(&mut self.state).map_err(|err_list| {
-        //     FerryInterpreterErrors {
-        //         source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
-        //         related: err_list,
-        //     }
-        // })? {
-        //     Some(r) => r,
-        //     None => FerryValue::Unit,
-        // };
+        self.typed_ast = typed_ast.clone();
 
-        let mut ir = FerryIr::new(self.ast.clone());
-        self.ferry_ir = ir.lower(&mut self.state).unwrap();
+        let mut ir = FerryIr::new(typed_ast);
+        let ferry_ir = ir.lower(&mut self.state).unwrap();
+        self.ferry_ir = ferry_ir.clone();
 
         // self.vm.set_program(self.ferry_ir.clone());
-        let result = self
-            .vm
-            .interpret(self.ferry_ir.clone(), &mut self.state)
-            .unwrap();
+        let result = self.vm.interpret(ferry_ir, &mut self.state).unwrap();
 
         self.vm.clear();
-
-        // self.print_data(PrintReq::TypedAst);
 
         Ok(result)
     }
@@ -131,7 +119,7 @@ impl Ferry {
                 println!("===\n");
 
                 for e in &self.ast {
-                    println!("{}", e);
+                    println!("{e}");
                 }
             }
             PrintReq::TypedAst => {
@@ -139,11 +127,16 @@ impl Ferry {
                 println!("======\n");
 
                 for t in &self.typed_ast {
-                    println!("{}", t);
+                    println!("{t}");
                 }
             }
-            PrintReq::Asm => {
-                unimplemented!()
+            PrintReq::Ir => {
+                println!("\nLINEAR IR");
+                println!("=========\n");
+
+                for i in &self.ferry_ir {
+                    println!("{i}");
+                }
             }
         }
         println!();

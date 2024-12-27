@@ -16,7 +16,7 @@ fn hello() {
     let start_time = Instant::now();
     let output = program.run();
     let elapsed_time = start_time.elapsed().as_secs_f64();
-    println!("{} in: {elapsed_time}s", output.unwrap());
+    println!("hello.feri: {} in: {elapsed_time}s", output.unwrap());
 }
 
 fn euler_1() {
@@ -25,7 +25,7 @@ fn euler_1() {
     let start_time = Instant::now();
     let output = program.run();
     let elapsed_time = start_time.elapsed().as_secs_f64();
-    println!("{} in: {elapsed_time}s", output.unwrap());
+    println!("euler1.feri: {} in: {elapsed_time}s", output.unwrap());
 }
 
 fn fib() {
@@ -34,5 +34,5 @@ fn fib() {
     let start_time = Instant::now();
     let output = program.run();
     let elapsed_time = start_time.elapsed().as_secs_f64();
-    println!("{} in: {elapsed_time}s", output.unwrap());
+    println!("fib.feri: {} in: {elapsed_time}s", output.unwrap());
 }

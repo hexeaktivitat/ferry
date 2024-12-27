@@ -1,4 +1,4 @@
-use crate::syntax::{Expr, Lit};
+use crate::parser::syntax::{Expr, Lit};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum FerryTyping {
@@ -93,7 +93,13 @@ impl Typing for Expr {
             Expr::Loop(l) => l.expr_type.get_type(),
             Expr::Unary(u) => u.expr_type.get_type(),
             Expr::For(f) => f.expr_type.get_type(),
-            Expr::Function(f) => f.expr_type.get_type(),
+            Expr::Function(f) => {
+                if let Some(ty) = &f.return_type {
+                    ty
+                } else {
+                    &FerryType::Undefined
+                }
+            }
             Expr::Call(c) => c.expr_type.get_type(),
             Expr::Module(_) => &FerryType::Untyped,
             Expr::Import(_) => &FerryType::Untyped,
