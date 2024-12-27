@@ -47,6 +47,11 @@ impl FerryState {
         self.labels.insert(id.into(), value);
     }
 
+    // currently simply clones the variables instance for consumption via drain()
+    pub fn load_memory(&self) -> HashMap<String, Option<FerryValue>> {
+        self.variables.clone()
+    }
+
     pub fn _get_label(&self, id: &String) -> Option<usize> {
         if self.labels.contains_key(id) {
             Some(*self.labels.get(id).unwrap())

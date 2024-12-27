@@ -67,12 +67,16 @@ impl FerryVm {
         state: &mut FerryState,
     ) -> FerryResult<FerryValue> {
         let program = Rc::new(RefCell::new(instructions));
-        let frame = FerryFrame {
+        let mut frame = FerryFrame {
             stack: vec![],
             pc: 0,
             function: program,
             locals: HashMap::new(),
         };
+
+        for (key, value) in state.load_memory().drain() {
+            frame.locals.insert(key, value.unwrap());
+        }
 
         self.frames.push(frame);
         let result = self.run(state);
@@ -81,6 +85,10 @@ impl FerryVm {
             println!("STACK: {:?}", self.frames[self.fp].stack);
             self.frames[self.fp].stack = vec![];
         }
+        for (key, value) in self.frames[self.fp].locals.drain() {
+            state.add_symbol(&key, Some(value));
+        }
+
         result
     }
 
@@ -115,6 +123,7 @@ impl FerryVm {
                 // FerryOpcode::Load => self.frames[self.fp].pop(),
                 FerryOpcode::LoadI(c) => self.frames[self.fp].stack.push(c.into()),
                 FerryOpcode::Alloc(_ptr, a) => {
+                    // self.heap.insert(ptr, a);
                     self.frames[self.fp].stack.push(a);
                 }
                 FerryOpcode::Set(id) => {
@@ -122,7 +131,7 @@ impl FerryVm {
                     self.frames[self.fp].locals.insert(id, value);
                 }
                 FerryOpcode::Get(id) => {
-                    let value = self.frames[self.fp].locals.get(&id).unwrap().clone();
+                    let value = self.frames[self.fp].locals.get(&id).unwrap().to_owned();
                     if let FerryValue::Ptr(ptr) = value {
                         self.frames[self.fp]
                             .stack
