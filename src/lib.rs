@@ -75,19 +75,18 @@ impl Ferry {
 
         self.ast = ast.clone();
 
-        let mut typechecker = FerryTypechecker::new(ast);
-        let typed_ast =
-            typechecker
-                .typecheck(&mut self.state)
-                .map_err(|err_list| FerryTypeErrors {
-                    source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
-                    related: err_list,
-                })?;
+        let mut typechecker = FerryTypechecker::new();
+        let typed_ast = typechecker
+            .typecheck(&ast, &mut self.state)
+            .map_err(|err_list| FerryTypeErrors {
+                source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
+                related: err_list,
+            })?;
 
         self.typed_ast = typed_ast.clone();
 
-        let mut ir = FerryIr::new(typed_ast);
-        let ferry_ir = ir.lower(&mut self.state).unwrap();
+        let mut ir = FerryIr::new();
+        let ferry_ir = ir.lower(&typed_ast, &mut self.state).unwrap();
         self.ferry_ir = ferry_ir.clone();
 
         // self.vm.set_program(self.ferry_ir.clone());

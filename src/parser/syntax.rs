@@ -162,23 +162,23 @@ pub struct Import {
 }
 
 pub trait ExprVisitor<T, S> {
-    fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
-    fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
-    fn visit_unary(&mut self, unary: &mut Unary, state: S) -> T;
-    fn visit_variable(&mut self, variable: &mut Variable, state: S) -> T;
-    fn visit_assign(&mut self, assign: &mut Assign, state: S) -> T;
-    fn visit_if_expr(&mut self, if_expr: &mut If, state: S) -> T;
-    fn visit_group(&mut self, group: &mut Group, state: S) -> T;
-    fn visit_binding(&mut self, binding: &mut Binding, state: S) -> T;
-    fn visit_loop(&mut self, loop_expr: &mut Loop, state: S) -> T;
-    fn visit_for(&mut self, for_expr: &mut For, state: S) -> T;
-    fn visit_function(&mut self, function: &mut Function, state: S) -> T;
-    fn visit_call(&mut self, call: &mut Call, state: S) -> T;
-    fn visit_module(&mut self, module: &mut Module, state: S) -> T;
-    fn visit_import(&mut self, import: &mut Import, state: S) -> T;
+    fn visit_literal(&mut self, literal: &Lit, state: S) -> T;
+    fn visit_binary(&mut self, binary: &Binary, state: S) -> T;
+    fn visit_unary(&mut self, unary: &Unary, state: S) -> T;
+    fn visit_variable(&mut self, variable: &Variable, state: S) -> T;
+    fn visit_assign(&mut self, assign: &Assign, state: S) -> T;
+    fn visit_if_expr(&mut self, if_expr: &If, state: S) -> T;
+    fn visit_group(&mut self, group: &Group, state: S) -> T;
+    fn visit_binding(&mut self, binding: &Binding, state: S) -> T;
+    fn visit_loop(&mut self, loop_expr: &Loop, state: S) -> T;
+    fn visit_for(&mut self, for_expr: &For, state: S) -> T;
+    fn visit_function(&mut self, function: &Function, state: S) -> T;
+    fn visit_call(&mut self, call: &Call, state: S) -> T;
+    fn visit_module(&mut self, module: &Module, state: S) -> T;
+    fn visit_import(&mut self, import: &Import, state: S) -> T;
 }
 
-pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, state: S) -> T {
+pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &Expr, state: S) -> T {
     match expr {
         Expr::Literal(literal) => visitor.visit_literal(literal, state),
         Expr::Binary(binary) => visitor.visit_binary(binary, state),

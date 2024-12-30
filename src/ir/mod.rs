@@ -32,25 +32,25 @@ pub type FerryAddr = u8;
 #[derive(Debug)]
 pub struct FerryIr {
     // AST to be lowered to this IR
-    ast: Vec<Expr>,
     heap_ptr: FerryAddr,
 }
 
 type FerryResult<T> = Result<T, FerryIrError>;
 
 impl FerryIr {
-    pub fn new(ast: Vec<Expr>) -> Self {
-        Self {
-            ast,
-            heap_ptr: 0x00,
-        }
+    pub fn new() -> Self {
+        Self { heap_ptr: 0x00 }
     }
 
-    pub fn lower(&mut self, state: &mut FerryState) -> FerryResult<Vec<FerryOpcode>> {
+    pub fn lower(
+        &mut self,
+        typed_ast: &[Expr],
+        state: &mut FerryState,
+    ) -> FerryResult<Vec<FerryOpcode>> {
         let mut program = vec![];
         let mut functions = vec![];
 
-        for expr in self.ast.clone().iter_mut() {
+        for expr in typed_ast.iter() {
             if let Expr::Function(_) = expr {
                 match self.assemble_opcode(expr, state) {
                     Ok(mut instructions) => functions.append(&mut instructions),
@@ -98,7 +98,7 @@ impl FerryIr {
 
     fn assemble_opcode(
         &mut self,
-        expr: &mut Expr,
+        expr: &Expr,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         walk_expr(&mut *self, expr, state)
@@ -109,7 +109,7 @@ impl FerryIr {
 impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryIr {
     fn visit_literal(
         &mut self,
-        literal: &mut Lit,
+        literal: &Lit,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         match literal {
@@ -150,7 +150,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 self.heap_ptr += 1;
 
                 let mut value_insts = vec![];
-                for expr in contents.iter_mut() {
+                for expr in contents.iter() {
                     value_insts.append(&mut self.assemble_opcode(expr, state)?);
                 }
 
@@ -168,7 +168,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_binary(
         &mut self,
-        binary: &mut Binary,
+        binary: &Binary,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         if let TokenType::Operator(op) = binary.operator.get_token_type() {
@@ -176,8 +176,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::Add => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -188,8 +188,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::Subtract => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -200,8 +200,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::Multiply => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -212,8 +212,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::Divide => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -225,8 +225,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::LessThan => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -237,8 +237,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::GreaterThan => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -249,8 +249,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::Equality => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -261,8 +261,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::LessEqual => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -273,8 +273,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::GreaterEqual => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -285,8 +285,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::GetI => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -297,8 +297,8 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
                 Op::Cons => {
                     let mut instructions = vec![];
 
-                    let mut left = self.assemble_opcode(&mut binary.lhs, state)?;
-                    let mut right = self.assemble_opcode(&mut binary.rhs, state)?;
+                    let mut left = self.assemble_opcode(&binary.lhs, state)?;
+                    let mut right = self.assemble_opcode(&binary.rhs, state)?;
 
                     instructions.append(&mut left);
                     instructions.append(&mut right);
@@ -320,14 +320,14 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_unary(
         &mut self,
-        unary: &mut Unary,
+        unary: &Unary,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         match unary.operator.get_token_type() {
             TokenType::Operator(Op::Subtract) => {
                 let mut instructions = vec![];
 
-                let mut right = self.assemble_opcode(&mut unary.rhs, state)?;
+                let mut right = self.assemble_opcode(&unary.rhs, state)?;
                 instructions.append(&mut right);
                 instructions.append(&mut vec![FerryOpcode::LoadI(-1), FerryOpcode::Mul]);
 
@@ -339,7 +339,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_variable(
         &mut self,
-        variable: &mut Variable,
+        variable: &Variable,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         let instructions = vec![FerryOpcode::Get(variable.name.clone())];
@@ -349,14 +349,14 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_assign(
         &mut self,
-        assign: &mut Assign,
+        assign: &Assign,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         let mut instructions = vec![];
 
         let id = assign.name.clone();
         // let mut var = self.assemble_opcode(&mut assign.var, state)?;
-        let mut value_instructions = if let Some(val) = assign.value.as_mut() {
+        let mut value_instructions = if let Some(val) = assign.value.as_ref() {
             self.assemble_opcode(val, state)?
         } else {
             vec![]
@@ -371,13 +371,13 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_if_expr(
         &mut self,
-        if_expr: &mut If,
+        if_expr: &If,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         let mut instructions = vec![];
-        let mut conditional = self.assemble_opcode(&mut if_expr.condition, state)?;
-        let mut then_expr = self.assemble_opcode(&mut if_expr.then_expr, state)?;
-        let mut else_expr = if let Some(else_expr) = if_expr.else_expr.as_mut() {
+        let mut conditional = self.assemble_opcode(&if_expr.condition, state)?;
+        let mut then_expr = self.assemble_opcode(&if_expr.then_expr, state)?;
+        let mut else_expr = if let Some(else_expr) = if_expr.else_expr.as_ref() {
             self.assemble_opcode(else_expr, state)?
         } else {
             vec![]
@@ -398,21 +398,21 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_group(
         &mut self,
-        group: &mut Group,
+        group: &Group,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
-        let instructions = self.assemble_opcode(&mut group.contents, state)?;
+        let instructions = self.assemble_opcode(&group.contents, state)?;
 
         Ok(instructions)
     }
 
     fn visit_binding(
         &mut self,
-        binding: &mut Binding,
+        binding: &Binding,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         let mut instructions = vec![];
-        let mut value = if let Some(v) = &mut binding.value {
+        let mut value = if let Some(v) = &binding.value {
             self.assemble_opcode(v, state)?
         } else {
             vec![FerryOpcode::LoadI(0)]
@@ -426,17 +426,17 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_loop(
         &mut self,
-        loop_expr: &mut Loop,
+        loop_expr: &Loop,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         let mut instructions = vec![];
 
-        let mut cond_inst = if let Some(cond) = loop_expr.condition.as_mut() {
+        let mut cond_inst = if let Some(cond) = loop_expr.condition.as_ref() {
             self.assemble_opcode(cond, state)?
         } else {
             vec![]
         };
-        let mut contents = self.assemble_opcode(&mut loop_expr.contents, state)?;
+        let mut contents = self.assemble_opcode(&loop_expr.contents, state)?;
         instructions.append(&mut cond_inst);
         instructions.push(FerryOpcode::JumpCond(contents.len() + 1));
         // instructions.push(FerryOpcode::Pop);
@@ -449,15 +449,15 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_for(
         &mut self,
-        for_expr: &mut For,
+        for_expr: &For,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         let mut instructions = vec![];
 
-        if let Some(variable) = for_expr.variable.as_mut() {
+        if let Some(variable) = for_expr.variable.as_ref() {
             let name = variable.get_token().get_id().unwrap();
-            let mut iter_inst = self.assemble_opcode(&mut for_expr.iterator, state)?;
-            let mut contents_inst = self.assemble_opcode(&mut for_expr.contents, state)?;
+            let mut iter_inst = self.assemble_opcode(&for_expr.iterator, state)?;
+            let mut contents_inst = self.assemble_opcode(&for_expr.contents, state)?;
             let contents_len = contents_inst.len();
 
             instructions.append(&mut iter_inst);
@@ -477,14 +477,14 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_function(
         &mut self,
-        function: &mut Function,
+        function: &Function,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         let mut instructions = vec![];
 
         let mut arity = 0;
 
-        let mut args_inst = if let Some(args) = function.args.as_mut() {
+        let mut args_inst = if let Some(args) = function.args.as_ref() {
             let mut ret = vec![];
             for arg in args {
                 if let Expr::Binding(binding) = arg {
@@ -497,7 +497,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         } else {
             vec![]
         };
-        let mut function_inst = self.assemble_opcode(&mut function.contents, state)?;
+        let mut function_inst = self.assemble_opcode(&function.contents, state)?;
 
         // instructions.push(FerryOpcode::Label(function.name.clone()));
         instructions.append(&mut args_inst);
@@ -518,11 +518,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         Ok(vec![])
     }
 
-    fn visit_call(
-        &mut self,
-        call: &mut Call,
-        state: &mut FerryState,
-    ) -> FerryResult<Vec<FerryOpcode>> {
+    fn visit_call(&mut self, call: &Call, state: &mut FerryState) -> FerryResult<Vec<FerryOpcode>> {
         let mut instructions = vec![];
 
         let mut args_inst = {
@@ -541,7 +537,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_module(
         &mut self,
-        module: &mut Module,
+        module: &Module,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         todo!()
@@ -549,7 +545,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
 
     fn visit_import(
         &mut self,
-        import: &mut Import,
+        import: &Import,
         state: &mut FerryState,
     ) -> FerryResult<Vec<FerryOpcode>> {
         let instructions = vec![];
