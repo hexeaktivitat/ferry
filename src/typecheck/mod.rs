@@ -10,7 +10,7 @@ use crate::{
         Import, Lit, Loop, Module, Unary, Variable,
     },
     state::{
-        types::{FerryType, FerryTyping, TypeCheckable, Typing},
+        types::{FerryType, FerryTyping, Typing},
         value::{FuncVal, Value},
         State,
     },
@@ -115,7 +115,7 @@ impl Typechecker {
         &mut self,
         code: &Expr,
         state: &mut State,
-        infer_type: FerryType,
+        infer_type: &FerryType,
     ) -> FerryResult<Expr> {
         match walk_expr(&mut *self, code, state) {
             Ok(expr) => match expr {
@@ -249,11 +249,11 @@ impl Typechecker {
     }
 }
 
-fn set_type(expr_type: FerryTyping, infer_type: FerryType) -> FerryTyping {
+fn set_type(expr_type: FerryTyping, infer_type: &FerryType) -> FerryTyping {
     match expr_type {
-        FerryTyping::Assigned(a) => FerryTyping::Assigned(a),
-        FerryTyping::Inferred(i) => FerryTyping::Inferred(i),
-        FerryTyping::Untyped => FerryTyping::Inferred(infer_type),
+        FerryTyping::Assigned(a) => FerryTyping::assign(&a),
+        FerryTyping::Inferred(i) => FerryTyping::infer(&i),
+        FerryTyping::Untyped => FerryTyping::infer(infer_type),
         FerryTyping::Undefined => FerryTyping::Undefined,
     }
 }
@@ -268,7 +268,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 token,
             } => Ok(Expr::Literal(Lit::Number {
                 value: *value,
-                expr_type: FerryTyping::Assigned(FerryType::Num),
+                expr_type: FerryTyping::assign(&FerryType::Num),
                 span: *span,
                 token: token.clone(),
             })),
@@ -279,7 +279,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 token,
             } => Ok(Expr::Literal(Lit::Str {
                 value: value.clone(),
-                expr_type: FerryTyping::Assigned(FerryType::String),
+                expr_type: FerryTyping::assign(&FerryType::String),
                 span: *span,
                 token: token.clone(),
             })),
@@ -290,7 +290,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 token,
             } => Ok(Expr::Literal(Lit::Bool {
                 value: *value,
-                expr_type: FerryTyping::Assigned(FerryType::Boolean),
+                expr_type: FerryTyping::assign(&FerryType::Boolean),
                 span: *span,
                 token: token.clone(),
             })),
@@ -315,7 +315,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 Ok(Expr::Literal(Lit::List {
                     token: token.clone(),
                     contents: checked_contents,
-                    expr_type: FerryTyping::Assigned(FerryType::List),
+                    expr_type: FerryTyping::assign(&FerryType::List),
                     span: *span,
                 }))
             }
@@ -326,10 +326,10 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
         match binary.operator.get_token_type() {
             TokenType::Operator(o) => match o {
                 Op::Add | Op::Subtract | Op::Multiply | Op::Divide | Op::Equals => {
-                    let left = self.infer(&binary.lhs, state, FerryType::Num)?;
-                    let right = self.infer(&binary.rhs, state, FerryType::Num)?;
+                    let left = self.infer(&binary.lhs, state, &FerryType::Num)?;
+                    let right = self.infer(&binary.rhs, state, &FerryType::Num)?;
                     if left.check(right.get_type()) {
-                        let expr_type = FerryTyping::Inferred(left.get_type().clone());
+                        let expr_type = FerryTyping::infer(left.get_type());
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
                             operator: binary.operator.clone(),
@@ -339,7 +339,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     } else if (left.check(&FerryType::Untyped) && right.check(&FerryType::Num))
                         || (left.check(&FerryType::Num) && right.check(&FerryType::Untyped))
                     {
-                        let expr_type = FerryTyping::Inferred(right.get_type().clone());
+                        let expr_type = FerryTyping::infer(right.get_type());
                         // need a setter to set type to left without needing to fuss with its internals
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
@@ -361,14 +361,14 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 | Op::Equality
                 | Op::LessEqual
                 | Op::GreaterEqual => {
-                    let left = self.infer(&binary.lhs, state, FerryType::Num)?;
-                    let right = self.infer(&binary.rhs, state, FerryType::Num)?;
+                    let left = self.infer(&binary.lhs, state, &FerryType::Num)?;
+                    let right = self.infer(&binary.rhs, state, &FerryType::Num)?;
                     if left.check(right.get_type()) {
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
                             operator: binary.operator.clone(),
                             rhs: Box::new(right),
-                            expr_type: FerryTyping::Assigned(FerryType::Boolean),
+                            expr_type: FerryTyping::assign(&FerryType::Boolean),
                         }))
                     } else {
                         Err(FerryTypeError::TypeMismatch {
@@ -380,15 +380,15 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     }
                 }
                 Op::GetI => {
-                    let left = self.infer(&binary.lhs, state, FerryType::List)?;
-                    let right = self.infer(&binary.rhs, state, FerryType::Num)?;
+                    let left = self.infer(&binary.lhs, state, &FerryType::List)?;
+                    let right = self.infer(&binary.rhs, state, &FerryType::Num)?;
                     if left.check(&FerryType::List) {
                         if right.check(&FerryType::Num) {
                             Ok(Expr::Binary(Binary {
                                 lhs: Box::new(left.clone()),
                                 operator: binary.operator.clone(),
                                 rhs: Box::new(right),
-                                expr_type: FerryTyping::Assigned(FerryType::List),
+                                expr_type: FerryTyping::assign(&FerryType::List),
                             }))
                         } else {
                             Err(FerryTypeError::TypeMismatch {
@@ -408,15 +408,15 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     }
                 }
                 Op::Cons => {
-                    let left = self.infer(&binary.lhs, state, FerryType::List)?;
-                    let right = self.infer(&binary.rhs, state, FerryType::List)?;
+                    let left = self.infer(&binary.lhs, state, &FerryType::List)?;
+                    let right = self.infer(&binary.rhs, state, &FerryType::List)?;
                     if left.check(&FerryType::List) {
                         if right.check(&FerryType::List) {
                             Ok(Expr::Binary(Binary {
                                 lhs: Box::new(left.clone()),
                                 operator: binary.operator.clone(),
                                 rhs: Box::new(right.clone()),
-                                expr_type: FerryTyping::Inferred(FerryType::List),
+                                expr_type: FerryTyping::infer(&FerryType::List),
                             }))
                         } else {
                             Err(FerryTypeError::TypeMismatch {
@@ -456,7 +456,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     token: variable.token.clone(),
                     name: variable.name.clone(),
                     assigned_type: variable.assigned_type.clone(),
-                    expr_type: FerryTyping::Inferred(derived_type.get_type().clone()),
+                    expr_type: FerryTyping::infer(derived_type.get_type()),
                 }))
             } else {
                 Err(FerryTypeError::MistypedVariable {
@@ -479,12 +479,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
     fn visit_assign(&mut self, assign: &Assign, state: &mut State) -> FerryResult<Expr> {
         // type inference first
         if let Some(value) = &assign.value {
-            if let Ok(value_check) = self.infer(value, state, FerryType::Undefined) {
+            if let Ok(value_check) = self.infer(value, state, &FerryType::Undefined) {
                 Ok(Expr::Assign(Assign {
                     var: assign.var.clone(),
                     name: assign.name.clone(),
                     value: Some(Box::new(value_check.clone())),
-                    expr_type: FerryTyping::Inferred(value_check.get_type().clone()),
+                    expr_type: FerryTyping::infer(value_check.get_type()),
                     token: assign.token.clone(),
                 }))
             } else {
@@ -531,7 +531,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
         } else {
             None
         };
-        let expr_type = FerryTyping::Inferred(then_expr.get_type().clone());
+        let expr_type = FerryTyping::Inferred(*then_expr.get_type());
         Ok(Expr::If(If {
             token: if_expr.token.clone(),
             condition: Box::new(condition),
@@ -543,7 +543,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
     fn visit_group(&mut self, group: &Group, state: &mut State) -> FerryResult<Expr> {
         let contents = Box::new(self.check_types(&group.contents, state)?);
-        let expr_type = FerryTyping::Inferred(contents.get_type().clone());
+        let expr_type = FerryTyping::infer(contents.get_type());
 
         Ok(Expr::Group(Group {
             token: group.token.clone(),
@@ -563,9 +563,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                         return Ok(Expr::Binding(Binding {
                             token: binding.token.clone(),
                             name: binding.name.clone(),
-                            assigned_type: binding.assigned_type.clone(),
+                            assigned_type: binding.assigned_type,
                             value: Some(Box::new(value_check.clone())),
-                            expr_type: FerryTyping::Assigned(assigned_type.to_owned()),
+                            expr_type: FerryTyping::assign(assigned_type),
                         }));
                     }
                 } else {
@@ -576,7 +576,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                         name: binding.name.clone(),
                         assigned_type: None,
                         value: Some(Box::new(value_check.clone())),
-                        expr_type: FerryTyping::Inferred(value_check.get_type().clone()),
+                        expr_type: FerryTyping::infer(value_check.get_type()),
                     }));
                 }
             }
@@ -587,9 +587,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             return Ok(Expr::Binding(Binding {
                 token: binding.token.clone(),
                 name: binding.name.clone(),
-                assigned_type: binding.assigned_type.clone(),
+                assigned_type: binding.assigned_type,
                 value: None,
-                expr_type: FerryTyping::Assigned(assigned_type.clone()),
+                expr_type: FerryTyping::assign(assigned_type),
             }));
         }
 
@@ -604,7 +604,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             let condition = Box::new(self.check_types(cond, state)?);
             if condition.check(&FerryType::Boolean) {
                 let contents = Box::new(self.check_types(&loop_expr.contents, state)?);
-                let expr_type = FerryTyping::Inferred(contents.get_type().clone());
+                let expr_type = FerryTyping::infer(contents.get_type());
                 Ok(Expr::Loop(Loop {
                     token: loop_expr.token.clone(),
                     condition: Some(condition),
@@ -619,7 +619,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             }
         } else {
             let contents = Box::new(self.check_types(&loop_expr.contents, state)?);
-            let expr_type = FerryTyping::Inferred(contents.get_type().clone());
+            let expr_type = FerryTyping::infer(contents.get_type());
             Ok(Expr::Loop(Loop {
                 token: loop_expr.token.clone(),
                 condition: loop_expr.condition.clone(),
@@ -636,7 +636,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             Ok(Expr::Unary(Unary {
                 operator: unary.operator.clone(),
                 rhs: Box::new(right),
-                expr_type: FerryTyping::Assigned(FerryType::Num),
+                expr_type: FerryTyping::assign(&FerryType::Num),
             }))
         } else {
             Err(FerryTypeError::TypeMismatch {
@@ -654,7 +654,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             if let Expr::Variable(v) = variable.as_ref() {
                 state.add_symbol(&v.name, None);
             }
-            let variable_checked = self.infer(variable, state, FerryType::Num)?;
+            let variable_checked = self.infer(variable, state, &FerryType::Num)?;
             if let Expr::Variable(var) = &variable_checked {
                 let placeholder_value = set_placeholder(variable_checked.get_type());
                 state.add_symbol(&var.name, Some(placeholder_value));
@@ -662,15 +662,15 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             let contents = self.check_types(&for_expr.contents, state)?;
 
             if iterator.get_type() == &FerryType::List {
-                let inf_type = contents.get_type().clone();
+                let inf_type = contents.get_type();
                 Ok(Expr::For(For {
                     token: for_expr.token.clone(),
                     // variable: Some(Box::new(variable_checked)),
                     variable: Some(Box::new(variable_checked)),
                     iterator: Box::new(iterator),
-                    contents: Box::new(contents),
-                    expr_type: FerryTyping::Inferred(inf_type),
-                    iterator_type: for_expr.iterator_type.clone(),
+                    contents: Box::new(contents.clone()),
+                    expr_type: FerryTyping::infer(inf_type),
+                    iterator_type: for_expr.iterator_type,
                 }))
             } else {
                 Err(FerryTypeError::MistypedVariable {
@@ -681,14 +681,14 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
         } else {
             let contents = self.check_types(&for_expr.contents, state)?;
             if iterator.get_type() == &FerryType::List {
-                let inf_type = contents.get_type().clone();
+                let inf_type = &contents.get_type();
                 Ok(Expr::For(For {
                     token: for_expr.token.clone(),
                     variable: None,
                     iterator: Box::new(iterator),
-                    contents: Box::new(contents),
-                    expr_type: FerryTyping::Inferred(inf_type),
-                    iterator_type: for_expr.iterator_type.clone(),
+                    contents: Box::new(contents.clone()),
+                    expr_type: FerryTyping::infer(inf_type),
+                    iterator_type: for_expr.iterator_type,
                 }))
             } else {
                 Err(FerryTypeError::MistypedVariable {
@@ -700,15 +700,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
     }
 
     fn visit_function(&mut self, function: &Function, state: &mut State) -> FerryResult<Expr> {
-        // let expr_type = FerryTyping::Assigned(FerryType::Function);
+        // let expr_type = FerryTyping::new_assign(FerryType::Function);
         // Need to rework logic of functions in general to enable first-class functions
-        let (expr_type, return_type) = if let Some(ty) = &function.return_type {
-            (FerryTyping::Assigned(ty.clone()), ty.clone())
+        let (expr_type, return_type) = if let Some(ty) = function.return_type {
+            (ty, ty)
         } else {
-            (
-                FerryTyping::Assigned(FerryType::Undefined),
-                FerryType::Undefined,
-            )
+            (FerryType::Undefined, FerryType::Undefined)
         };
 
         let mut fn_state = state.clone();
@@ -721,7 +718,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     args: function.args.clone(),
                     contents: function.contents.clone(),
                     return_type: Some(return_type),
-                    expr_type: expr_type.clone(),
+                    expr_type: FerryTyping::assign(&expr_type),
                 }),
                 name: function.name.clone(),
                 func_type: FerryType::Function,
@@ -757,8 +754,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             name: function.name.clone(),
             args,
             contents: checked_contents,
-            return_type: function.return_type.clone(),
-            expr_type,
+            return_type: function.return_type,
+            expr_type: FerryTyping::assign(&expr_type),
         };
 
         state.add_symbol(

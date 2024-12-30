@@ -1,14 +1,25 @@
 use crate::parser::syntax::{Expr, Lit};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum FerryTyping {
     Assigned(FerryType),
     Inferred(FerryType),
+    #[default]
     Untyped,
     Undefined,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+impl FerryTyping {
+    pub(crate) fn assign(assign: &FerryType) -> Self {
+        Self::Assigned(*assign)
+    }
+
+    pub(crate) fn infer(infer: &FerryType) -> Self {
+        Self::Inferred(*infer)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum FerryType {
     Untyped,
     Undefined,
@@ -22,11 +33,12 @@ pub enum FerryType {
 
 pub trait Typing {
     fn get_type(&self) -> &FerryType;
-}
-
-pub trait TypeCheckable {
     fn check(&self, other: &FerryType) -> bool;
 }
+
+// pub trait TypeCheckable {
+//     fn check(&self, other: &FerryType) -> bool;
+// }
 
 impl Typing for FerryTyping {
     fn get_type(&self) -> &FerryType {
@@ -37,15 +49,17 @@ impl Typing for FerryTyping {
             FerryTyping::Undefined => &FerryType::Undefined,
         }
     }
-}
 
-impl TypeCheckable for FerryTyping {
     fn check(&self, other: &FerryType) -> bool {
         self.get_type() == other
     }
 }
 
-impl TypeCheckable for FerryType {
+impl Typing for FerryType {
+    fn get_type(&self) -> &FerryType {
+        self
+    }
+
     fn check(&self, other: &FerryType) -> bool {
         self == other
     }
@@ -104,9 +118,7 @@ impl Typing for Expr {
             Expr::Module(_) | Expr::Import(_) => &FerryType::Untyped,
         }
     }
-}
 
-impl TypeCheckable for Expr {
     fn check(&self, other: &FerryType) -> bool {
         self.get_type() == other
     }
