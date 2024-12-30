@@ -3,9 +3,15 @@
 use std::{fs, time::Instant};
 
 fn main() {
-    hello();
-    euler_1();
-    fib();
+    for _ in 1..25 {
+        hello();
+    }
+    for _ in 1..25 {
+        euler_1();
+    }
+    for _ in 1..25 {
+        fib();
+    }
 }
 
 // #[expect(unused)]

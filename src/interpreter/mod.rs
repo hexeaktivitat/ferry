@@ -11,7 +11,7 @@ use crate::{
     },
     state::{
         types::Typing,
-        value::{Value, FuncVal},
+        value::{FuncVal, Value},
         State,
     },
 };
@@ -243,11 +243,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
         }
     }
 
-    fn visit_variable(
-        &mut self,
-        variable: &Variable,
-        state: &mut State,
-    ) -> FerryResult<Value> {
+    fn visit_variable(&mut self, variable: &Variable, state: &mut State) -> FerryResult<Value> {
         Ok(state.get_symbol_value(&variable.name))
     }
 
@@ -280,11 +276,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
         self.evaluate(&group.contents, state)
     }
 
-    fn visit_binding(
-        &mut self,
-        binding: &Binding,
-        state: &mut State,
-    ) -> FerryResult<Value> {
+    fn visit_binding(&mut self, binding: &Binding, state: &mut State) -> FerryResult<Value> {
         if let Some(v) = &binding.value {
             let value = self.evaluate(v, state)?;
             state.add_symbol(&binding.name, value.clone());
@@ -370,11 +362,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
         }
     }
 
-    fn visit_function(
-        &mut self,
-        function: &Function,
-        state: &mut State,
-    ) -> FerryResult<Value> {
+    fn visit_function(&mut self, function: &Function, state: &mut State) -> FerryResult<Value> {
         let name = function.name.clone();
         let arity = if let Some(args) = function.args.as_ref() {
             args.len()
@@ -386,7 +374,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
             Some(Value::Function(FuncVal {
                 declaration: Some(function.clone()),
                 name: name.clone(),
-                func_type: function.expr_type.get_type().clone(),
+                func_type: *function.expr_type.get_type(),
                 instructions: vec![],
                 arity,
             })),
@@ -402,9 +390,9 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
             func_type: _,
             instructions: _,
             arity: _,
-        })) = &mut state.get_symbol_value(&call.name)
+        })) = &state.get_symbol_value(&call.name)
         {
-            if let Some(params) = &mut function.args {
+            if let Some(params) = &function.args {
                 if call.args.is_empty() {
                     let mut param_state = state.clone();
                     for (arg, param_var) in call.args.iter().zip(params.iter()) {
@@ -415,10 +403,10 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                     }
                     self.evaluate(&function.contents, &mut param_state)
                 } else {
-                    self.evaluate(&function.contents, &mut state.clone())
+                    self.evaluate(&function.contents, state)
                 }
             } else {
-                self.evaluate(&function.contents, &mut state.clone())
+                self.evaluate(&function.contents, state)
             }
         } else {
             Err(FerryInterpreterError::InvalidOperation {
@@ -428,19 +416,11 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
         }
     }
 
-    fn visit_module(
-        &mut self,
-        _module: &Module,
-        _state: &mut State,
-    ) -> FerryResult<Value> {
+    fn visit_module(&mut self, _module: &Module, _state: &mut State) -> FerryResult<Value> {
         todo!()
     }
 
-    fn visit_import(
-        &mut self,
-        _import: &Import,
-        _state: &mut State,
-    ) -> FerryResult<Value> {
+    fn visit_import(&mut self, _import: &Import, _state: &mut State) -> FerryResult<Value> {
         todo!()
     }
 }
