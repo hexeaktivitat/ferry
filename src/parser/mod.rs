@@ -109,7 +109,7 @@ impl Parser {
         )?;
         self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'then'")?;
         self.consume_newline()?;
-        let then_expr = Box::new(self.s_expression(state)?);
+        let then_expr = Box::new(self.start(state)?);
         self.consume_newline()?;
         let else_expr = if self.peek().get_token_type() == &TT::Keyword(Kwd::Else) {
             self.consume(&TT::Keyword(Kwd::Else), "idk how you got this")?;
@@ -117,7 +117,7 @@ impl Parser {
                 self.consume(&TT::Control(Ctrl::Colon), "colon not consumed")?;
             }
             self.consume_newline()?;
-            Some(Box::new(self.s_expression(state)?))
+            Some(Box::new(self.start(state)?))
         } else {
             None
         };
@@ -799,6 +799,11 @@ impl Parser {
         let mut args = Vec::new();
         let name = expr.get_token().get_id().unwrap_or_default();
 
+        // self.consume(
+        //     &TT::Control(Ctrl::LeftParen),
+        //     "expected '(' after function identifier",
+        // )?;
+
         if !self.check(&TT::Control(Ctrl::RightParen)) {
             loop {
                 args.push(self.assignment(state)?);
@@ -808,7 +813,10 @@ impl Parser {
             }
         }
 
-        let token = self.consume(&TT::Control(Ctrl::RightParen), "expected ')' after '('")?;
+        let token = self.consume(
+            &TT::Control(Ctrl::RightParen),
+            "expected ')' after '(' in function call",
+        )?;
 
         Ok(Expr::Call(Call {
             invoker: Box::new(expr),
