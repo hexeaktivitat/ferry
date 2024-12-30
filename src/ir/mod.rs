@@ -58,7 +58,7 @@ impl FerryIr {
                 }
             } else if let Expr::Module(module) = expr {
                 for function in module.functions.clone() {
-                    match self.assemble_opcode(&mut Expr::Function(function), state) {
+                    match self.assemble_opcode(&Expr::Function(function), state) {
                         Ok(mut instructions) => functions.append(&mut instructions),
                         Err(e) => println!("{e}"),
                     }
@@ -551,7 +551,7 @@ impl ExprVisitor<FerryResult<Vec<FerryOpcode>>, &mut FerryState> for &mut FerryI
         let instructions = vec![];
 
         for function in import.functions.clone() {
-            self.assemble_opcode(&mut Expr::Function(function), state)?;
+            self.assemble_opcode(&Expr::Function(function), state)?;
         }
 
         Ok(instructions)

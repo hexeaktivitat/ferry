@@ -908,7 +908,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
 
         for function in module.functions.clone() {
             if let Expr::Function(checked_function) =
-                self.check_types(&mut Expr::Function(function), state)?
+                self.check_types(&Expr::Function(function), state)?
             {
                 checked_fns.push(checked_function);
             } else {
@@ -931,7 +931,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut FerryState> for &mut FerryTypechecker {
 
         for function in import.functions.clone() {
             if let Expr::Function(checked_function) =
-                self.check_types(&mut Expr::Function(function), state)?
+                self.check_types(&Expr::Function(function), state)?
             {
                 checked_fns.push(checked_function);
             } else {

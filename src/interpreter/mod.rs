@@ -52,7 +52,7 @@ impl FerryInterpreter {
     ) -> Result<Option<FerryValue>, Vec<FerryInterpreterError>> {
         let mut ret = None;
         let mut errors = vec![];
-        for code in typed_ast.clone().iter() {
+        for code in typed_ast.iter() {
             match self.evaluate(code, state) {
                 Ok(r) => ret = r,
                 Err(e) => errors.push(e),
@@ -103,7 +103,7 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
             } => {
                 let mut values: Vec<FerryValue> = Vec::new();
                 for c in contents {
-                    if let Some(value) = self.evaluate(&c, state)? {
+                    if let Some(value) = self.evaluate(c, state)? {
                         values.push(value);
                     } else {
                         values.push(FerryValue::Unit);
@@ -413,12 +413,12 @@ impl ExprVisitor<FerryResult<FerryValue>, &mut FerryState> for &mut FerryInterpr
                             param_state.add_symbol(&var.name, arg_val);
                         }
                     }
-                    self.evaluate(&mut function.contents, &mut param_state)
+                    self.evaluate(&function.contents, &mut param_state)
                 } else {
-                    self.evaluate(&mut function.contents, &mut state.clone())
+                    self.evaluate(&function.contents, &mut state.clone())
                 }
             } else {
-                self.evaluate(&mut function.contents, &mut state.clone())
+                self.evaluate(&function.contents, &mut state.clone())
             }
         } else {
             Err(FerryInterpreterError::InvalidOperation {
