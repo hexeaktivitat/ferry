@@ -159,18 +159,8 @@ impl Vm {
                 }
                 Opcode::Add => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap()
-                            .try_into()
-                            .unwrap();
-                        let left: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap()
-                            .try_into()
-                            .unwrap();
+                        let right: i64 = self.frames[self.fp].stack.pop().unwrap().into();
+                        let left: i64 = self.frames[self.fp].stack.pop().unwrap().into();
                         let res: i64 = left + right;
 
                         self.frames[self.fp].stack.push(res.into());
@@ -182,18 +172,8 @@ impl Vm {
                 }
                 Opcode::Sub => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap()
-                            .try_into()
-                            .unwrap();
-                        let left: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap()
-                            .try_into()
-                            .unwrap();
+                        let right: i64 = self.frames[self.fp].stack.pop().unwrap().into();
+                        let left: i64 = self.frames[self.fp].stack.pop().unwrap().into();
                         let res: i64 = left - right;
                         self.frames[self.fp].stack.push(res.into());
                     } else {
@@ -204,18 +184,8 @@ impl Vm {
                 }
                 Opcode::Mul => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap()
-                            .try_into()
-                            .unwrap();
-                        let left: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap()
-                            .try_into()
-                            .unwrap();
+                        let right: i64 = self.frames[self.fp].stack.pop().unwrap().into();
+                        let left: i64 = self.frames[self.fp].stack.pop().unwrap().into();
                         let res: i64 = left * right;
                         self.frames[self.fp].stack.push(res.into());
                     } else {
@@ -226,18 +196,8 @@ impl Vm {
                 }
                 Opcode::Div => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap()
-                            .try_into()
-                            .unwrap();
-                        let left: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap()
-                            .try_into()
-                            .unwrap();
+                        let right: i64 = self.frames[self.fp].stack.pop().unwrap().into();
+                        let left: i64 = self.frames[self.fp].stack.pop().unwrap().into();
                         if right == 0 {
                             return Err(FerryVmError::RuntimeError {
                                 advice: "DIVIDE BY ZERO".into(),
@@ -261,77 +221,32 @@ impl Vm {
                     }
                 }
                 Opcode::Equal => {
-                    let right: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
-                    let left: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
+                    let right: i64 = self.frames[self.fp].stack.pop().unwrap().into();
+                    let left: i64 = self.frames[self.fp].stack.pop().unwrap().into();
                     let res = left == right;
                     self.frames[self.fp].stack.push(res.into());
                 }
                 Opcode::Greater => {
-                    let right: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
-                    let left: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
+                    let right: i64 = self.frames[self.fp].stack.pop().unwrap().into();
+                    let left: i64 = self.frames[self.fp].stack.pop().unwrap().into();
                     let res = left > right;
                     self.frames[self.fp].stack.push(res.into());
                 }
                 Opcode::Lesser => {
-                    let right: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
-                    let left: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
+                    let right: i64 = self.frames[self.fp].stack.pop().unwrap().into();
+                    let left: i64 = self.frames[self.fp].stack.pop().unwrap().into();
                     let res = left < right;
                     self.frames[self.fp].stack.push(res.into());
                 }
                 Opcode::GetI => {
-                    let right: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
-                    let left: Vec<Value> = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
+                    let right: i64 = self.frames[self.fp].stack.pop().unwrap().into();
+                    let left: Vec<Value> = self.frames[self.fp].stack.pop().unwrap().into();
                     let res: Value = left[right as usize].clone();
                     self.frames[self.fp].stack.push(res);
                 }
                 Opcode::Cons => {
                     let right: Value = self.frames[self.fp].stack.pop().unwrap();
-                    let mut left: Vec<Value> = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
+                    let mut left: Vec<Value> = self.frames[self.fp].stack.pop().unwrap().into();
                     let res: Vec<Value>;
                     if let Value::List(l) = right {
                         res = [left, l].concat();
@@ -354,12 +269,7 @@ impl Vm {
                     self.frames[self.fp].pc -= offset;
                 }
                 Opcode::Iter => {
-                    let iter: Vec<Value> = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap()
-                        .try_into()
-                        .unwrap();
+                    let iter: Vec<Value> = self.frames[self.fp].stack.pop().unwrap().into();
 
                     let (head, tail) = iter.split_first().unwrap();
 

@@ -9,7 +9,7 @@ use crate::{
     },
     state::{
         types::FerryType,
-        value::{Value, FuncVal},
+        value::{FuncVal, Value},
         State,
     },
 };
@@ -42,11 +42,7 @@ impl Ir {
         Self { heap_ptr: 0x00 }
     }
 
-    pub fn lower(
-        &mut self,
-        typed_ast: &[Expr],
-        state: &mut State,
-    ) -> FerryResult<Vec<Opcode>> {
+    pub fn lower(&mut self, typed_ast: &[Expr], state: &mut State) -> FerryResult<Vec<Opcode>> {
         let mut program = vec![];
         let mut functions = vec![];
 
@@ -73,25 +69,11 @@ impl Ir {
 
         program.push(Opcode::Return);
 
-        // state.add_symbol(
-        //     &"main".to_string(),
-        //     Some(FerryValue::Function {
-        //         declaration: None,
-        //         name: "main".into(),
-        //         func_type: FerryType::Untyped,
-        //         instructions: program,
-        //     }),
-        // );
-
-        // program.append(&mut functions);
-
         for (idx, inst) in program.clone().iter().enumerate() {
             if let Opcode::Label(name) = inst {
                 state.add_label(name, idx + 1);
             }
         }
-
-        // println!("{:?}", program);
 
         Ok(program)
     }
@@ -155,11 +137,7 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
         }
     }
 
-    fn visit_binary(
-        &mut self,
-        binary: &Binary,
-        state: &mut State,
-    ) -> FerryResult<Vec<Opcode>> {
+    fn visit_binary(&mut self, binary: &Binary, state: &mut State) -> FerryResult<Vec<Opcode>> {
         if let TokenType::Operator(op) = binary.operator.get_token_type() {
             match op {
                 Op::Add => {
@@ -296,12 +274,6 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
                     Ok(instructions)
                 }
             }
-            // crate::token::TokenType::Value(val) => todo!(),
-            // crate::token::TokenType::Control(ctrl) => todo!(),
-            // crate::token::TokenType::Keyword(kwd) => todo!(),
-            // crate::token::TokenType::Identifier(_) => todo!(),
-            // crate::token::TokenType::Comment(_) => todo!(),
-            // crate::token::TokenType::End => todo!(),
         } else {
             Ok(vec![Opcode::Nop])
         }
@@ -332,11 +304,7 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
         Ok(instructions)
     }
 
-    fn visit_assign(
-        &mut self,
-        assign: &Assign,
-        state: &mut State,
-    ) -> FerryResult<Vec<Opcode>> {
+    fn visit_assign(&mut self, assign: &Assign, state: &mut State) -> FerryResult<Vec<Opcode>> {
         let mut instructions = vec![];
 
         let id = assign.name.clone();
@@ -383,11 +351,7 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
         Ok(instructions)
     }
 
-    fn visit_binding(
-        &mut self,
-        binding: &Binding,
-        state: &mut State,
-    ) -> FerryResult<Vec<Opcode>> {
+    fn visit_binding(&mut self, binding: &Binding, state: &mut State) -> FerryResult<Vec<Opcode>> {
         let mut instructions = vec![];
         let mut value = if let Some(v) = &binding.value {
             self.assemble_opcode(v, state)?
@@ -504,19 +468,11 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
         Ok(instructions)
     }
 
-    fn visit_module(
-        &mut self,
-        module: &Module,
-        state: &mut State,
-    ) -> FerryResult<Vec<Opcode>> {
+    fn visit_module(&mut self, module: &Module, state: &mut State) -> FerryResult<Vec<Opcode>> {
         todo!()
     }
 
-    fn visit_import(
-        &mut self,
-        import: &Import,
-        state: &mut State,
-    ) -> FerryResult<Vec<Opcode>> {
+    fn visit_import(&mut self, import: &Import, state: &mut State) -> FerryResult<Vec<Opcode>> {
         let instructions = vec![];
 
         for function in import.functions.clone() {
