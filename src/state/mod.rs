@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use types::{FerryType, TypeCheckable, Typing};
+use types::{FerryType, Typing};
 use value::Value;
 
 pub(crate) mod types;
@@ -87,9 +87,7 @@ impl Typing for Value {
             Value::Ptr(_) => &FerryType::Pointer,
         }
     }
-}
 
-impl TypeCheckable for Value {
     fn check(&self, other: &FerryType) -> bool {
         self.get_type() == other
     }
