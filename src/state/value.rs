@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Error};
 
-use crate::{ir::FerryOpcode, parser::syntax::Function};
+use crate::{ir::Opcode, parser::syntax::Function};
 
 use super::types::FerryType;
 
@@ -10,32 +10,32 @@ pub struct FuncVal {
     pub declaration: Option<Function>,
     pub name: String,
     pub func_type: FerryType,
-    pub instructions: Vec<FerryOpcode>,
+    pub instructions: Vec<Opcode>,
     pub arity: usize,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum FerryValue {
+pub enum Value {
     Number(i64),
     Str(String),
     Boolean(bool),
-    List(Vec<FerryValue>),
+    List(Vec<Value>),
     Function(FuncVal),
     Ptr(u8),
     Unit,
 }
 
-impl From<i64> for FerryValue {
+impl From<i64> for Value {
     fn from(value: i64) -> Self {
-        FerryValue::Number(value)
+        Value::Number(value)
     }
 }
 
-impl TryFrom<FerryValue> for i64 {
+impl TryFrom<Value> for i64 {
     type Error = Error;
 
-    fn try_from(value: FerryValue) -> Result<Self, Self::Error> {
-        if let FerryValue::Number(v) = value {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        if let Value::Number(v) = value {
             Ok(v)
         } else {
             Err(anyhow!("not an i64"))
@@ -43,17 +43,17 @@ impl TryFrom<FerryValue> for i64 {
     }
 }
 
-impl From<String> for FerryValue {
+impl From<String> for Value {
     fn from(value: String) -> Self {
-        FerryValue::Str(value)
+        Value::Str(value)
     }
 }
 
-impl TryFrom<FerryValue> for String {
+impl TryFrom<Value> for String {
     type Error = Error;
 
-    fn try_from(value: FerryValue) -> Result<Self, Self::Error> {
-        if let FerryValue::Str(v) = value {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        if let Value::Str(v) = value {
             Ok(v)
         } else {
             Err(anyhow!("not a String"))
@@ -61,17 +61,17 @@ impl TryFrom<FerryValue> for String {
     }
 }
 
-impl From<Vec<FerryValue>> for FerryValue {
-    fn from(value: Vec<FerryValue>) -> FerryValue {
-        FerryValue::List(value)
+impl From<Vec<Value>> for Value {
+    fn from(value: Vec<Value>) -> Value {
+        Value::List(value)
     }
 }
 
-impl TryFrom<FerryValue> for Vec<FerryValue> {
+impl TryFrom<Value> for Vec<Value> {
     type Error = Error;
 
-    fn try_from(value: FerryValue) -> Result<Self, Self::Error> {
-        if let FerryValue::List(v) = value {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        if let Value::List(v) = value {
             Ok(v)
         } else {
             Err(anyhow!("not a Vec<FerryValue>"))
@@ -79,17 +79,17 @@ impl TryFrom<FerryValue> for Vec<FerryValue> {
     }
 }
 
-impl From<bool> for FerryValue {
+impl From<bool> for Value {
     fn from(value: bool) -> Self {
-        FerryValue::Boolean(value)
+        Value::Boolean(value)
     }
 }
 
-impl TryFrom<FerryValue> for bool {
+impl TryFrom<Value> for bool {
     type Error = Error;
 
-    fn try_from(value: FerryValue) -> Result<Self, Self::Error> {
-        if let FerryValue::Boolean(v) = value {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        if let Value::Boolean(v) = value {
             Ok(v)
         } else {
             Err(anyhow!("Not a bool"))
@@ -97,17 +97,17 @@ impl TryFrom<FerryValue> for bool {
     }
 }
 
-impl From<FuncVal> for FerryValue {
+impl From<FuncVal> for Value {
     fn from(value: FuncVal) -> Self {
-        FerryValue::Function(value)
+        Value::Function(value)
     }
 }
 
-impl TryFrom<FerryValue> for FuncVal {
+impl TryFrom<Value> for FuncVal {
     type Error = Error;
 
-    fn try_from(value: FerryValue) -> Result<Self, Self::Error> {
-        if let FerryValue::Function(v) = value {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        if let Value::Function(v) = value {
             Ok(v)
         } else {
             Err(anyhow!("Not a FuncVal"))
@@ -115,17 +115,17 @@ impl TryFrom<FerryValue> for FuncVal {
     }
 }
 
-impl From<u8> for FerryValue {
+impl From<u8> for Value {
     fn from(value: u8) -> Self {
-        FerryValue::Ptr(value)
+        Value::Ptr(value)
     }
 }
 
-impl TryFrom<FerryValue> for u8 {
+impl TryFrom<Value> for u8 {
     type Error = Error;
 
-    fn try_from(value: FerryValue) -> Result<Self, Self::Error> {
-        if let FerryValue::Ptr(v) = value {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        if let Value::Ptr(v) = value {
             Ok(v)
         } else {
             Err(anyhow!("Not a Ptr"))
@@ -133,17 +133,17 @@ impl TryFrom<FerryValue> for u8 {
     }
 }
 
-impl From<()> for FerryValue {
+impl From<()> for Value {
     fn from(_value: ()) -> Self {
-        FerryValue::Unit
+        Value::Unit
     }
 }
 
-impl TryFrom<FerryValue> for () {
+impl TryFrom<Value> for () {
     type Error = Error;
 
-    fn try_from(value: FerryValue) -> Result<Self, Self::Error> {
-        if FerryValue::Unit == value {
+    fn try_from(value: Value) -> Result<Self, Self::Error> {
+        if Value::Unit == value {
             Ok(())
         } else {
             Err(anyhow!("not ()"))

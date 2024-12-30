@@ -12,7 +12,7 @@ use ferry::{Ferry, PrintReq};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
-struct FerryArgs {
+struct Args {
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -24,7 +24,7 @@ enum Commands {
 }
 
 fn main() -> ExitCode {
-    let ferry_args = FerryArgs::parse();
+    let ferry_args = Args::parse();
 
     match ferry_args.command {
         Some(f) => match f {
@@ -37,7 +37,7 @@ fn main() -> ExitCode {
                 let mut program = Ferry::new(source_code.clone());
                 match program.run() {
                     Ok(r) => println!("{r}"),
-                    Err(e) => eprintln!("{:?}", e),
+                    Err(e) => eprintln!("{e:?}"),
                 }
                 // program.print_data(PrintReq::TypedAst);
                 ExitCode::SUCCESS
@@ -48,7 +48,7 @@ fn main() -> ExitCode {
             match repl() {
                 Ok(_) => ExitCode::SUCCESS,
                 Err(e) => {
-                    println!("Error: {}", e);
+                    println!("Error: {e}");
                     ExitCode::FAILURE
                 }
             }
@@ -69,18 +69,18 @@ fn repl() -> Result<(), Error> {
         print!("Fwee...> ");
         stdout().flush().expect("stdout didn't flush");
 
-        input = "".into();
+        input = String::new();
         stdin()
             .read_line(&mut input)
             .expect("Unable to read from stdin");
 
-        match repl_input_process(&input) {
-            Some(r) => match r {
+        if let Some(r) = repl_input_process(&input) {
+            match r {
                 FerryRepl::Run(code) => {
                     program.update_source(code);
                     match program.run() {
-                        Ok(r) => println!("\n{}\n", r),
-                        Err(e) => eprintln!("\n{:?}\n", e),
+                        Ok(r) => println!("\n{r}\n"),
+                        Err(e) => eprintln!("\n{e:?}\n"),
                     }
                 }
                 FerryRepl::Exit => {
@@ -93,11 +93,10 @@ fn repl() -> Result<(), Error> {
                 FerryRepl::Type => program.print_data(PrintReq::TypedAst),
                 FerryRepl::Ir => program.print_data(PrintReq::Ir),
                 FerryRepl::Help => print_help(),
-            },
-            None => {
-                println!("invalid command {input}");
-                continue;
             }
+        } else {
+            println!("invalid command {input}");
+            continue;
         }
     }
 }

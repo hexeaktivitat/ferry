@@ -18,6 +18,11 @@ thiserror = "1.0.63"
 
 [lints.clippy]
 perf = "warn"
+correctness = "warn"
+complexity = "warn"
+suspicious = "warn"
+style = "warn"
+# pedantic = "warn"
 
 [[example]]
 name = "perf"
