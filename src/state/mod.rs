@@ -1,19 +1,19 @@
 use std::collections::HashMap;
 
 use types::{FerryType, TypeCheckable, Typing};
-use value::FerryValue;
+use value::Value;
 
 pub(crate) mod types;
 pub(crate) mod value;
 
 // placeholder for program state
 #[derive(Debug, Clone)]
-pub struct FerryState {
-    variables: HashMap<String, Option<FerryValue>>,
+pub struct State {
+    variables: HashMap<String, Option<Value>>,
     labels: HashMap<String, usize>,
 }
 
-impl FerryState {
+impl State {
     pub fn new() -> Self {
         Self {
             variables: HashMap::new(),
@@ -21,21 +21,21 @@ impl FerryState {
         }
     }
 
-    pub fn add_symbol(&mut self, id: &String, value: Option<FerryValue>) {
-        if !self.variables.contains_key(id) {
-            self.variables.insert(id.clone(), value);
-        } else {
+    pub fn add_symbol(&mut self, id: &str, value: Option<Value>) {
+        if self.variables.contains_key(id) {
             self.update_symbol(id, value);
+        } else {
+            self.variables.insert(id.into(), value);
         }
     }
 
-    fn update_symbol(&mut self, id: &String, value: Option<FerryValue>) {
+    fn update_symbol(&mut self, id: &str, value: Option<Value>) {
         if self.variables.contains_key(id) {
             self.variables.get_mut(id).unwrap().clone_from(&value);
         }
     }
 
-    pub fn get_symbol_value(&self, id: &String) -> Option<FerryValue> {
+    pub fn get_symbol_value(&self, id: &str) -> Option<Value> {
         if self.variables.contains_key(id) {
             self.variables.get(id).unwrap().clone()
         } else {
@@ -48,11 +48,11 @@ impl FerryState {
     }
 
     // currently simply clones the variables instance for consumption via drain()
-    pub fn load_memory(&self) -> HashMap<String, Option<FerryValue>> {
+    pub fn load_memory(&self) -> HashMap<String, Option<Value>> {
         self.variables.clone()
     }
 
-    pub fn _get_label(&self, id: &String) -> Option<usize> {
+    pub fn _get_label(&self, id: &str) -> Option<usize> {
         if self.labels.contains_key(id) {
             Some(*self.labels.get(id).unwrap())
         } else {
@@ -61,13 +61,13 @@ impl FerryState {
     }
 }
 
-impl std::fmt::Display for FerryState {
+impl std::fmt::Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for k in self.variables.keys() {
             if let Some(v) = self.variables.get(k).unwrap() {
-                writeln!(f, "{}: {}", k, v)?;
+                writeln!(f, "{k}: {v}")?;
             } else {
-                writeln!(f, "{}: undefined", k)?;
+                writeln!(f, "{k}: undefined")?;
             }
         }
 
@@ -75,34 +75,34 @@ impl std::fmt::Display for FerryState {
     }
 }
 
-impl Typing for FerryValue {
+impl Typing for Value {
     fn get_type(&self) -> &FerryType {
         match self {
-            FerryValue::Number(_) => &FerryType::Num,
-            FerryValue::Str(_) => &FerryType::String,
-            FerryValue::Boolean(_) => &FerryType::Boolean,
-            FerryValue::Unit => &FerryType::Undefined,
-            FerryValue::List(_) => &FerryType::List,
-            FerryValue::Function(f) => &f.func_type,
-            FerryValue::Ptr(_) => &FerryType::Pointer,
+            Value::Number(_) => &FerryType::Num,
+            Value::Str(_) => &FerryType::String,
+            Value::Boolean(_) => &FerryType::Boolean,
+            Value::Unit => &FerryType::Undefined,
+            Value::List(_) => &FerryType::List,
+            Value::Function(f) => &f.func_type,
+            Value::Ptr(_) => &FerryType::Pointer,
         }
     }
 }
 
-impl TypeCheckable for FerryValue {
+impl TypeCheckable for Value {
     fn check(&self, other: &FerryType) -> bool {
         self.get_type() == other
     }
 }
 
-impl std::fmt::Display for FerryValue {
+impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            FerryValue::Number(n) => write!(f, "{}", n),
-            FerryValue::Str(s) => write!(f, "\"{s}\""),
-            FerryValue::Boolean(b) => write!(f, "{b}"),
-            FerryValue::Unit => write!(f, "[unit]"),
-            FerryValue::List(l) => {
+            Value::Number(n) => write!(f, "{}", n),
+            Value::Str(s) => write!(f, "\"{s}\""),
+            Value::Boolean(b) => write!(f, "{b}"),
+            Value::Unit => write!(f, "[unit]"),
+            Value::List(l) => {
                 let mut formatting = String::new();
                 formatting.push('[');
                 let mut items = l.iter().peekable();
@@ -115,7 +115,7 @@ impl std::fmt::Display for FerryValue {
                 formatting.push(']');
                 write!(f, "{formatting}")
             }
-            FerryValue::Function(function) => {
+            Value::Function(function) => {
                 let mut formatting = String::new();
                 formatting.push('(');
                 if let Some(func) = &function.declaration {
@@ -130,7 +130,7 @@ impl std::fmt::Display for FerryValue {
                     }
                     formatting.push(')');
                     if let Some(return_type) = &func.return_type {
-                        formatting.push_str(format!(" -> {}", return_type).as_str());
+                        formatting.push_str(format!(" -> {return_type}").as_str());
                     } else {
                         formatting.push_str("[unit]");
                     }
@@ -138,21 +138,20 @@ impl std::fmt::Display for FerryValue {
 
                 write!(f, "{formatting}")
             }
-            FerryValue::Ptr(p) => write!(f, "address: {p}"),
+            Value::Ptr(p) => write!(f, "address: {p}"),
         }
     }
 }
 
-impl FerryValue {
+impl Value {
     pub fn truthiness(&self) -> bool {
         match self {
-            FerryValue::Number(n) => n > &0,
-            FerryValue::Str(s) => !s.is_empty(),
-            FerryValue::Boolean(b) => *b,
-            FerryValue::Unit => false,
-            FerryValue::List(l) => !l.is_empty(),
-            FerryValue::Function(_) => false,
-            FerryValue::Ptr(p) => !*p == 0xff,
+            Value::Number(n) => n > &0,
+            Value::Str(s) => !s.is_empty(),
+            Value::Boolean(b) => *b,
+            Value::List(l) => !l.is_empty(),
+            Value::Function(_) | Value::Unit => false,
+            Value::Ptr(p) => !*p == 0xff,
         }
     }
 }

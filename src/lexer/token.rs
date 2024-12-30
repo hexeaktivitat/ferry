@@ -4,12 +4,12 @@ use miette::SourceSpan;
 ///
 /// Data for a lexed token.
 #[derive(Debug, Clone, PartialEq)]
-pub struct FerryToken {
+pub struct Token {
     token_type: TokenType,
     span: SourceSpan,
 }
 
-impl FerryToken {
+impl Token {
     pub fn new(token_type: TokenType, span: SourceSpan) -> Self {
         Self { token_type, span }
     }
@@ -100,7 +100,7 @@ pub enum Kwd {
     As,
 }
 
-impl std::fmt::Display for FerryToken {
+impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.token_type)
     }

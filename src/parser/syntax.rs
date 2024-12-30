@@ -1,6 +1,6 @@
 use miette::SourceSpan;
 
-use crate::lexer::token::{FerryToken, Op, TokenType as TT};
+use crate::lexer::token::{Op, Token, TokenType as TT};
 use crate::state::types::{FerryType, FerryTyping};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,29 +24,29 @@ pub enum Expr {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Lit {
     Undefined {
-        token: FerryToken,
+        token: Token,
         expr_type: FerryTyping,
     },
     Number {
-        token: FerryToken,
+        token: Token,
         value: i64,
         expr_type: FerryTyping,
         span: SourceSpan,
     },
     Str {
-        token: FerryToken,
+        token: Token,
         value: String,
         expr_type: FerryTyping,
         span: SourceSpan,
     },
     Bool {
-        token: FerryToken,
+        token: Token,
         value: bool,
         expr_type: FerryTyping,
         span: SourceSpan,
     },
     List {
-        token: FerryToken,
+        token: Token,
         contents: Vec<Expr>,
         expr_type: FerryTyping,
         span: SourceSpan,
@@ -56,21 +56,21 @@ pub enum Lit {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binary {
     pub lhs: Box<Expr>,
-    pub operator: FerryToken,
+    pub operator: Token,
     pub rhs: Box<Expr>,
     pub expr_type: FerryTyping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Unary {
-    pub operator: FerryToken,
+    pub operator: Token,
     pub rhs: Box<Expr>,
     pub expr_type: FerryTyping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Assign {
-    pub token: FerryToken,
+    pub token: Token,
     pub var: Box<Expr>,
     pub name: String,
     pub value: Option<Box<Expr>>,
@@ -79,7 +79,7 @@ pub struct Assign {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Variable {
-    pub token: FerryToken,
+    pub token: Token,
     pub name: String,
     pub assigned_type: Option<String>,
     pub expr_type: FerryTyping,
@@ -87,7 +87,7 @@ pub struct Variable {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct If {
-    pub token: FerryToken,
+    pub token: Token,
     pub condition: Box<Expr>,
     pub then_expr: Box<Expr>,
     pub else_expr: Option<Box<Expr>>,
@@ -96,14 +96,14 @@ pub struct If {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Group {
-    pub token: FerryToken,
+    pub token: Token,
     pub contents: Box<Expr>,
     pub expr_type: FerryTyping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binding {
-    pub token: FerryToken,
+    pub token: Token,
     pub name: String,
     pub assigned_type: Option<FerryType>,
     pub value: Option<Box<Expr>>,
@@ -112,7 +112,7 @@ pub struct Binding {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Loop {
-    pub token: FerryToken,
+    pub token: Token,
     pub condition: Option<Box<Expr>>,
     pub contents: Box<Expr>,
     pub expr_type: FerryTyping,
@@ -120,7 +120,7 @@ pub struct Loop {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct For {
-    pub token: FerryToken,
+    pub token: Token,
     pub variable: Option<Box<Expr>>,
     pub iterator: Box<Expr>,
     pub iterator_type: Option<FerryType>,
@@ -130,7 +130,7 @@ pub struct For {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Function {
-    pub token: FerryToken,
+    pub token: Token,
     pub name: String,
     pub args: Option<Vec<Expr>>,
     pub contents: Box<Expr>,
@@ -142,7 +142,7 @@ pub struct Function {
 pub struct Call {
     pub invoker: Box<Expr>,
     pub name: String,
-    pub token: FerryToken,
+    pub token: Token,
     pub args: Vec<Expr>,
     pub expr_type: FerryTyping,
 }
@@ -150,14 +150,14 @@ pub struct Call {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Module {
     pub name: String,
-    pub token: FerryToken,
+    pub token: Token,
     pub functions: Vec<Function>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Import {
     pub name: String,
-    pub token: FerryToken,
+    pub token: Token,
     pub functions: Vec<Function>,
 }
 
@@ -198,32 +198,32 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &Expr, state: 
 }
 
 impl Expr {
-    pub fn get_token(&self) -> &FerryToken {
+    pub fn get_token(&self) -> &Token {
         match self {
             Expr::Literal(l) => match l {
                 Lit::Undefined {
                     token,
                     expr_type: _,
-                } => token,
-                Lit::Number {
+                }
+                | Lit::Number {
                     token,
                     value: _,
                     expr_type: _,
                     span: _,
-                } => token,
-                Lit::Str {
+                }
+                | Lit::Str {
                     token,
                     value: _,
                     expr_type: _,
                     span: _,
-                } => token,
-                Lit::Bool {
+                }
+                | Lit::Bool {
                     token,
                     value: _,
                     expr_type: _,
                     span: _,
-                } => token,
-                Lit::List {
+                }
+                | Lit::List {
                     token,
                     contents: _,
                     expr_type: _,

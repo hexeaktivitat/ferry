@@ -4,8 +4,8 @@ use miette::{Diagnostic, Result};
 use thiserror::Error;
 
 use crate::{
-    ir::{FerryAddr, FerryOpcode},
-    state::{value::FerryValue, FerryState},
+    ir::{FerryAddr, Opcode},
+    state::{value::Value, State},
 };
 
 #[derive(Diagnostic, Debug, Error)]
@@ -20,17 +20,17 @@ pub enum FerryVmError {
 type FerryResult<T> = Result<T, FerryVmError>;
 
 #[derive(Debug)]
-struct FerryFrame {
-    pub stack: Vec<FerryValue>,
+struct Frame {
+    pub stack: Vec<Value>,
     pub pc: usize,
-    pub function: Rc<RefCell<Vec<FerryOpcode>>>,
-    pub locals: HashMap<String, FerryValue>,
+    pub function: Rc<RefCell<Vec<Opcode>>>,
+    pub locals: HashMap<String, Value>,
 }
 
-pub struct FerryVm {
+pub struct Vm {
     // instructions: Vec<FerryOpcode>,
-    frames: Vec<FerryFrame>,
-    heap: HashMap<FerryAddr, FerryValue>,
+    frames: Vec<Frame>,
+    heap: HashMap<FerryAddr, Value>,
     // heap_ptr: u8,
     // constants: Vec<i64>,
     // locals: HashMap<String, FerryValue>,
@@ -40,7 +40,7 @@ pub struct FerryVm {
     ret: Vec<usize>,
 }
 
-impl FerryVm {
+impl Vm {
     pub fn new() -> Self {
         Self {
             // instructions,
@@ -63,11 +63,11 @@ impl FerryVm {
 
     pub fn interpret(
         &mut self,
-        instructions: Vec<FerryOpcode>,
-        state: &mut FerryState,
-    ) -> FerryResult<FerryValue> {
+        instructions: Vec<Opcode>,
+        state: &mut State,
+    ) -> FerryResult<Value> {
         let program = Rc::new(RefCell::new(instructions));
-        let mut frame = FerryFrame {
+        let mut frame = Frame {
             stack: vec![],
             pc: 0,
             function: program,
@@ -92,21 +92,21 @@ impl FerryVm {
         result
     }
 
-    fn run(&mut self, state: &mut FerryState) -> FerryResult<FerryValue> {
+    fn run(&mut self, state: &mut State) -> FerryResult<Value> {
         loop {
             let instruction = self.advance(Rc::clone(&self.frames[self.fp].function));
 
             match instruction {
-                FerryOpcode::Nop => println!("nop"),
-                FerryOpcode::Halt => {
-                    return Ok(FerryValue::Unit);
+                Opcode::Nop => println!("nop"),
+                Opcode::Halt => {
+                    return Ok(Value::Unit);
                 }
-                FerryOpcode::Return => {
+                Opcode::Return => {
                     let mut result = match self.frames[self.fp].stack.pop() {
                         Some(v) => v,
-                        None => FerryValue::Unit,
+                        None => Value::Unit,
                     };
-                    if let FerryValue::Ptr(ptr) = result {
+                    if let Value::Ptr(ptr) = result {
                         result = self.heap.get(&ptr).unwrap().clone();
                     }
                     if self.fp == 0 {
@@ -121,18 +121,18 @@ impl FerryVm {
                     }
                 }
                 // FerryOpcode::Load => self.frames[self.fp].pop(),
-                FerryOpcode::LoadI(c) => self.frames[self.fp].stack.push(c.into()),
-                FerryOpcode::Alloc(_ptr, a) => {
+                Opcode::LoadI(c) => self.frames[self.fp].stack.push(c.into()),
+                Opcode::Alloc(_ptr, a) => {
                     // self.heap.insert(ptr, a);
                     self.frames[self.fp].stack.push(a);
                 }
-                FerryOpcode::Set(id) => {
+                Opcode::Set(id) => {
                     let value = self.frames[self.fp].stack.pop().unwrap();
                     self.frames[self.fp].locals.insert(id, value);
                 }
-                FerryOpcode::Get(id) => {
+                Opcode::Get(id) => {
                     let value = self.frames[self.fp].locals.get(&id).unwrap().to_owned();
-                    if let FerryValue::Ptr(ptr) = value {
+                    if let Value::Ptr(ptr) = value {
                         self.frames[self.fp]
                             .stack
                             .push(self.heap.get(&ptr).unwrap().clone());
@@ -140,10 +140,10 @@ impl FerryVm {
                         self.frames[self.fp].stack.push(value);
                     }
                 }
-                FerryOpcode::Pop => {
+                Opcode::Pop => {
                     self.frames[self.fp].stack.pop().unwrap();
                 }
-                FerryOpcode::Add => {
+                Opcode::Add => {
                     if self.frames[self.fp].stack.len() >= 2 {
                         let right: i64 = self.frames[self.fp]
                             .stack
@@ -166,7 +166,7 @@ impl FerryVm {
                         });
                     }
                 }
-                FerryOpcode::Sub => {
+                Opcode::Sub => {
                     if self.frames[self.fp].stack.len() >= 2 {
                         let right: i64 = self.frames[self.fp]
                             .stack
@@ -188,7 +188,7 @@ impl FerryVm {
                         });
                     }
                 }
-                FerryOpcode::Mul => {
+                Opcode::Mul => {
                     if self.frames[self.fp].stack.len() >= 2 {
                         let right: i64 = self.frames[self.fp]
                             .stack
@@ -210,7 +210,7 @@ impl FerryVm {
                         });
                     }
                 }
-                FerryOpcode::Div => {
+                Opcode::Div => {
                     if self.frames[self.fp].stack.len() >= 2 {
                         let right: i64 = self.frames[self.fp]
                             .stack
@@ -237,16 +237,16 @@ impl FerryVm {
                         });
                     }
                 }
-                FerryOpcode::And => todo!(),
-                FerryOpcode::Or => todo!(),
-                FerryOpcode::Not => {
-                    if let FerryValue::Boolean(v) = self.frames[self.fp].stack.pop().unwrap() {
-                        self.frames[self.fp].stack.push(FerryValue::Boolean(!v));
+                Opcode::And => todo!(),
+                Opcode::Or => todo!(),
+                Opcode::Not => {
+                    if let Value::Boolean(v) = self.frames[self.fp].stack.pop().unwrap() {
+                        self.frames[self.fp].stack.push(Value::Boolean(!v));
                     } else {
-                        self.frames[self.fp].stack.push(FerryValue::Boolean(false));
+                        self.frames[self.fp].stack.push(Value::Boolean(false));
                     }
                 }
-                FerryOpcode::Equal => {
+                Opcode::Equal => {
                     let right: i64 = self.frames[self.fp]
                         .stack
                         .pop()
@@ -262,7 +262,7 @@ impl FerryVm {
                     let res = left == right;
                     self.frames[self.fp].stack.push(res.into());
                 }
-                FerryOpcode::Greater => {
+                Opcode::Greater => {
                     let right: i64 = self.frames[self.fp]
                         .stack
                         .pop()
@@ -278,7 +278,7 @@ impl FerryVm {
                     let res = left > right;
                     self.frames[self.fp].stack.push(res.into());
                 }
-                FerryOpcode::Lesser => {
+                Opcode::Lesser => {
                     let right: i64 = self.frames[self.fp]
                         .stack
                         .pop()
@@ -294,53 +294,53 @@ impl FerryVm {
                     let res = left < right;
                     self.frames[self.fp].stack.push(res.into());
                 }
-                FerryOpcode::GetI => {
+                Opcode::GetI => {
                     let right: i64 = self.frames[self.fp]
                         .stack
                         .pop()
                         .unwrap()
                         .try_into()
                         .unwrap();
-                    let left: Vec<FerryValue> = self.frames[self.fp]
+                    let left: Vec<Value> = self.frames[self.fp]
                         .stack
                         .pop()
                         .unwrap()
                         .try_into()
                         .unwrap();
-                    let res: FerryValue = left[right as usize].clone();
+                    let res: Value = left[right as usize].clone();
                     self.frames[self.fp].stack.push(res);
                 }
-                FerryOpcode::Cons => {
-                    let right: FerryValue = self.frames[self.fp].stack.pop().unwrap();
-                    let mut left: Vec<FerryValue> = self.frames[self.fp]
+                Opcode::Cons => {
+                    let right: Value = self.frames[self.fp].stack.pop().unwrap();
+                    let mut left: Vec<Value> = self.frames[self.fp]
                         .stack
                         .pop()
                         .unwrap()
                         .try_into()
                         .unwrap();
-                    let res: Vec<FerryValue>;
-                    if let FerryValue::List(l) = right {
+                    let res: Vec<Value>;
+                    if let Value::List(l) = right {
                         res = [left, l].concat();
                     } else {
                         left.push(right);
                         res = left;
                     }
-                    self.frames[self.fp].stack.push(FerryValue::List(res));
+                    self.frames[self.fp].stack.push(Value::List(res));
                 }
-                FerryOpcode::Jump(offset) => {
+                Opcode::Jump(offset) => {
                     self.frames[self.fp].pc += offset;
                 }
-                FerryOpcode::JumpCond(offset) => {
+                Opcode::JumpCond(offset) => {
                     let cond = self.frames[self.fp].stack.pop().unwrap();
                     if !cond.truthiness() {
                         self.frames[self.fp].pc += offset;
                     }
                 }
-                FerryOpcode::JumpBack(offset) => {
+                Opcode::JumpBack(offset) => {
                     self.frames[self.fp].pc -= offset;
                 }
-                FerryOpcode::Iter => {
-                    let iter: Vec<FerryValue> = self.frames[self.fp]
+                Opcode::Iter => {
+                    let iter: Vec<Value> = self.frames[self.fp]
                         .stack
                         .pop()
                         .unwrap()
@@ -352,27 +352,27 @@ impl FerryVm {
                     let tail_len = tail.len() as i64;
                     self.frames[self.fp]
                         .stack
-                        .push(FerryValue::List(tail.into()));
+                        .push(Value::List(tail.into()));
                     // push len onto stack
                     self.frames[self.fp]
                         .stack
-                        .push(FerryValue::Number(tail_len));
+                        .push(Value::Number(tail_len));
                     // push value of variable assignment
                     self.frames[self.fp].stack.push(head.clone());
                 }
-                FerryOpcode::Label(_label) => {
+                Opcode::Label(_label) => {
                     // this opcode may self destruct (deprecated?)
                     println!("lol");
                 }
-                FerryOpcode::Call(label) => {
+                Opcode::Call(label) => {
                     self.ret.push(self.frames[self.fp].pc);
-                    if let Some(FerryValue::Function(f)) = state.get_symbol_value(&label) {
+                    if let Some(Value::Function(f)) = state.get_symbol_value(&label) {
                         let stack_len = self.frames[self.fp].stack.len();
                         let mut frame_stack = vec![];
                         for _ in (stack_len - f.arity)..stack_len {
                             frame_stack.push(self.frames[self.fp].stack.pop().unwrap());
                         }
-                        let frame = FerryFrame {
+                        let frame = Frame {
                             stack: frame_stack,
                             pc: 0,
                             function: Rc::new(RefCell::new(f.instructions)),
@@ -387,14 +387,14 @@ impl FerryVm {
                         });
                     }
                 }
-                FerryOpcode::JumpRet => {
+                Opcode::JumpRet => {
                     self.frames[self.fp].pc = self.ret.pop().unwrap();
                 }
             }
         }
     }
 
-    fn advance(&mut self, instructions: Rc<RefCell<Vec<FerryOpcode>>>) -> FerryOpcode {
+    fn advance(&mut self, instructions: Rc<RefCell<Vec<Opcode>>>) -> Opcode {
         self.frames[self.fp].pc += 1;
         instructions.borrow_mut()[self.frames[self.fp].pc - 1].to_owned()
     }
@@ -406,36 +406,36 @@ mod tests {
 
     #[test]
     fn check_run() {
-        let mut vm = FerryVm::new();
-        let instructions = vec![FerryOpcode::Halt];
-        assert!(vm.interpret(instructions, &mut FerryState::new()).unwrap() == FerryValue::Unit);
+        let mut vm = Vm::new();
+        let instructions = vec![Opcode::Halt];
+        assert!(vm.interpret(instructions, &mut State::new()).unwrap() == Value::Unit);
     }
 
     #[test]
     #[ignore]
     fn check_load() {
-        let mut vm = FerryVm::new();
+        let mut vm = Vm::new();
         let instructions = vec![
-            FerryOpcode::LoadI(1),
-            FerryOpcode::LoadI(2),
-            FerryOpcode::Halt,
+            Opcode::LoadI(1),
+            Opcode::LoadI(2),
+            Opcode::Halt,
         ];
-        vm.interpret(instructions, &mut FerryState::new()).unwrap();
-        assert!(vm.frames[vm.fp].stack == vec![FerryValue::Number(1), FerryValue::Number(2)]);
+        vm.interpret(instructions, &mut State::new()).unwrap();
+        assert!(vm.frames[vm.fp].stack == vec![Value::Number(1), Value::Number(2)]);
     }
 
     #[test]
     fn check_add() {
-        let mut vm = FerryVm::new();
+        let mut vm = Vm::new();
         let instructions = vec![
-            FerryOpcode::LoadI(1),
-            FerryOpcode::LoadI(2),
-            FerryOpcode::Add,
-            FerryOpcode::Return,
-            FerryOpcode::Halt,
+            Opcode::LoadI(1),
+            Opcode::LoadI(2),
+            Opcode::Add,
+            Opcode::Return,
+            Opcode::Halt,
         ];
         assert!(
-            vm.interpret(instructions, &mut FerryState::new()).unwrap() == FerryValue::Number(3)
+            vm.interpret(instructions, &mut State::new()).unwrap() == Value::Number(3)
         );
     }
 }

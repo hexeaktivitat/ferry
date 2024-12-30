@@ -60,24 +60,24 @@ impl Typing for Expr {
                     expr_type,
                     span: _,
                     token: _,
-                } => expr_type.get_type(),
-                Lit::Str {
+                }
+                | Lit::Str {
                     value: _,
                     expr_type,
                     span: _,
                     token: _,
-                } => expr_type.get_type(),
-                Lit::Bool {
+                }
+                | Lit::Bool {
                     value: _,
                     expr_type,
                     span: _,
                     token: _,
-                } => expr_type.get_type(),
-                Lit::Undefined {
+                }
+                | Lit::Undefined {
                     expr_type,
                     token: _,
-                } => expr_type.get_type(),
-                Lit::List {
+                }
+                | Lit::List {
                     token: _,
                     contents: _,
                     expr_type,
@@ -101,8 +101,7 @@ impl Typing for Expr {
                 }
             }
             Expr::Call(c) => c.expr_type.get_type(),
-            Expr::Module(_) => &FerryType::Untyped,
-            Expr::Import(_) => &FerryType::Untyped,
+            Expr::Module(_) | Expr::Import(_) => &FerryType::Untyped,
         }
     }
 }
