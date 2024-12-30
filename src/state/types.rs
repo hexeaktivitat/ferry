@@ -36,10 +36,6 @@ pub trait Typing {
     fn check(&self, other: &FerryType) -> bool;
 }
 
-// pub trait TypeCheckable {
-//     fn check(&self, other: &FerryType) -> bool;
-// }
-
 impl Typing for FerryTyping {
     fn get_type(&self) -> &FerryType {
         match self {
