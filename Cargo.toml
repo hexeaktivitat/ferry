@@ -24,5 +24,11 @@ suspicious = "warn"
 style = "warn"
 # pedantic = "warn"
 
+[profile.dev]
+lto = "thin"
+
+[profile.release]
+lto = "fat"
+
 [[example]]
 name = "perf"
