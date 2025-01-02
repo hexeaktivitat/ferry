@@ -35,10 +35,8 @@ fn main() -> ExitCode {
             Commands::Run { file } => {
                 let source_code = read_to_string(file).expect("couldn't read from file");
                 let mut program = Ferry::new(source_code.clone());
-                match program.run() {
-                    Ok(r) => println!("{r}"),
-                    Err(e) => eprintln!("{e:?}"),
-                }
+                let res = program.run().map_err(|e| eprintln!("{e:?}"));
+                println!("{res:?}");
                 // program.print_data(PrintReq::TypedAst);
                 ExitCode::SUCCESS
             }
