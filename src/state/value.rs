@@ -14,7 +14,7 @@ pub struct FuncVal {
     pub arity: usize,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum Value {
     Number(i64),
     Str(String),
@@ -22,6 +22,7 @@ pub enum Value {
     List(Vec<Value>),
     Function(FuncVal),
     Ptr(u8),
+    #[default]
     Unit,
 }
 
