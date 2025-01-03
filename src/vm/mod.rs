@@ -128,9 +128,12 @@ impl Vm {
                         return Ok(result);
                     } else {
                         self.frames[self.fp].stack.clear();
+                        self.frames[self.fp].function.borrow_mut().clear();
+                        self.frames[self.fp].locals.clear();
+                        self.frames[self.fp].pc = 0;
                         self.fp -= 1;
 
-                        self.frames.pop();
+                        // self.frames.pop();
                         self.frames[self.fp].stack.push(result);
                     }
                 }
@@ -372,10 +375,14 @@ impl Vm {
                             frame_stack
                                 .push(self.frames[self.fp].stack.pop().unwrap_or(Value::Unit));
                         }
-                        let frame = Frame::new_from_stack(f.instructions, frame_stack);
-
-                        self.frames.push(frame);
                         self.fp += 1;
+                        if self.fp >= self.frames.len() {
+                            let frame = Frame::new_from_stack(f.instructions, frame_stack);
+                            self.frames.push(frame);
+                        } else {
+                            *self.frames[self.fp].function.borrow_mut() = f.instructions;
+                            self.frames[self.fp].stack = frame_stack;
+                        };
                     } else {
                         return Err(FerryVmError::RuntimeError {
                             advice: "Function call did not succeed".into(),
