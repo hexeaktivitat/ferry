@@ -89,11 +89,11 @@ impl Ferry {
         self.typed_ast.clone_from(&typed_ast);
 
         let mut ir = Ir::new();
-        let Ok(ferry_ir) = ir.lower(&typed_ast, &mut self.state);
+        let ferry_ir = ir.lower(&typed_ast, &mut self.state)?;
         self.ferry_ir.clone_from(&ferry_ir);
 
         // self.vm.set_program(self.ferry_ir.clone());
-        let result = self.vm.interpret(ferry_ir, &mut self.state).unwrap();
+        let result = self.vm.interpret(ferry_ir, &mut self.state)?;
 
         self.vm.clear();
 
