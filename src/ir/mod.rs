@@ -48,22 +48,23 @@ impl Ir {
 
         for expr in typed_ast.iter() {
             if let Expr::Function(_) = expr {
-                match self.assemble_opcode(expr, state) {
-                    Ok(mut instructions) => functions.append(&mut instructions),
-                    Err(e) => println!("{e}"),
-                }
+                self.assemble_opcode(expr, state).map_or_else(
+                    |err| eprintln!("{err:?}"),
+                    |mut instructions| functions.append(&mut instructions),
+                );
             } else if let Expr::Module(module) = expr {
                 for function in module.functions.clone() {
-                    match self.assemble_opcode(&Expr::Function(function), state) {
-                        Ok(mut instructions) => functions.append(&mut instructions),
-                        Err(e) => println!("{e}"),
-                    }
+                    self.assemble_opcode(&Expr::Function(function), state)
+                        .map_or_else(
+                            |err| eprintln!("{err:?}"),
+                            |mut instructions| functions.append(&mut instructions),
+                        );
                 }
             } else {
-                match self.assemble_opcode(expr, state) {
-                    Ok(mut instructions) => program.append(&mut instructions),
-                    Err(e) => println!("{e}"),
-                }
+                self.assemble_opcode(expr, state).map_or_else(
+                    |err| eprintln!("{err:?}"),
+                    |mut instructions| program.append(&mut instructions),
+                );
             }
         }
 
@@ -285,6 +286,7 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
                 let mut instructions = vec![];
 
                 let mut right = self.assemble_opcode(&unary.rhs, state)?;
+
                 instructions.append(&mut right);
                 instructions.append(&mut vec![Opcode::LoadI(-1), Opcode::Mul]);
 
@@ -324,6 +326,7 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
 
     fn visit_if_expr(&mut self, if_expr: &If, state: &mut State) -> FerryResult<Vec<Opcode>> {
         let mut instructions = vec![];
+
         let mut conditional = self.assemble_opcode(&if_expr.condition, state)?;
         let mut then_expr = self.assemble_opcode(&if_expr.then_expr, state)?;
         let mut else_expr = if let Some(else_expr) = if_expr.else_expr.as_ref() {
@@ -334,7 +337,9 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
 
         let else_offset = else_expr.len();
         then_expr.push(Opcode::Jump(else_offset));
+
         let then_offset = then_expr.len();
+
         instructions.append(&mut conditional);
         instructions.push(Opcode::JumpCond(then_offset));
         instructions.append(&mut then_expr);
@@ -353,6 +358,7 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
 
     fn visit_binding(&mut self, binding: &Binding, state: &mut State) -> FerryResult<Vec<Opcode>> {
         let mut instructions = vec![];
+
         let mut value = if let Some(v) = &binding.value {
             self.assemble_opcode(v, state)?
         } else {
@@ -373,12 +379,12 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
         } else {
             vec![]
         };
+
         let mut contents = self.assemble_opcode(&loop_expr.contents, state)?;
+
         instructions.append(&mut cond_inst);
         instructions.push(Opcode::JumpCond(contents.len() + 1));
-        // instructions.push(FerryOpcode::Pop);
         instructions.append(&mut contents);
-        // instructions.push(FerryOpcode::Pop);
         instructions.push(Opcode::JumpBack(instructions.len() + 1));
 
         Ok(instructions)
@@ -397,12 +403,8 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
             instructions.push(Opcode::Iter);
             instructions.push(Opcode::Set(name.clone()));
             instructions.append(&mut contents_inst);
-            // instructions.push(FerryOpcode::Pop);
-
             instructions.push(Opcode::JumpCond(1));
-            // instructions.push(FerryOpcode::Pop);
             instructions.push(Opcode::JumpBack(contents_len + 4));
-            // instructions.push(FerryOpcode::Pop);
         }
 
         Ok(instructions)
@@ -419,12 +421,14 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
 
         let mut args_inst = if let Some(args) = function.args.as_ref() {
             let mut ret = vec![];
+
             for arg in args {
                 if let Expr::Binding(binding) = arg {
                     ret.push(Opcode::Set(binding.name.clone()));
                     // ret.push(FerryOpcode::Get(binding.name.clone()));
                 }
             }
+
             arity = ret.len();
             ret
         } else {
@@ -432,7 +436,6 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
         };
         let mut function_inst = self.assemble_opcode(&function.contents, state)?;
 
-        // instructions.push(FerryOpcode::Label(function.name.clone()));
         instructions.append(&mut args_inst);
         instructions.append(&mut function_inst);
         instructions.push(Opcode::Return);
