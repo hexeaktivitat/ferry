@@ -116,7 +116,7 @@ impl Vm {
                     return Ok(Value::Unit);
                 }
                 Opcode::Return => {
-                    let mut result = self.frames[self.fp].stack.pop().unwrap_or(Value::Unit);
+                    let mut result = self.frames[self.fp].stack.pop().unwrap_or_default();
                     if let Value::Ptr(ptr) = result {
                         result = self
                             .heap
@@ -144,7 +144,7 @@ impl Vm {
                     self.frames[self.fp].stack.push(a);
                 }
                 Opcode::Set(id) => {
-                    let value = self.frames[self.fp].stack.pop().unwrap_or(Value::Unit);
+                    let value = self.frames[self.fp].stack.pop().unwrap_or_default();
                     self.frames[self.fp].locals.insert(id, value);
                 }
                 Opcode::Get(id) => {
@@ -163,20 +163,13 @@ impl Vm {
                     }
                 }
                 Opcode::Pop => {
-                    self.frames[self.fp].stack.pop().unwrap_or(Value::Unit);
+                    self.frames[self.fp].stack.pop().unwrap_or_default();
                 }
                 Opcode::Add => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap_or(Value::Unit)
-                            .into();
-                        let left: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap_or(Value::Unit)
-                            .into();
+                        let right: i64 =
+                            self.frames[self.fp].stack.pop().unwrap_or_default().into();
+                        let left: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
                         let res: i64 = left + right;
 
                         self.frames[self.fp].stack.push(res.into());
@@ -188,16 +181,9 @@ impl Vm {
                 }
                 Opcode::Sub => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap_or(Value::Unit)
-                            .into();
-                        let left: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap_or(Value::Unit)
-                            .into();
+                        let right: i64 =
+                            self.frames[self.fp].stack.pop().unwrap_or_default().into();
+                        let left: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
                         let res: i64 = left - right;
                         self.frames[self.fp].stack.push(res.into());
                     } else {
@@ -208,16 +194,9 @@ impl Vm {
                 }
                 Opcode::Mul => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap_or(Value::Unit)
-                            .into();
-                        let left: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap_or(Value::Unit)
-                            .into();
+                        let right: i64 =
+                            self.frames[self.fp].stack.pop().unwrap_or_default().into();
+                        let left: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
                         let res: i64 = left * right;
                         self.frames[self.fp].stack.push(res.into());
                     } else {
@@ -228,16 +207,9 @@ impl Vm {
                 }
                 Opcode::Div => {
                     if self.frames[self.fp].stack.len() >= 2 {
-                        let right: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap_or(Value::Unit)
-                            .into();
-                        let left: i64 = self.frames[self.fp]
-                            .stack
-                            .pop()
-                            .unwrap_or(Value::Unit)
-                            .into();
+                        let right: i64 =
+                            self.frames[self.fp].stack.pop().unwrap_or_default().into();
+                        let left: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
                         if right == 0 {
                             return Err(FerryVmError::RuntimeError {
                                 advice: "DIVIDE BY ZERO".into(),
@@ -254,8 +226,7 @@ impl Vm {
                 Opcode::And => todo!(),
                 Opcode::Or => todo!(),
                 Opcode::Not => {
-                    if let Value::Boolean(v) =
-                        self.frames[self.fp].stack.pop().unwrap_or(Value::Unit)
+                    if let Value::Boolean(v) = self.frames[self.fp].stack.pop().unwrap_or_default()
                     {
                         self.frames[self.fp].stack.push(Value::Boolean(!v));
                     } else {
@@ -263,68 +234,34 @@ impl Vm {
                     }
                 }
                 Opcode::Equal => {
-                    let right: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap_or(Value::Unit)
-                        .into();
-                    let left: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap_or(Value::Unit)
-                        .into();
+                    let right: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
+                    let left: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
                     let res = left == right;
                     self.frames[self.fp].stack.push(res.into());
                 }
                 Opcode::Greater => {
-                    let right: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap_or(Value::Unit)
-                        .into();
-                    let left: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap_or(Value::Unit)
-                        .into();
+                    let right: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
+                    let left: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
                     let res = left > right;
                     self.frames[self.fp].stack.push(res.into());
                 }
                 Opcode::Lesser => {
-                    let right: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap_or(Value::Unit)
-                        .into();
-                    let left: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap_or(Value::Unit)
-                        .into();
+                    let right: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
+                    let left: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
                     let res = left < right;
                     self.frames[self.fp].stack.push(res.into());
                 }
                 Opcode::GetI => {
-                    let right: i64 = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap_or(Value::Unit)
-                        .into();
-                    let left: Vec<Value> = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap_or(Value::Unit)
-                        .into();
+                    let right: i64 = self.frames[self.fp].stack.pop().unwrap_or_default().into();
+                    let left: Vec<Value> =
+                        self.frames[self.fp].stack.pop().unwrap_or_default().into();
                     let res: Value = left[right as usize].clone();
                     self.frames[self.fp].stack.push(res);
                 }
                 Opcode::Cons => {
-                    let right: Value = self.frames[self.fp].stack.pop().unwrap_or(Value::Unit);
-                    let mut left: Vec<Value> = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap_or(Value::Unit)
-                        .into();
+                    let right: Value = self.frames[self.fp].stack.pop().unwrap_or_default();
+                    let mut left: Vec<Value> =
+                        self.frames[self.fp].stack.pop().unwrap_or_default().into();
                     let res: Vec<Value>;
                     if let Value::List(l) = right {
                         res = [left, l].concat();
@@ -338,7 +275,7 @@ impl Vm {
                     self.frames[self.fp].pc += offset;
                 }
                 Opcode::JumpCond(offset) => {
-                    let cond = self.frames[self.fp].stack.pop().unwrap_or(Value::Unit);
+                    let cond = self.frames[self.fp].stack.pop().unwrap_or_default();
                     if !cond.truthiness() {
                         self.frames[self.fp].pc += offset;
                     }
@@ -347,11 +284,8 @@ impl Vm {
                     self.frames[self.fp].pc -= offset;
                 }
                 Opcode::Iter => {
-                    let iter: Vec<Value> = self.frames[self.fp]
-                        .stack
-                        .pop()
-                        .unwrap_or(Value::Unit)
-                        .into();
+                    let iter: Vec<Value> =
+                        self.frames[self.fp].stack.pop().unwrap_or_default().into();
 
                     let (head, tail) = iter.split_first().unwrap();
 
@@ -372,8 +306,7 @@ impl Vm {
                         let stack_len = self.frames[self.fp].stack.len();
                         let mut frame_stack = vec![];
                         for _ in (stack_len - f.arity)..stack_len {
-                            frame_stack
-                                .push(self.frames[self.fp].stack.pop().unwrap_or(Value::Unit));
+                            frame_stack.push(self.frames[self.fp].stack.pop().unwrap_or_default());
                         }
                         self.fp += 1;
                         if self.fp >= self.frames.len() {
