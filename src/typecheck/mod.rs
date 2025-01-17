@@ -94,10 +94,8 @@ impl Typechecker {
         let mut errors = Vec::new();
 
         for code in syntax {
-            match self.check_types(code, state) {
-                Ok(r) => result.push(r),
-                Err(e) => errors.push(e),
-            }
+            self.check_types(code, state)
+                .map_or_else(|err| errors.push(err), |res| result.push(res));
         }
 
         if errors.is_empty() {
@@ -325,11 +323,14 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
     fn visit_binary(&mut self, binary: &Binary, state: &mut State) -> FerryResult<Expr> {
         match binary.operator.get_token_type() {
             TokenType::Operator(o) => match o {
+                // mathematical operations
                 Op::Add | Op::Subtract | Op::Multiply | Op::Divide | Op::Equals => {
                     let left = self.infer(&binary.lhs, state, &FerryType::Num)?;
                     let right = self.infer(&binary.rhs, state, &FerryType::Num)?;
+
                     if left.check(right.get_type()) {
                         let expr_type = FerryTyping::infer(left.get_type());
+
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
                             operator: binary.operator.clone(),
@@ -340,6 +341,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                         || (left.check(&FerryType::Num) && right.check(&FerryType::Untyped))
                     {
                         let expr_type = FerryTyping::infer(right.get_type());
+
                         // need a setter to set type to left without needing to fuss with its internals
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
@@ -356,6 +358,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                         })
                     }
                 }
+
                 Op::LessThan
                 | Op::GreaterThan
                 | Op::Equality
@@ -363,6 +366,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 | Op::GreaterEqual => {
                     let left = self.infer(&binary.lhs, state, &FerryType::Num)?;
                     let right = self.infer(&binary.rhs, state, &FerryType::Num)?;
+
                     if left.check(right.get_type()) {
                         Ok(Expr::Binary(Binary {
                             lhs: Box::new(left.clone()),
@@ -379,9 +383,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                         })
                     }
                 }
+
                 Op::GetI => {
                     let left = self.infer(&binary.lhs, state, &FerryType::List)?;
                     let right = self.infer(&binary.rhs, state, &FerryType::Num)?;
+
                     if left.check(&FerryType::List) {
                         if right.check(&FerryType::Num) {
                             Ok(Expr::Binary(Binary {
@@ -407,9 +413,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                         })
                     }
                 }
+
                 Op::Cons => {
                     let left = self.infer(&binary.lhs, state, &FerryType::List)?;
                     let right = self.infer(&binary.rhs, state, &FerryType::List)?;
+
                     if left.check(&FerryType::List) {
                         if right.check(&FerryType::List) {
                             Ok(Expr::Binary(Binary {
@@ -436,6 +444,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     }
                 }
             },
+
             _ => Err(FerryTypeError::InvalidOperand {
                 advice: "invalid operator token".into(),
                 span: *binary.operator.get_span(),
@@ -509,29 +518,35 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
     fn visit_if_expr(&mut self, if_expr: &If, state: &mut State) -> FerryResult<Expr> {
         let condition = self.check_types(&if_expr.condition, state)?;
+
         if !condition.check(&FerryType::Boolean) {
             return Err(FerryTypeError::ConditionalNotBool {
                 advice: "expected conditional to if statement to be of type 'bool'".into(),
                 span: *if_expr.token.get_span(),
             });
         }
+
         let then_expr = self.check_types(&if_expr.then_expr, state)?;
+
         let else_expr = if let Some(else_expr_box) = &if_expr.else_expr {
-            let else_expr = self.check_types(else_expr_box, state)?;
-            if then_expr.get_type() == else_expr.get_type() {
-                Some(Box::new(else_expr))
+            let else_expr_inner = self.check_types(else_expr_box, state)?;
+
+            if then_expr.get_type() == else_expr_inner.get_type() {
+                Some(Box::new(else_expr_inner))
             } else {
                 return Err(FerryTypeError::MismatchedThenElse {
                     advice: "type mismatch between two values".into(),
                     span: *if_expr.token.get_span(),
                     lhs_span: *then_expr.get_token().get_span(),
-                    rhs_span: *else_expr.get_token().get_span(),
+                    rhs_span: *else_expr_inner.get_token().get_span(),
                 });
             }
         } else {
             None
         };
+
         let expr_type = FerryTyping::Inferred(*then_expr.get_type());
+
         Ok(Expr::If(If {
             token: if_expr.token.clone(),
             condition: Box::new(condition),
@@ -560,6 +575,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     if assigned_type.check(value_check.get_type()) {
                         let placeholder_value = set_placeholder(value_check.get_type());
                         state.add_symbol(&binding.name, Some(placeholder_value));
+
                         return Ok(Expr::Binding(Binding {
                             token: binding.token.clone(),
                             name: binding.name.clone(),
@@ -571,6 +587,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 } else {
                     let placeholder_value = set_placeholder(value_check.get_type());
                     state.add_symbol(&binding.name, Some(placeholder_value));
+
                     return Ok(Expr::Binding(Binding {
                         token: binding.token.clone(),
                         name: binding.name.clone(),
@@ -602,9 +619,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
     fn visit_loop(&mut self, loop_expr: &Loop, state: &mut State) -> FerryResult<Expr> {
         if let Some(cond) = &loop_expr.condition {
             let condition = Box::new(self.check_types(cond, state)?);
+
             if condition.check(&FerryType::Boolean) {
                 let contents = Box::new(self.check_types(&loop_expr.contents, state)?);
                 let expr_type = FerryTyping::infer(contents.get_type());
+
                 Ok(Expr::Loop(Loop {
                     token: loop_expr.token.clone(),
                     condition: Some(condition),
@@ -620,6 +639,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
         } else {
             let contents = Box::new(self.check_types(&loop_expr.contents, state)?);
             let expr_type = FerryTyping::infer(contents.get_type());
+
             Ok(Expr::Loop(Loop {
                 token: loop_expr.token.clone(),
                 condition: loop_expr.condition.clone(),
@@ -650,19 +670,24 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
     fn visit_for(&mut self, for_expr: &For, state: &mut State) -> FerryResult<Expr> {
         let iterator = self.check_types(&for_expr.iterator, state)?;
+
         if let Some(variable) = &for_expr.variable {
             if let Expr::Variable(v) = variable.as_ref() {
                 state.add_symbol(&v.name, None);
             }
+
             let variable_checked = self.infer(variable, state, &FerryType::Num)?;
+
             if let Expr::Variable(var) = &variable_checked {
                 let placeholder_value = set_placeholder(variable_checked.get_type());
                 state.add_symbol(&var.name, Some(placeholder_value));
             }
+
             let contents = self.check_types(&for_expr.contents, state)?;
 
             if iterator.get_type() == &FerryType::List {
                 let inf_type = contents.get_type();
+
                 Ok(Expr::For(For {
                     token: for_expr.token.clone(),
                     // variable: Some(Box::new(variable_checked)),
@@ -680,8 +705,10 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             }
         } else {
             let contents = self.check_types(&for_expr.contents, state)?;
+
             if iterator.get_type() == &FerryType::List {
                 let inf_type = &contents.get_type();
+
                 Ok(Expr::For(For {
                     token: for_expr.token.clone(),
                     variable: None,
@@ -709,6 +736,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
         };
 
         let mut fn_state = state.clone();
+
         fn_state.add_symbol(
             &function.name,
             Some(Value::Function(FuncVal {
@@ -728,6 +756,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
         );
 
         let mut arity = 0;
+
         let args = if let Some(arguments) = &function.args {
             let mut rets = Vec::new();
             for a in arguments {
@@ -805,9 +834,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     }))
                 } else {
                     let mut checked_args = Vec::new();
+
                     for (call_arg, decl_arg) in call.args.iter().zip(decl_args.iter()) {
                         let checked_arg = self.check_types(call_arg, state)?;
                         let checked_decl_arg = self.check_types(decl_arg, state)?;
+
                         if checked_arg.check(checked_decl_arg.get_type()) {
                             checked_args.push(checked_arg);
                         } else {
@@ -817,6 +848,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                             });
                         }
                     }
+
                     Ok(Expr::Call(Call {
                         invoker: call.invoker.clone(),
                         name: name.clone(),

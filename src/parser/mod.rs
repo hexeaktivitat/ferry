@@ -49,10 +49,8 @@ impl Parser {
         let mut errors = Vec::new();
 
         while !self.end_of_program() {
-            match self.start(state) {
-                Ok(s) => statements.push(s),
-                Err(e) => errors.push(e),
-            }
+            self.start(state)
+                .map_or_else(|e| errors.push(e), |s| statements.push(s));
         }
 
         if errors.is_empty() {
