@@ -1,7 +1,7 @@
 use miette::SourceSpan;
 
-use crate::token::{FerryToken, Op, TokenType as TT};
-use crate::types::{FerryType, FerryTyping};
+use crate::lexer::token::{Op, Token, TokenType as TT};
+use crate::state::types::{FerryType, FerryTyping};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
@@ -17,34 +17,36 @@ pub enum Expr {
     For(For),
     Function(Function),
     Call(Call),
+    Module(Module),
+    Import(Import),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Lit {
     Undefined {
-        token: FerryToken,
+        token: Token,
         expr_type: FerryTyping,
     },
     Number {
-        token: FerryToken,
+        token: Token,
         value: i64,
         expr_type: FerryTyping,
         span: SourceSpan,
     },
     Str {
-        token: FerryToken,
+        token: Token,
         value: String,
         expr_type: FerryTyping,
         span: SourceSpan,
     },
     Bool {
-        token: FerryToken,
+        token: Token,
         value: bool,
         expr_type: FerryTyping,
         span: SourceSpan,
     },
     List {
-        token: FerryToken,
+        token: Token,
         contents: Vec<Expr>,
         expr_type: FerryTyping,
         span: SourceSpan,
@@ -54,21 +56,21 @@ pub enum Lit {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binary {
     pub lhs: Box<Expr>,
-    pub operator: FerryToken,
+    pub operator: Token,
     pub rhs: Box<Expr>,
     pub expr_type: FerryTyping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Unary {
-    pub operator: FerryToken,
+    pub operator: Token,
     pub rhs: Box<Expr>,
     pub expr_type: FerryTyping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Assign {
-    pub token: FerryToken,
+    pub token: Token,
     pub var: Box<Expr>,
     pub name: String,
     pub value: Option<Box<Expr>>,
@@ -77,7 +79,7 @@ pub struct Assign {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Variable {
-    pub token: FerryToken,
+    pub token: Token,
     pub name: String,
     pub assigned_type: Option<String>,
     pub expr_type: FerryTyping,
@@ -85,7 +87,7 @@ pub struct Variable {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct If {
-    pub token: FerryToken,
+    pub token: Token,
     pub condition: Box<Expr>,
     pub then_expr: Box<Expr>,
     pub else_expr: Option<Box<Expr>>,
@@ -94,14 +96,14 @@ pub struct If {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Group {
-    pub token: FerryToken,
+    pub token: Token,
     pub contents: Box<Expr>,
     pub expr_type: FerryTyping,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binding {
-    pub token: FerryToken,
+    pub token: Token,
     pub name: String,
     pub assigned_type: Option<FerryType>,
     pub value: Option<Box<Expr>>,
@@ -110,7 +112,7 @@ pub struct Binding {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Loop {
-    pub token: FerryToken,
+    pub token: Token,
     pub condition: Option<Box<Expr>>,
     pub contents: Box<Expr>,
     pub expr_type: FerryTyping,
@@ -118,7 +120,7 @@ pub struct Loop {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct For {
-    pub token: FerryToken,
+    pub token: Token,
     pub variable: Option<Box<Expr>>,
     pub iterator: Box<Expr>,
     pub iterator_type: Option<FerryType>,
@@ -128,7 +130,7 @@ pub struct For {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Function {
-    pub token: FerryToken,
+    pub token: Token,
     pub name: String,
     pub args: Option<Vec<Expr>>,
     pub contents: Box<Expr>,
@@ -140,27 +142,43 @@ pub struct Function {
 pub struct Call {
     pub invoker: Box<Expr>,
     pub name: String,
-    pub token: FerryToken,
+    pub token: Token,
     pub args: Vec<Expr>,
     pub expr_type: FerryTyping,
 }
 
-pub trait ExprVisitor<T, S> {
-    fn visit_literal(&mut self, literal: &mut Lit, state: S) -> T;
-    fn visit_binary(&mut self, binary: &mut Binary, state: S) -> T;
-    fn visit_unary(&mut self, unary: &mut Unary, state: S) -> T;
-    fn visit_variable(&mut self, variable: &mut Variable, state: S) -> T;
-    fn visit_assign(&mut self, assign: &mut Assign, state: S) -> T;
-    fn visit_if_expr(&mut self, if_expr: &mut If, state: S) -> T;
-    fn visit_group(&mut self, group: &mut Group, state: S) -> T;
-    fn visit_binding(&mut self, binding: &mut Binding, state: S) -> T;
-    fn visit_loop(&mut self, loop_expr: &mut Loop, state: S) -> T;
-    fn visit_for(&mut self, for_expr: &mut For, state: S) -> T;
-    fn visit_function(&mut self, function: &mut Function, state: S) -> T;
-    fn visit_call(&mut self, call: &mut Call, state: S) -> T;
+#[derive(Debug, Clone, PartialEq)]
+pub struct Module {
+    pub name: String,
+    pub token: Token,
+    pub functions: Vec<Function>,
 }
 
-pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, state: S) -> T {
+#[derive(Debug, Clone, PartialEq)]
+pub struct Import {
+    pub name: String,
+    pub token: Token,
+    pub functions: Vec<Function>,
+}
+
+pub trait ExprVisitor<T, S> {
+    fn visit_literal(&mut self, literal: &Lit, state: S) -> T;
+    fn visit_binary(&mut self, binary: &Binary, state: S) -> T;
+    fn visit_unary(&mut self, unary: &Unary, state: S) -> T;
+    fn visit_variable(&mut self, variable: &Variable, state: S) -> T;
+    fn visit_assign(&mut self, assign: &Assign, state: S) -> T;
+    fn visit_if_expr(&mut self, if_expr: &If, state: S) -> T;
+    fn visit_group(&mut self, group: &Group, state: S) -> T;
+    fn visit_binding(&mut self, binding: &Binding, state: S) -> T;
+    fn visit_loop(&mut self, loop_expr: &Loop, state: S) -> T;
+    fn visit_for(&mut self, for_expr: &For, state: S) -> T;
+    fn visit_function(&mut self, function: &Function, state: S) -> T;
+    fn visit_call(&mut self, call: &Call, state: S) -> T;
+    fn visit_module(&mut self, module: &Module, state: S) -> T;
+    fn visit_import(&mut self, import: &Import, state: S) -> T;
+}
+
+pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &Expr, state: S) -> T {
     match expr {
         Expr::Literal(literal) => visitor.visit_literal(literal, state),
         Expr::Binary(binary) => visitor.visit_binary(binary, state),
@@ -174,36 +192,38 @@ pub fn walk_expr<T, S>(mut visitor: impl ExprVisitor<T, S>, expr: &mut Expr, sta
         Expr::For(for_expr) => visitor.visit_for(for_expr, state),
         Expr::Function(function) => visitor.visit_function(function, state),
         Expr::Call(call) => visitor.visit_call(call, state),
+        Expr::Module(module) => visitor.visit_module(module, state),
+        Expr::Import(import) => visitor.visit_import(import, state),
     }
 }
 
 impl Expr {
-    pub fn get_token(&self) -> &FerryToken {
+    pub fn get_token(&self) -> &Token {
         match self {
             Expr::Literal(l) => match l {
                 Lit::Undefined {
                     token,
                     expr_type: _,
-                } => token,
-                Lit::Number {
+                }
+                | Lit::Number {
                     token,
                     value: _,
                     expr_type: _,
                     span: _,
-                } => token,
-                Lit::Str {
+                }
+                | Lit::Str {
                     token,
                     value: _,
                     expr_type: _,
                     span: _,
-                } => token,
-                Lit::Bool {
+                }
+                | Lit::Bool {
                     token,
                     value: _,
                     expr_type: _,
                     span: _,
-                } => token,
-                Lit::List {
+                }
+                | Lit::List {
                     token,
                     contents: _,
                     expr_type: _,
@@ -221,6 +241,8 @@ impl Expr {
             Expr::For(f) => &f.token,
             Expr::Function(f) => &f.token,
             Expr::Call(c) => &c.token,
+            Expr::Module(m) => &m.token,
+            Expr::Import(i) => &i.token,
         }
     }
 }
@@ -375,6 +397,8 @@ impl std::fmt::Display for Expr {
                 }
             }
             Expr::Call(c) => write!(f, "{}({:?})", c.name, c.args),
+            Expr::Module(m) => write!(f, "{}", m.name),
+            Expr::Import(i) => write!(f, "{}", i.name),
         }
     }
 }

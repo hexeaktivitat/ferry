@@ -23,7 +23,7 @@
 			"patterns": [
 				{
 					"name": "keyword.control.ferry",
-					"match": "\\b(if|while|for|let|def|fn|then|else)\\b"
+					"match": "\\b(if|while|for|let|def|fn|then|else|import|export|as|return)\\b"
 				}
 			]
 		},

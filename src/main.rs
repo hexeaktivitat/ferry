@@ -1,6 +1,5 @@
-use anyhow::Error;
 use clap::{Parser, Subcommand};
-use miette::Result;
+use miette::{Report, Result};
 
 use std::{
     fs::read_to_string,
@@ -12,7 +11,7 @@ use ferry::{Ferry, PrintReq};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
-struct FerryArgs {
+struct Args {
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -23,40 +22,32 @@ enum Commands {
     Run { file: String },
 }
 
-fn main() -> ExitCode {
-    let ferry_args = FerryArgs::parse();
+fn main() -> Result<ExitCode, Report> {
+    let ferry_args = Args::parse();
 
     match ferry_args.command {
         Some(f) => match f {
             Commands::Compile { file } => {
                 println!("{file}");
-                ExitCode::SUCCESS
+                Ok(ExitCode::SUCCESS)
             }
             Commands::Run { file } => {
                 let source_code = read_to_string(file).expect("couldn't read from file");
                 let mut program = Ferry::new(source_code.clone());
-                match program.run() {
-                    Ok(r) => println!("{r}"),
-                    Err(e) => eprintln!("{:?}", e),
-                }
+                let res = program.run()?;
+                println!("{res}");
                 // program.print_data(PrintReq::TypedAst);
-                ExitCode::SUCCESS
+                Ok(ExitCode::SUCCESS)
             }
         },
         None => {
             // run interpreter
-            match repl() {
-                Ok(_) => ExitCode::SUCCESS,
-                Err(e) => {
-                    println!("Error: {}", e);
-                    ExitCode::FAILURE
-                }
-            }
+            repl()
         }
     }
 }
 
-fn repl() -> Result<(), Error> {
+fn repl() -> Result<ExitCode, Report> {
     let mut input = String::new();
     let mut program = Ferry::new(input.clone());
 
@@ -69,35 +60,33 @@ fn repl() -> Result<(), Error> {
         print!("Fwee...> ");
         stdout().flush().expect("stdout didn't flush");
 
-        input = "".into();
+        input = String::new();
         stdin()
             .read_line(&mut input)
             .expect("Unable to read from stdin");
 
-        match repl_input_process(&input) {
-            Some(r) => match r {
+        if let Some(r) = repl_input_process(&input) {
+            match r {
                 FerryRepl::Run(code) => {
                     program.update_source(code);
-                    match program.run() {
-                        Ok(r) => println!("\n{}\n", r),
-                        Err(e) => eprintln!("\n{:?}\n", e),
-                    }
+                    program
+                        .run()
+                        .map_or_else(|e| eprintln!("\n{e:?}\n"), |r| println!("\n{r}\n"));
                 }
                 FerryRepl::Exit => {
                     println!("Exiting...");
-                    return Ok(());
+                    return Ok(ExitCode::SUCCESS);
                 }
                 FerryRepl::Tokens => program.print_data(PrintReq::Tokens),
                 FerryRepl::State => program.print_data(PrintReq::State),
                 FerryRepl::Ast => program.print_data(PrintReq::Ast),
                 FerryRepl::Type => program.print_data(PrintReq::TypedAst),
-                FerryRepl::Asm => program.print_data(PrintReq::Asm),
+                FerryRepl::Ir => program.print_data(PrintReq::Ir),
                 FerryRepl::Help => print_help(),
-            },
-            None => {
-                println!("invalid command {input}");
-                continue;
             }
+        } else {
+            println!("invalid command {input}");
+            continue;
         }
     }
 }
@@ -109,7 +98,7 @@ enum FerryRepl {
     State,
     Ast,
     Type,
-    Asm,
+    Ir,
     Help,
 }
 
@@ -123,7 +112,7 @@ fn repl_input_process(input: &str) -> Option<FerryRepl> {
             "state" => Some(FerryRepl::State),
             "ast" => Some(FerryRepl::Ast),
             "type" => Some(FerryRepl::Type),
-            "asm" => Some(FerryRepl::Asm),
+            "ir" => Some(FerryRepl::Ir),
             "help" => Some(FerryRepl::Help),
             _ => None,
         }

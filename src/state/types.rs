@@ -1,14 +1,25 @@
-use crate::syntax::{Expr, Lit};
+use crate::parser::syntax::{Expr, Lit};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum FerryTyping {
     Assigned(FerryType),
     Inferred(FerryType),
+    #[default]
     Untyped,
     Undefined,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+impl FerryTyping {
+    pub(crate) fn assign(assign: &FerryType) -> Self {
+        Self::Assigned(*assign)
+    }
+
+    pub(crate) fn infer(infer: &FerryType) -> Self {
+        Self::Inferred(*infer)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum FerryType {
     Untyped,
     Undefined,
@@ -22,9 +33,6 @@ pub enum FerryType {
 
 pub trait Typing {
     fn get_type(&self) -> &FerryType;
-}
-
-pub trait TypeCheckable {
     fn check(&self, other: &FerryType) -> bool;
 }
 
@@ -37,15 +45,17 @@ impl Typing for FerryTyping {
             FerryTyping::Undefined => &FerryType::Undefined,
         }
     }
-}
 
-impl TypeCheckable for FerryTyping {
     fn check(&self, other: &FerryType) -> bool {
         self.get_type() == other
     }
 }
 
-impl TypeCheckable for FerryType {
+impl Typing for FerryType {
+    fn get_type(&self) -> &FerryType {
+        self
+    }
+
     fn check(&self, other: &FerryType) -> bool {
         self == other
     }
@@ -60,24 +70,24 @@ impl Typing for Expr {
                     expr_type,
                     span: _,
                     token: _,
-                } => expr_type.get_type(),
-                Lit::Str {
+                }
+                | Lit::Str {
                     value: _,
                     expr_type,
                     span: _,
                     token: _,
-                } => expr_type.get_type(),
-                Lit::Bool {
+                }
+                | Lit::Bool {
                     value: _,
                     expr_type,
                     span: _,
                     token: _,
-                } => expr_type.get_type(),
-                Lit::Undefined {
+                }
+                | Lit::Undefined {
                     expr_type,
                     token: _,
-                } => expr_type.get_type(),
-                Lit::List {
+                }
+                | Lit::List {
                     token: _,
                     contents: _,
                     expr_type,
@@ -93,13 +103,18 @@ impl Typing for Expr {
             Expr::Loop(l) => l.expr_type.get_type(),
             Expr::Unary(u) => u.expr_type.get_type(),
             Expr::For(f) => f.expr_type.get_type(),
-            Expr::Function(f) => f.expr_type.get_type(),
+            Expr::Function(f) => {
+                if let Some(ty) = &f.return_type {
+                    ty
+                } else {
+                    &FerryType::Undefined
+                }
+            }
             Expr::Call(c) => c.expr_type.get_type(),
+            Expr::Module(_) | Expr::Import(_) => &FerryType::Untyped,
         }
     }
-}
 
-impl TypeCheckable for Expr {
     fn check(&self, other: &FerryType) -> bool {
         self.get_type() == other
     }

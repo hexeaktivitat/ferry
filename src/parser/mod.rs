@@ -1,13 +1,16 @@
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
-use crate::state::FerryState;
-use crate::syntax::{
-    Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Lit as SLit, Loop, Variable,
+use crate::lexer::token::{Ctrl, Kwd};
+use crate::lexer::token::{Op, Token, TokenType as TT, Val as TLit};
+use crate::state::types::{FerryType, FerryTyping};
+use crate::state::State;
+use syntax::{
+    Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Import, Lit as SLit, Loop,
+    Module, Unary, Variable,
 };
-use crate::token::{Ctrl, Kwd};
-use crate::token::{FerryToken, Op, TokenType as TT, Val as TLit};
-use crate::types::{FerryType, FerryTyping};
+
+pub(crate) mod syntax;
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryParseError {
@@ -31,25 +34,23 @@ type FerryResult<T> = Result<T, FerryParseError>;
 type FerryParseResult<T> = Result<Vec<T>, Vec<FerryParseError>>;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct FerryParser {
-    tokens: Vec<FerryToken>,
+pub struct Parser {
+    tokens: Vec<Token>,
     current: usize,
 }
 
-impl FerryParser {
-    pub fn new(tokens: Vec<FerryToken>) -> Self {
+impl Parser {
+    pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self, state: &mut FerryState) -> FerryParseResult<Expr> {
+    pub fn parse(&mut self, state: &mut State) -> FerryParseResult<Expr> {
         let mut statements = Vec::new();
         let mut errors = Vec::new();
 
         while !self.end_of_program() {
-            match self.start(state) {
-                Ok(s) => statements.push(s),
-                Err(e) => errors.push(e),
-            }
+            self.start(state)
+                .map_or_else(|e| errors.push(e), |s| statements.push(s));
         }
 
         if errors.is_empty() {
@@ -59,7 +60,7 @@ impl FerryParser {
         }
     }
 
-    fn start(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn start(&mut self, state: &mut State) -> FerryResult<Expr> {
         let expr = self.keywords(state)?;
 
         Ok(expr)
@@ -67,7 +68,7 @@ impl FerryParser {
 
     // pratt parsing starts here
 
-    fn keywords(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn keywords(&mut self, state: &mut State) -> FerryResult<Expr> {
         let expr = if self.matches(&[TT::Keyword(Kwd::If)]) {
             self.if_expr(state)
         } else if self.matches(&[TT::Keyword(Kwd::Let)]) {
@@ -80,6 +81,10 @@ impl FerryParser {
             self.for_loop(state)
         } else if self.matches(&[TT::Keyword(Kwd::Def)]) {
             self.function(state)
+        } else if self.matches(&[TT::Keyword(Kwd::Export)]) {
+            self.module(state)
+        } else if self.matches(&[TT::Keyword(Kwd::Import)]) {
+            self.import(state)
         } else {
             self.s_expression(state)
         };
@@ -93,7 +98,7 @@ impl FerryParser {
         expr
     }
 
-    fn if_expr(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn if_expr(&mut self, state: &mut State) -> FerryResult<Expr> {
         let token = self.previous();
         let condition = Box::new(self.s_expression(state)?);
         self.consume(
@@ -102,18 +107,15 @@ impl FerryParser {
         )?;
         self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'then'")?;
         self.consume_newline()?;
-        let then_expr = Box::new(self.s_expression(state)?);
+        let then_expr = Box::new(self.start(state)?);
         self.consume_newline()?;
         let else_expr = if self.peek().get_token_type() == &TT::Keyword(Kwd::Else) {
             self.consume(&TT::Keyword(Kwd::Else), "idk how you got this")?;
             if self.peek().get_token_type() == &TT::Control(Ctrl::Colon) {
-                self.consume(
-                    &TT::Control(crate::token::Ctrl::Colon),
-                    "colon not consumed",
-                )?;
+                self.consume(&TT::Control(Ctrl::Colon), "colon not consumed")?;
             }
             self.consume_newline()?;
-            Some(Box::new(self.s_expression(state)?))
+            Some(Box::new(self.start(state)?))
         } else {
             None
         };
@@ -130,16 +132,17 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn binding(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn binding(&mut self, state: &mut State) -> FerryResult<Expr> {
         let token = self.previous();
         if let TT::Identifier(name) = self.advance().get_token_type() {
             self.consume(&TT::Control(Ctrl::Colon), "expected ':' after identifier")?;
             let assigned_type = if let TT::Identifier(id) = self.peek().get_token_type() {
                 self.advance();
                 match id.clone().as_str() {
-                    "Int" => Some(crate::types::FerryType::Num),
-                    "String" => Some(crate::types::FerryType::String),
+                    "Int" => Some(FerryType::Num),
+                    "String" => Some(FerryType::String),
                     "List" => Some(FerryType::List),
+                    "Function" => Some(FerryType::Function),
                     _ => Some(FerryType::Untyped), // allowing for inference
                 }
             } else {
@@ -171,7 +174,7 @@ impl FerryParser {
         }
     }
 
-    fn do_loop(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn do_loop(&mut self, state: &mut State) -> FerryResult<Expr> {
         let token = self.previous();
         self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'do'")?;
         let condition = None;
@@ -185,7 +188,7 @@ impl FerryParser {
         }))
     }
 
-    fn while_loop(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn while_loop(&mut self, state: &mut State) -> FerryResult<Expr> {
         let token = self.previous();
         let condition = Some(Box::new(self.start(state)?));
         self.consume(
@@ -203,7 +206,7 @@ impl FerryParser {
         }))
     }
 
-    fn for_loop(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn for_loop(&mut self, state: &mut State) -> FerryResult<Expr> {
         let token = self.previous();
         let variable = Some(Box::new(self.start(state)?)); //explicitly expect variable decl
         self.consume(
@@ -213,8 +216,8 @@ impl FerryParser {
         let iterator_type = if let TT::Identifier(id) = self.peek().get_token_type() {
             self.advance();
             match id.clone().as_str() {
-                "Int" => Some(crate::types::FerryType::Num),
-                "String" => Some(crate::types::FerryType::String),
+                "Int" => Some(FerryType::Num),
+                "String" => Some(FerryType::String),
                 _ => Some(FerryType::Num), // coerce all types to Num
             }
         } else {
@@ -238,12 +241,10 @@ impl FerryParser {
         }))
     }
 
-    fn function(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn function(&mut self, state: &mut State) -> FerryResult<Expr> {
         let token = self.previous();
         self.consume(&TT::Keyword(Kwd::Fn), "expected 'fn' after 'def'")?;
-        let name = if let Some(id) = self.advance().get_id() {
-            id
-        } else {
+        let Some(name) = self.advance().get_id() else {
             return Err(FerryParseError::UnexpectedToken {
                 msg: "expected identifier, found other".into(),
                 span: *self.previous().get_span(),
@@ -270,8 +271,8 @@ impl FerryParser {
                 let param_type = if let TT::Identifier(id) = self.peek().get_token_type() {
                     self.advance();
                     match id.clone().as_str() {
-                        "Int" => Some(crate::types::FerryType::Num),
-                        "String" => Some(crate::types::FerryType::String),
+                        "Int" => Some(FerryType::Num),
+                        "String" => Some(FerryType::String),
                         _ => None,
                     }
                 } else {
@@ -302,6 +303,7 @@ impl FerryParser {
                 match id.clone().as_str() {
                     "Int" => Some(FerryType::Num),
                     "String" => Some(FerryType::String),
+                    "Function:" => Some(FerryType::Function),
                     _ => None,
                 }
             } else {
@@ -336,13 +338,95 @@ impl FerryParser {
         }))
     }
 
-    fn s_expression(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    // export as <ID>:
+    // def fn fn1()
+    // def fn fn2()
+    // def fn fn3()
+    fn module(&mut self, state: &mut State) -> FerryResult<Expr> {
+        let token = self.previous();
+        self.consume(
+            &TT::Keyword(Kwd::As),
+            "expected 'as' after 'export' keyword",
+        )?;
+
+        let Some(name) = self.advance().get_id() else {
+            return Err(FerryParseError::UnexpectedToken {
+                msg: "expected identifier for module".into(),
+                span: *self.previous().get_span(),
+            });
+        };
+        self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'as'")?;
+
+        let mut functions = vec![];
+        while let Ok(Expr::Function(function)) = self.start(state) {
+            functions.push(function);
+
+            if self.peek().get_token_type() == &TT::End {
+                break;
+            }
+        }
+
+        Ok(Expr::Module(Module {
+            name,
+            token,
+            functions,
+        }))
+    }
+
+    fn import(&mut self, state: &mut State) -> FerryResult<Expr> {
+        let token = self.previous();
+
+        let Some(name) = self.advance().get_id() else {
+            return Err(FerryParseError::UnexpectedToken {
+                msg: "expected identifier for module to import".into(),
+                span: *self.previous().get_span(),
+            });
+        };
+
+        let module = if std::path::Path::exists(std::path::Path::new(&format!("{name}.feri"))) {
+            std::fs::read_to_string(format!("{name}.feri")).expect("couldn't find module")
+        } else if std::path::Path::exists(std::path::Path::new(&format!("examples/{name}.feri"))) {
+            std::fs::read_to_string(format!("examples/{name}.feri")).expect("couldn't find module")
+        } else if std::path::Path::exists(std::path::Path::new(&format!("lib/{name}.feri"))) {
+            std::fs::read_to_string(format!("lib/{name}.feri")).expect("couldn't find module")
+        } else {
+            return Err(FerryParseError::UnexpectedToken {
+                msg: "Invalid path for module".into(),
+                span: *self.previous().get_span(),
+            });
+        };
+
+        let mut lexer = crate::lexer::Lexer::new(module.as_bytes());
+        let mut parser = Parser::new(lexer.lex().expect("module did not lex"));
+        let module_parse = parser.parse(state).expect("module parsing errors");
+
+        let mut functions = vec![];
+
+        if let Some(Expr::Module(module)) = module_parse.first() {
+            for function in module.functions.clone() {
+                functions.push(function.clone());
+            }
+        } else {
+            return Err(FerryParseError::UnexpectedToken {
+                msg: "Provided module was not module".into(),
+                span: *self.previous().get_span(),
+            });
+        }
+
+        Ok(Expr::Import(Import {
+            name,
+            token,
+            functions,
+        }))
+    }
+
+    fn s_expression(&mut self, state: &mut State) -> FerryResult<Expr> {
         let expr = self.assignment(state)?;
 
         Ok(expr)
     }
 
-    fn list(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn list(&mut self, state: &mut State) -> FerryResult<Expr> {
         let token = self.previous();
         let mut contents: Vec<Expr> = Vec::new();
 
@@ -366,7 +450,7 @@ impl FerryParser {
         }
     }
 
-    fn assignment(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn assignment(&mut self, state: &mut State) -> FerryResult<Expr> {
         let mut expr = self.cons(state)?;
 
         if self.matches(&[TT::Operator(Op::Equals)]) {
@@ -386,7 +470,7 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn cons(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn cons(&mut self, state: &mut State) -> FerryResult<Expr> {
         let mut expr = self.index(state)?;
 
         if self.matches(&[TT::Operator(Op::Cons)]) {
@@ -403,7 +487,7 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn index(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn index(&mut self, state: &mut State) -> FerryResult<Expr> {
         let mut expr = self.comparison(state)?;
 
         if self.matches(&[TT::Operator(Op::GetI)]) {
@@ -421,7 +505,7 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn comparison(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn comparison(&mut self, state: &mut State) -> FerryResult<Expr> {
         let mut expr = self.sum(state)?;
 
         if self.matches(&[
@@ -438,13 +522,13 @@ impl FerryParser {
                 operator: op,
                 rhs,
                 expr_type: FerryTyping::Untyped,
-            })
+            });
         }
 
         Ok(expr)
     }
 
-    fn sum(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn sum(&mut self, state: &mut State) -> FerryResult<Expr> {
         let mut expr = self.factor(state)?;
 
         if self.matches(&[TT::Operator(Op::Add), TT::Operator(Op::Subtract)]) {
@@ -461,7 +545,7 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn factor(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn factor(&mut self, state: &mut State) -> FerryResult<Expr> {
         let mut expr = self.unary(state)?;
 
         if self.matches(&[TT::Operator(Op::Multiply), TT::Operator(Op::Divide)]) {
@@ -478,13 +562,23 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn unary(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
-        let expr = self.call(state)?;
+    fn unary(&mut self, state: &mut State) -> FerryResult<Expr> {
+        let expr = if self.matches(&[TT::Operator(Op::Subtract)]) {
+            let operator = self.previous();
+            let rhs = Box::new(self.unary(state)?);
+            Expr::Unary(Unary {
+                operator,
+                rhs,
+                expr_type: FerryTyping::Untyped,
+            })
+        } else {
+            self.call(state)?
+        };
 
         Ok(expr)
     }
 
-    fn call(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn call(&mut self, state: &mut State) -> FerryResult<Expr> {
         let mut expr = self.target(state)?;
 
         loop {
@@ -498,7 +592,7 @@ impl FerryParser {
         Ok(expr)
     }
 
-    fn target(&mut self, state: &mut FerryState) -> FerryResult<Expr> {
+    fn target(&mut self, state: &mut State) -> FerryResult<Expr> {
         self.advance();
 
         match self.previous().get_token_type() {
@@ -555,7 +649,7 @@ impl FerryParser {
                         assigned_type: None,
                         expr_type: FerryTyping::Untyped,
                     }));
-                    let operator = FerryToken::new(TT::Operator(Op::GetI), *self.peek().get_span());
+                    let operator = Token::new(TT::Operator(Op::GetI), *self.peek().get_span());
                     self.consume(&TT::Control(Ctrl::LeftBracket), "expected '[' for index ")?;
                     let rhs = Box::new(self.start(state)?);
                     self.consume(&TT::Control(Ctrl::RightBracket), "expected ']' after '['")?;
@@ -597,18 +691,18 @@ impl FerryParser {
     }
 
     // helper functions
-    fn peek(&self) -> FerryToken {
+    fn peek(&self) -> Token {
         self.tokens[self.current].clone()
     }
 
-    fn advance(&mut self) -> FerryToken {
+    fn advance(&mut self) -> Token {
         if !self.end_of_program() {
             self.current += 1;
         }
         self.previous()
     }
 
-    fn previous(&self) -> FerryToken {
+    fn previous(&self) -> Token {
         self.tokens[self.current - 1].clone()
     }
 
@@ -624,7 +718,7 @@ impl FerryParser {
         &mut self,
         token_type: &impl MatchToken,
         message: &str,
-    ) -> Result<FerryToken, FerryParseError> {
+    ) -> Result<Token, FerryParseError> {
         if self.check(token_type) {
             Ok(self.advance())
         } else {
@@ -651,12 +745,11 @@ impl FerryParser {
         while !self.end_of_program() {
             if self.previous().get_token_type() == &TT::Control(Ctrl::Newline) {
                 return;
-            } else {
-                match self.peek().get_token_type() {
-                    TT::Keyword(_) => return,
-                    _ => self.advance(),
-                };
             }
+            match self.peek().get_token_type() {
+                TT::Keyword(_) => return,
+                _ => self.advance(),
+            };
         }
     }
 
@@ -664,7 +757,7 @@ impl FerryParser {
         self.tokens[self.current].get_token_type() == &TT::End
     }
 
-    fn consume_newline(&mut self) -> Result<Option<FerryToken>, FerryParseError> {
+    fn consume_newline(&mut self) -> Result<Option<Token>, FerryParseError> {
         if self.matches(&[TT::Control(Ctrl::Newline)]) {
             Ok(Some(self.previous()))
         } else {
@@ -674,8 +767,8 @@ impl FerryParser {
 
     fn finish_sequence(
         &mut self,
-        token: FerryToken,
-        state: &mut FerryState,
+        token: Token,
+        state: &mut State,
         mut contents: Vec<Expr>,
     ) -> FerryResult<Expr> {
         while self.peek().get_token_type() != &TT::Control(Ctrl::RightBracket) {
@@ -700,9 +793,14 @@ impl FerryParser {
         }))
     }
 
-    fn call_function(&mut self, expr: Expr, state: &mut FerryState) -> FerryResult<Expr> {
+    fn call_function(&mut self, expr: Expr, state: &mut State) -> FerryResult<Expr> {
         let mut args = Vec::new();
-        let name = expr.get_token().get_id().unwrap_or("".into());
+        let name = expr.get_token().get_id().unwrap_or_default();
+
+        // self.consume(
+        //     &TT::Control(Ctrl::LeftParen),
+        //     "expected '(' after function identifier",
+        // )?;
 
         if !self.check(&TT::Control(Ctrl::RightParen)) {
             loop {
@@ -713,7 +811,10 @@ impl FerryParser {
             }
         }
 
-        let token = self.consume(&TT::Control(Ctrl::RightParen), "expected ')' after '('")?;
+        let token = self.consume(
+            &TT::Control(Ctrl::RightParen),
+            "expected ')' after '(' in function call",
+        )?;
 
         Ok(Expr::Call(Call {
             invoker: Box::new(expr),
@@ -726,20 +827,20 @@ impl FerryParser {
 }
 
 trait MatchToken {
-    fn matches(&self, token: &FerryToken) -> bool;
+    fn matches(&self, token: &Token) -> bool;
 }
 
 impl MatchToken for TT {
-    fn matches(&self, token: &FerryToken) -> bool {
+    fn matches(&self, token: &Token) -> bool {
         token.get_token_type() == self
     }
 }
 
 impl<F> MatchToken for F
 where
-    F: Fn(&FerryToken) -> bool,
+    F: Fn(&Token) -> bool,
 {
-    fn matches(&self, token: &FerryToken) -> bool {
+    fn matches(&self, token: &Token) -> bool {
         self(token)
     }
 }

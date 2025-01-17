@@ -1,46 +1,41 @@
-use ir::{FerryIr, FerryOpcode};
-use miette::{Diagnostic, IntoDiagnostic, Result};
+use ir::{Ir, Opcode};
+use miette::{Diagnostic, Result};
 use thiserror::Error;
 
 use interpreter::FerryInterpreterError;
-use lexer::{FerryLexError, FerryLexer};
-use parser::{FerryParseError, FerryParser};
-use riscv::{FerryAsmError, FerryRiscVAssembler, Instruction};
-use state::{FerryState, FerryValue};
-use syntax::Expr;
-use token::FerryToken;
-use typecheck::{FerryTypeError, FerryTypechecker};
-use vm::FerryVm;
+use lexer::token::Token;
+use lexer::{FerryLexError, Lexer};
+use parser::syntax::Expr;
+use parser::{FerryParseError, Parser};
+use state::{value::Value, State};
+use typecheck::{FerryTypeError, Typechecker};
+use vm::Vm;
 
 mod interpreter;
 mod ir;
 mod lexer;
 mod parser;
-mod riscv;
 mod state;
-mod syntax;
-mod token;
 mod typecheck;
-mod types;
 mod vm;
 
 pub struct Ferry {
     source_code: String,
-    tokens: Vec<FerryToken>,
-    state: FerryState,
+    tokens: Vec<Token>,
+    state: State,
     ast: Vec<Expr>,
     typed_ast: Vec<Expr>,
-    ferry_ir: Vec<FerryOpcode>,
-    vm: FerryVm,
-    riscv_asm: Vec<Instruction>,
+    ferry_ir: Vec<Opcode>,
+    vm: Vm,
 }
 
+#[derive(Clone, Copy)]
 pub enum PrintReq {
     Tokens,
     State,
     Ast,
     TypedAst,
-    Asm,
+    Ir,
 }
 
 impl Ferry {
@@ -48,12 +43,11 @@ impl Ferry {
         Self {
             source_code,
             tokens: Vec::new(),
-            state: FerryState::new(),
+            state: State::new(),
             ast: Vec::new(),
             typed_ast: Vec::new(),
             ferry_ir: Vec::new(),
-            vm: FerryVm::new(),
-            riscv_asm: Vec::new(),
+            vm: Vm::new(),
         }
     }
 
@@ -61,53 +55,47 @@ impl Ferry {
         self.source_code = source_code;
     }
 
-    pub fn run(&mut self) -> Result<FerryValue> {
-        let mut ferry_lexer = FerryLexer::new(self.source_code.as_bytes());
+    pub fn run(&mut self) -> Result<Value> {
+        let mut ferry_lexer = Lexer::new(self.source_code.as_bytes());
+        let source_code =
+            String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap_or_default();
 
-        self.tokens = ferry_lexer.lex().map_err(|err_list| FerryLexErrors {
-            source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
+        let tokens = ferry_lexer.lex().map_err(|err_list| FerryLexErrors {
+            source_code: source_code.clone(),
             related: err_list,
         })?;
 
-        let mut ferry_parser = FerryParser::new(self.tokens.clone());
+        self.tokens.clone_from(&tokens);
 
-        self.ast = ferry_parser
+        let mut ferry_parser = Parser::new(tokens);
+
+        let ast = ferry_parser
             .parse(&mut self.state)
             .map_err(|err_list| FerryParseErrors {
-                source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
+                source_code: source_code.clone(),
                 related: err_list,
             })?;
 
-        let mut typechecker = FerryTypechecker::new(self.ast.clone());
-        self.typed_ast =
-            typechecker
-                .typecheck(&mut self.state)
-                .map_err(|err_list| FerryTypeErrors {
-                    source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
-                    related: err_list,
-                })?;
+        self.ast.clone_from(&ast);
 
-        // let mut interpreter = FerryInterpreter::new(self.typed_ast.clone());
-        // let result = match interpreter.interpret(&mut self.state).map_err(|err_list| {
-        //     FerryInterpreterErrors {
-        //         source_code: String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap(),
-        //         related: err_list,
-        //     }
-        // })? {
-        //     Some(r) => r,
-        //     None => FerryValue::Unit,
-        // };
+        let mut typechecker = Typechecker::new();
+        let typed_ast = typechecker
+            .typecheck(&ast, &mut self.state)
+            .map_err(|err_list| FerryTypeErrors {
+                source_code: source_code.clone(),
+                related: err_list,
+            })?;
 
-        let mut ir = FerryIr::new(self.ast.clone());
-        self.ferry_ir = ir.lower(&mut self.state).unwrap();
+        self.typed_ast.clone_from(&typed_ast);
+
+        let mut ir = Ir::new();
+        let ferry_ir = ir.lower(&typed_ast, &mut self.state)?;
+        self.ferry_ir.clone_from(&ferry_ir);
 
         // self.vm.set_program(self.ferry_ir.clone());
-        let result = self
-            .vm
-            .interpret(self.ferry_ir.clone(), &mut self.state)
-            .unwrap();
+        let result = self.vm.interpret(ferry_ir, &mut self.state)?;
 
-        // self.print_data(PrintReq::TypedAst);
+        self.vm.clear();
 
         Ok(result)
     }
@@ -133,7 +121,7 @@ impl Ferry {
                 println!("===\n");
 
                 for e in &self.ast {
-                    println!("{}", e);
+                    println!("{e}");
                 }
             }
             PrintReq::TypedAst => {
@@ -141,31 +129,15 @@ impl Ferry {
                 println!("======\n");
 
                 for t in &self.typed_ast {
-                    println!("{}", t);
+                    println!("{t}");
                 }
             }
-            PrintReq::Asm => {
-                println!("\nRISC-V ASM");
-                println!("==========\n");
+            PrintReq::Ir => {
+                println!("\nLINEAR IR");
+                println!("=========\n");
 
-                self.riscv_asm = Vec::new();
-
-                let mut assembler = FerryRiscVAssembler::new();
-                match assembler
-                    .assemble(self.typed_ast.clone(), &mut self.state)
-                    .map_err(|err_list| FerryAsmErrors {
-                        source_code: String::from_utf8(self.source_code.as_bytes().to_vec())
-                            .unwrap(),
-                        related: err_list,
-                    })
-                    .into_diagnostic()
-                {
-                    Ok(o) => self.riscv_asm = o,
-                    Err(e) => eprintln!("{:?}", e),
-                }
-
-                for op in &self.riscv_asm {
-                    println!("{}", op);
+                for i in &self.ferry_ir {
+                    println!("{i}");
                 }
             }
         }
@@ -214,14 +186,4 @@ struct FerryInterpreterErrors {
     source_code: String,
     #[related]
     related: Vec<FerryInterpreterError>,
-}
-
-#[derive(Error, Debug, Diagnostic)]
-#[error("Encountered assembler errrors")]
-#[diagnostic()]
-struct FerryAsmErrors {
-    #[source_code]
-    source_code: String,
-    #[related]
-    related: Vec<FerryAsmError>,
 }

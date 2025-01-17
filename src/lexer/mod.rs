@@ -1,6 +1,8 @@
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
+pub(crate) mod token;
+
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryLexError {
     #[error("Syntax error: Unexpected character")]
@@ -29,19 +31,19 @@ pub enum FerryLexError {
     },
 }
 
-use crate::token::{TokenType as TT, *};
+use token::{Ctrl, Token, Kwd, Op, TokenType as TT, Val};
 
 type FerryResult<T> = Result<T, FerryLexError>;
 type FerryLexResult<T> = Result<Vec<T>, Vec<FerryLexError>>;
 
 #[derive(Debug)]
-pub struct FerryLexer<'source> {
+pub struct Lexer<'source> {
     source: &'source [u8],
     start: usize,
     current: usize,
 }
 
-impl<'source> FerryLexer<'source> {
+impl<'source> Lexer<'source> {
     pub fn new(source: &'source [u8]) -> Self {
         Self {
             source,
@@ -50,7 +52,7 @@ impl<'source> FerryLexer<'source> {
         }
     }
 
-    pub fn lex(&mut self) -> FerryLexResult<FerryToken> {
+    pub fn lex(&mut self) -> FerryLexResult<Token> {
         let mut tokens = Vec::new();
         let mut errors = Vec::new();
 
@@ -155,6 +157,10 @@ impl<'source> FerryLexer<'source> {
                     "def" => Some(TT::Keyword(Kwd::Def)),
                     "fn" => Some(TT::Keyword(Kwd::Fn)),
                     "return" => Some(TT::Keyword(Kwd::Return)),
+                    "from" => Some(TT::Keyword(Kwd::From)),
+                    "import" => Some(TT::Keyword(Kwd::Import)),
+                    "export" => Some(TT::Keyword(Kwd::Export)),
+                    "as" => Some(TT::Keyword(Kwd::As)),
 
                     // reserved boolean keywords
                     "true" => Some(TT::Value(Val::Boolean(true))),
@@ -181,9 +187,9 @@ impl<'source> FerryLexer<'source> {
     }
 
     /// creates the token and associates it with a span of the source code
-    fn make_token(&self, token_type: TT) -> FerryResult<FerryToken> {
+    fn make_token(&self, token_type: TT) -> FerryResult<Token> {
         let span = (self.start, self.current - self.start).into();
-        Ok(FerryToken::new(token_type, span))
+        Ok(Token::new(token_type, span))
     }
 
     /// returns the next byte of source code and advances the internal counter
@@ -286,10 +292,10 @@ impl<'source> FerryLexer<'source> {
                 .substring(end_start, self.current)?
                 .parse::<i64>()
                 .expect("should have been i64");
-            return Ok(TokenType::Value(Val::Range(start, end)));
+            return Ok(TT::Value(Val::Range(start, end)));
         }
 
-        Ok(TokenType::Value(Val::Num(
+        Ok(TT::Value(Val::Num(
             self.substring(self.start, self.current)?
                 .parse::<i64>()
                 .expect("that was not an f64? how"),

@@ -16,5 +16,19 @@ thiserror = "1.0.63"
 #     "prefer-static",
 # ] }
 
+[lints.clippy]
+perf = "warn"
+correctness = "warn"
+complexity = "warn"
+suspicious = "warn"
+style = "warn"
+# pedantic = "warn"
+
+[profile.dev]
+lto = "thin"
+
+[profile.release]
+lto = "fat"
+
 [[example]]
 name = "perf"
