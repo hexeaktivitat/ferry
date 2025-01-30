@@ -273,6 +273,7 @@ impl Parser {
                     match id.clone().as_str() {
                         "Int" => Some(FerryType::Num),
                         "String" => Some(FerryType::String),
+                        "List" => Some(FerryType::List),
                         _ => None,
                     }
                 } else {
@@ -303,6 +304,7 @@ impl Parser {
                 match id.clone().as_str() {
                     "Int" => Some(FerryType::Num),
                     "String" => Some(FerryType::String),
+                    "List" => Some(FerryType::List),
                     "Function:" => Some(FerryType::Function),
                     _ => None,
                 }
@@ -443,6 +445,7 @@ impl Parser {
                 token,
                 contents,
                 expr_type: FerryTyping::Untyped,
+                inner_type: FerryTyping::Untyped,
                 span: *self.previous().get_span(),
             }))
         } else {
@@ -633,6 +636,7 @@ impl Parser {
                         token: self.previous().clone(),
                         contents,
                         expr_type: FerryTyping::Untyped,
+                        inner_type: FerryTyping::Untyped,
                         span: *self.previous().get_span(),
                     })
                 } // _ => unreachable!(),
@@ -789,6 +793,7 @@ impl Parser {
             token,
             contents,
             expr_type: FerryTyping::Untyped,
+            inner_type: FerryTyping::Untyped,
             span: *self.previous().get_span(),
         }))
     }

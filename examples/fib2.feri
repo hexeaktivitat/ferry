@@ -1,11 +1,19 @@
 import std
 
-// this will require a sequence operator to function correctly
-def fn fib(n: Int) -> Int: 
-    if n == 0 then: (0) else: (
-        if n == 1 then: (1) else (
-    if modulo(n, 2) == 0 then:
-        (fib(n / 2) * (fib((n / 2) + 1) * 2 - fib(n / 2)))
-    else: 
-       ( fib(n / 2) * fib(n / 2) + fib((n / 2) + 1) * fib((n / 2) + 1))
-))
+def fn fib_help(n: Int, a: List, b: List) -> List:
+    // let c: Int = a[0] * (b[0] * 2 - a[0])
+    // let d: Int = square(a[0]) + square(b[0])
+    if (modulo(n, 2) == 0) then:
+        [a[0] * (b[0] * 2 - a[0]), square(a[0]) + square(b[0])]
+    else:
+        [square(a[0]) + square(b[0]), (a[0] * (b[0] * 2 - a[0])) + (square(a[0]) + square(b[0]))]
+
+def fn fib(n: Int) -> List:
+    if (n == 0) then: 
+        [0, 1]
+    else: (
+        fib_help(n, fib(n / 2) , (fib(n / 2 + 1)))
+    )
+
+
+fib(5)

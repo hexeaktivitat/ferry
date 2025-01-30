@@ -159,11 +159,13 @@ impl Typechecker {
                         token,
                         contents,
                         expr_type,
+                        inner_type,
                         span,
                     } => Ok(Expr::Literal(Lit::List {
                         token,
                         contents,
-                        expr_type: set_type(expr_type, infer_type),
+                        expr_type: set_type(expr_type, &FerryType::List),
+                        inner_type: set_type(inner_type, infer_type),
                         span,
                     })),
                 },
@@ -303,17 +305,24 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 token,
                 contents,
                 expr_type: _,
+                inner_type: _,
                 span,
             } => {
                 let mut checked_contents: Vec<Expr> = Vec::new();
                 for item in contents {
                     checked_contents.push(self.check_types(item, state)?);
                 }
+                let inner_type = if !checked_contents.is_empty() {
+                    *checked_contents.first().unwrap().get_type()
+                } else {
+                    FerryType::Undefined
+                };
 
                 Ok(Expr::Literal(Lit::List {
                     token: token.clone(),
                     contents: checked_contents,
                     expr_type: FerryTyping::assign(&FerryType::List),
+                    inner_type: FerryTyping::infer(&inner_type),
                     span: *span,
                 }))
             }
@@ -335,7 +344,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                             lhs: Box::new(left.clone()),
                             operator: binary.operator.clone(),
                             rhs: Box::new(right),
-                            expr_type: expr_type.clone(),
+                            expr_type,
                         }))
                     } else if (left.check(&FerryType::Untyped) && right.check(&FerryType::Num))
                         || (left.check(&FerryType::Num) && right.check(&FerryType::Untyped))
@@ -347,7 +356,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                             lhs: Box::new(left.clone()),
                             operator: binary.operator.clone(),
                             rhs: Box::new(right),
-                            expr_type: expr_type.clone(),
+                            expr_type,
                         }))
                     } else {
                         Err(FerryTypeError::TypeMismatch {
@@ -394,7 +403,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                                 lhs: Box::new(left.clone()),
                                 operator: binary.operator.clone(),
                                 rhs: Box::new(right),
-                                expr_type: FerryTyping::assign(&FerryType::List),
+                                expr_type: FerryTyping::assign(&FerryType::Num),
                             }))
                         } else {
                             Err(FerryTypeError::TypeMismatch {
@@ -609,6 +618,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 expr_type: FerryTyping::assign(assigned_type),
             }));
         }
+
+        println!("binding: {:#?}", binding);
 
         Err(FerryTypeError::UnknownType {
             advice: "unknown type for variable".into(),
@@ -830,7 +841,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                         name: name.clone(),
                         token: call.token.clone(),
                         args: vec![],
-                        expr_type: declaration.expr_type.clone(),
+                        expr_type: declaration.expr_type,
                     }))
                 } else {
                     let mut checked_args = Vec::new();
@@ -854,7 +865,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                         name: name.clone(),
                         token: call.token.clone(),
                         args: checked_args,
-                        expr_type: declaration.expr_type.clone(),
+                        expr_type: declaration.expr_type,
                     }))
                 }
             } else {
@@ -863,7 +874,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     name: name.clone(),
                     token: call.token.clone(),
                     args: call.args.clone(),
-                    expr_type: declaration.expr_type.clone(),
+                    expr_type: declaration.expr_type,
                 }))
             }
         } else {

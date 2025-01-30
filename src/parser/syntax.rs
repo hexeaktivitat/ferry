@@ -49,6 +49,7 @@ pub enum Lit {
         token: Token,
         contents: Vec<Expr>,
         expr_type: FerryTyping,
+        inner_type: FerryTyping,
         span: SourceSpan,
     },
 }
@@ -227,6 +228,7 @@ impl Expr {
                     token,
                     contents: _,
                     expr_type: _,
+                    inner_type: _,
                     span: _,
                 } => token,
             },
@@ -277,6 +279,7 @@ impl std::fmt::Display for Expr {
                     token: _,
                     contents,
                     expr_type,
+                    inner_type: _,
                     span: _,
                 } => {
                     let mut formatting = String::new();

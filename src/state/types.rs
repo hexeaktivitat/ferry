@@ -1,6 +1,6 @@
 use crate::parser::syntax::{Expr, Lit};
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Copy)]
 pub enum FerryTyping {
     Assigned(FerryType),
     Inferred(FerryType),
@@ -92,6 +92,7 @@ impl Typing for Expr {
                     contents: _,
                     expr_type,
                     span: _,
+                    ..
                 } => expr_type.get_type(),
             },
             Expr::Binary(b) => b.expr_type.get_type(),

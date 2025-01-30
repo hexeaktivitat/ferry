@@ -116,6 +116,7 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
                 token,
                 contents,
                 expr_type,
+                inner_type,
                 span,
             } => {
                 let ptr = self.heap_ptr;

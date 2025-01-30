@@ -99,6 +99,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                 token: _,
                 contents,
                 expr_type: _,
+                inner_type: _,
                 span: _,
             } => {
                 let mut values: Vec<Value> = Vec::new();
