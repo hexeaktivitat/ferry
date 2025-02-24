@@ -6,13 +6,13 @@ use thiserror::Error;
 use crate::{
     lexer::token::{Op, TokenType as TT},
     parser::syntax::{
-        walk_expr, Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If,
-        Import, Lit as SLit, Loop, Module, Unary, Variable,
+        Assign, Binary, Binding, Call, Expr, ExprVisitor, For, Function, Group, If, Import,
+        Lit as SLit, Loop, Module, Unary, Variable, walk_expr,
     },
     state::{
+        State,
         types::Typing,
         value::{FuncVal, Value},
-        State,
     },
 };
 
