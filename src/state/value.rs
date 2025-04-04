@@ -35,11 +35,7 @@ impl From<i64> for Value {
 // Coerces all non-Number values to 0
 impl From<Value> for i64 {
     fn from(value: Value) -> Self {
-        if let Value::Number(v) = value {
-            v
-        } else {
-            0
-        }
+        if let Value::Number(v) = value { v } else { 0 }
     }
 }
 
@@ -184,11 +180,7 @@ impl From<u8> for Value {
 // null pointers????? null pointers....
 impl From<Value> for u8 {
     fn from(value: Value) -> Self {
-        if let Value::Ptr(v) = value {
-            v
-        } else {
-            0
-        }
+        if let Value::Ptr(v) = value { v } else { 0 }
     }
 }
 
