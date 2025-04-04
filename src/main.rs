@@ -3,7 +3,7 @@ use miette::{Report, Result};
 
 use std::{
     fs::read_to_string,
-    io::{stdin, stdout, Write},
+    io::{Write, stdin, stdout},
     process::ExitCode,
 };
 
