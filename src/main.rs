@@ -3,7 +3,7 @@ use miette::{Report, Result};
 
 use std::{
     fs::read_to_string,
-    io::{stdin, stdout, Write},
+    io::{Write, stdin, stdout},
     process::ExitCode,
 };
 
@@ -51,7 +51,7 @@ fn repl() -> Result<ExitCode, Report> {
     let mut input = String::new();
     let mut program = Ferry::new(input.clone());
 
-    println!("\nFERRY 0.2.4");
+    println!("\nFERRY 0.3.0");
     println!("===========");
     println!("Language Design Experiment");
     println!("Type !help for commands, or !quit to quit\n");

@@ -3,8 +3,8 @@ use thiserror::Error;
 
 use crate::lexer::token::{Ctrl, Kwd};
 use crate::lexer::token::{Op, Token, TokenType as TT, Val as TLit};
-use crate::state::types::{FerryType, FerryTyping};
 use crate::state::State;
+use crate::state::types::{FerryType, FerryTyping};
 use syntax::{
     Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Import, Lit as SLit, Loop,
     Module, Unary, Variable,

@@ -31,7 +31,7 @@ pub enum FerryLexError {
     },
 }
 
-use token::{Ctrl, Token, Kwd, Op, TokenType as TT, Val};
+use token::{Ctrl, Kwd, Op, Token, TokenType as TT, Val};
 
 type FerryResult<T> = Result<T, FerryLexError>;
 type FerryLexResult<T> = Result<Vec<T>, Vec<FerryLexError>>;

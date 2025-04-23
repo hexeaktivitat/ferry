@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use crate::{
     ir::{FerryAddr, Opcode},
-    state::{value::Value, State},
+    state::{State, value::Value},
 };
 
 #[derive(Diagnostic, Debug, Error)]
