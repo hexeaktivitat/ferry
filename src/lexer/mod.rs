@@ -5,13 +5,21 @@ pub(crate) mod token;
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryLexError {
+    #[error("Syntax error: Unknown character")]
+    #[diagnostic(code(syntax::unknown_character))]
+    UnknownCharacter {
+        #[help]
+        advice: String,
+        #[label]
+        bad_char: SourceSpan,
+    },
     #[error("Syntax error: Unexpected character")]
     #[diagnostic(code(syntax::unexpected_character))]
     UnexpectedCharacter {
         #[help]
         advice: String,
         #[label]
-        bad_char: SourceSpan,
+        unexpected_character: SourceSpan,
     },
     #[error("Syntax error: Unterminated string")]
     #[diagnostic(code(syntax::unterminated_string))]
@@ -20,14 +28,24 @@ pub enum FerryLexError {
         advice: String,
         #[label]
         start_quote: SourceSpan,
+        #[label]
+        current_pos: SourceSpan,
     },
     #[error("Syntax error: Not a number")]
     #[diagnostic(code(syntax::not_a_number))]
-    NotANumber {
+    InvalidNumeric {
         #[help]
         advice: String,
         #[label]
         bad_num: SourceSpan,
+    },
+    #[error("Syntax error: Expected integer, found float")]
+    #[diagnostic(code(syntax::invalid_integer))]
+    InvalidInteger {
+        #[help]
+        advice: String,
+        #[label]
+        float_num: SourceSpan,
     },
 }
 
@@ -179,9 +197,9 @@ impl<'source> Lexer<'source> {
 
             // NON-SIGNIFICANT WHITESPACE
             b' ' | b'\r' | b'\t' => Ok(None),
-            _ => Err(FerryLexError::UnexpectedCharacter {
-                advice: "Expected literally anything else".into(),
-                bad_char: (self.start, self.current - self.start).into(),
+            c => Err(FerryLexError::UnknownCharacter {
+                advice: format!("Encountered an unknown character: '{}'", c as char),
+                bad_char: (self.start, self.start).into(),
             }),
         }
     }
@@ -226,13 +244,20 @@ impl<'source> Lexer<'source> {
 
     /// creates a string value from the bytestream
     fn string(&mut self) -> FerryResult<TT> {
-        while self.peek() != b'"' && !self.end_of_code() {
+        while self.peek() != b'"' && !self.end_of_code() && self.peek() != b'\n' {
             self.current += 1;
         }
         if self.end_of_code() {
             return Err(FerryLexError::UnterminatedString {
-                advice: "check for a missing quote around intended string".into(),
-                start_quote: (self.start, self.current - self.start).into(),
+                advice: "Expected end of string, found end of file".into(),
+                start_quote: (self.start, self.start).into(),
+                current_pos: (self.start, self.current - self.start + 1).into(),
+            });
+        } else if self.peek() == b'\n' {
+            return Err(FerryLexError::UnterminatedString {
+                advice: "Expected end of string, found newline".into(),
+                start_quote: (self.start, self.start).into(),
+                current_pos: (self.start, self.current - self.start + 1).into(),
             });
         }
 
@@ -249,7 +274,7 @@ impl<'source> Lexer<'source> {
         String::from_utf8(self.source[start..end].to_vec()).map_err(|_source| {
             FerryLexError::UnexpectedCharacter {
                 advice: "character unrecognized in this context".into(),
-                bad_char: (self.start, self.current - self.start).into(),
+                unexpected_character: (self.start, self.current - self.start + 1).into(),
             }
         })
     }
@@ -261,21 +286,21 @@ impl<'source> Lexer<'source> {
         }
 
         if self.peek().is_ascii_alphabetic() {
-            return Err(FerryLexError::NotANumber {
-                advice: "not a valid integer value".into(),
-                bad_num: (self.start, self.current - self.start).into(),
+            return Err(FerryLexError::InvalidNumeric {
+                advice: "Not a valid numeric value".into(),
+                bad_num: (self.start, self.current - self.start + 1).into(),
             });
         }
 
         if self.peek() == b'.' && self.peek_next().is_ascii_digit() {
-            return Err(FerryLexError::NotANumber {
-                advice: "floats currently unsupported".into(),
-                bad_num: (self.start, self.current - self.start).into(),
+            self.advance();
+            while self.peek().is_ascii_digit() {
+                self.advance();
+            }
+            return Err(FerryLexError::InvalidInteger {
+                advice: "Integer values cannot be floats".into(),
+                float_num: (self.start, self.current - self.start + 1).into(),
             });
-            // self.advance();
-            // while self.peek().is_ascii_digit() {
-            // self.advance();
-            // }
         } else if self.peek() == b'.' && self.peek_next() == b'.' {
             // consume the .. token
             let start = self
@@ -298,7 +323,7 @@ impl<'source> Lexer<'source> {
         Ok(TT::Value(Val::Num(
             self.substring(self.start, self.current)?
                 .parse::<i64>()
-                .expect("that was not an f64? how"),
+                .expect("that was not an i64? how"),
         )))
     }
 
