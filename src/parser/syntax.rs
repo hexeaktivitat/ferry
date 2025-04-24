@@ -56,29 +56,32 @@ pub enum Lit {
 impl Lit {
     pub fn get_literal_span(&self) -> SourceSpan {
         match self {
-            Lit::Undefined { token, expr_type } => *token.get_span(),
-            Lit::Number {
+            Lit::Undefined {
                 token,
-                value,
-                expr_type,
+                expr_type: _,
+            } => *token.get_span(),
+            Lit::Number {
+                value: _,
+                token: _,
+                expr_type: _,
                 span,
             } => *span,
             Lit::Str {
-                token,
-                value,
-                expr_type,
+                token: _,
+                value: _,
+                expr_type: _,
                 span,
             } => *span,
             Lit::Bool {
-                token,
-                value,
-                expr_type,
+                token: _,
+                value: _,
+                expr_type: _,
                 span,
             } => *span,
             Lit::List {
-                token,
-                contents,
-                expr_type,
+                token: _,
+                contents: _,
+                expr_type: _,
                 span,
             } => *span,
         }
