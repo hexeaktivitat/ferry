@@ -781,15 +781,17 @@ impl Parser {
             let next = self.start(state)?;
             contents.push(next);
         }
-        self.consume(
+        let right_bracket = self.consume(
             &TT::Control(Ctrl::RightBracket),
             "expected right bracket after list",
         )?;
+        let offset = self.previous().get_span().offset();
+        let span = (offset, right_bracket.get_span().offset() - offset).into();
         Ok(Expr::Literal(SLit::List {
             token,
             contents,
             expr_type: FerryTyping::Untyped,
-            span: *self.previous().get_span(),
+            span,
         }))
     }
 

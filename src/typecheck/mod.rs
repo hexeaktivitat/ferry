@@ -34,7 +34,7 @@ pub enum FerryTypeError {
         span: SourceSpan,
     },
     #[error("mismatched types")]
-    TypeMismatch {
+    BinaryOpTypeMismatch {
         #[help]
         advice: String,
         #[label("operand")]
@@ -350,8 +350,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                             expr_type: expr_type.clone(),
                         }))
                     } else {
-                        Err(FerryTypeError::TypeMismatch {
-                            advice: "operands did not match types".into(),
+                        Err(FerryTypeError::BinaryOpTypeMismatch {
+                            advice: format!(
+                                "Operands do not match type:\n LH type: {} \n RH type: {}",
+                                left.get_type(),
+                                right.get_type()
+                            ),
                             span: *binary.operator.get_span(),
                             lhs_span: *left.get_token().get_span(),
                             rhs_span: *right.get_token().get_span(),
@@ -375,8 +379,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                             expr_type: FerryTyping::assign(&FerryType::Boolean),
                         }))
                     } else {
-                        Err(FerryTypeError::TypeMismatch {
-                            advice: "operands did not match types".into(),
+                        Err(FerryTypeError::BinaryOpTypeMismatch {
+                            advice: format!(
+                                "Operands do not match type:\n LH type: {} \n RH type: {}",
+                                left.get_type(),
+                                right.get_type()
+                            ),
                             span: *binary.operator.get_span(),
                             lhs_span: *left.get_token().get_span(),
                             rhs_span: *right.get_token().get_span(),
@@ -397,16 +405,24 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                                 expr_type: FerryTyping::assign(&FerryType::List),
                             }))
                         } else {
-                            Err(FerryTypeError::TypeMismatch {
-                                advice: "invalid attempt at list indexing".into(),
+                            Err(FerryTypeError::BinaryOpTypeMismatch {
+                                advice: format!(
+                                    "Cannot index List with non-Int type:\n LHS type: {}\n RHS type: {}",
+                                    left.get_type(),
+                                    right.get_type()
+                                ),
                                 span: *binary.operator.get_span(),
                                 lhs_span: *left.get_token().get_span(),
                                 rhs_span: *right.get_token().get_span(),
                             })
                         }
                     } else {
-                        Err(FerryTypeError::TypeMismatch {
-                            advice: "invalid attempt at list indexing".into(),
+                        Err(FerryTypeError::BinaryOpTypeMismatch {
+                            advice: format!(
+                                "Cannot index into non-List type:\n LH type: {} \n RH type: {}",
+                                left.get_type(),
+                                right.get_type()
+                            ),
                             span: *binary.operator.get_span(),
                             lhs_span: *left.get_token().get_span(),
                             rhs_span: *right.get_token().get_span(),
@@ -427,16 +443,24 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                                 expr_type: FerryTyping::infer(&FerryType::List),
                             }))
                         } else {
-                            Err(FerryTypeError::TypeMismatch {
-                                advice: "invalid attempt at list cons".into(),
+                            Err(FerryTypeError::BinaryOpTypeMismatch {
+                                advice: format!(
+                                    "Cannot cons a non-List object into a List:\n LHS type: {}\n RHS type: {}",
+                                    left.get_type(),
+                                    right.get_type()
+                                ),
                                 span: *binary.operator.get_span(),
                                 lhs_span: *left.get_token().get_span(),
                                 rhs_span: *right.get_token().get_span(),
                             })
                         }
                     } else {
-                        Err(FerryTypeError::TypeMismatch {
-                            advice: "invalid attempt at list cons".into(),
+                        Err(FerryTypeError::BinaryOpTypeMismatch {
+                            advice: format!(
+                                "Cannot cons a non-List object:\n LHS type: {}\n RHS type: {}",
+                                left.get_type(),
+                                right.get_type()
+                            ),
                             span: *binary.operator.get_span(),
                             lhs_span: *left.get_token().get_span(),
                             rhs_span: *right.get_token().get_span(),
@@ -659,7 +683,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 expr_type: FerryTyping::assign(&FerryType::Num),
             }))
         } else {
-            Err(FerryTypeError::TypeMismatch {
+            Err(FerryTypeError::BinaryOpTypeMismatch {
                 advice: "Expected Num, found".into(),
                 span: *unary.operator.get_span(),
                 lhs_span: *unary.operator.get_span(),

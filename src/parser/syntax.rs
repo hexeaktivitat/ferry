@@ -53,6 +53,38 @@ pub enum Lit {
     },
 }
 
+impl Lit {
+    pub fn get_literal_span(&self) -> SourceSpan {
+        match self {
+            Lit::Undefined { token, expr_type } => token.get_span(),
+            Lit::Number {
+                token,
+                value,
+                expr_type,
+                span,
+            } => *span,
+            Lit::Str {
+                token,
+                value,
+                expr_type,
+                span,
+            } => *span,
+            Lit::Bool {
+                token,
+                value,
+                expr_type,
+                span,
+            } => *span,
+            Lit::List {
+                token,
+                contents,
+                expr_type,
+                span,
+            } => *span,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binary {
     pub lhs: Box<Expr>,

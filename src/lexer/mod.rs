@@ -199,14 +199,14 @@ impl<'source> Lexer<'source> {
             b' ' | b'\r' | b'\t' => Ok(None),
             c => Err(FerryLexError::UnknownCharacter {
                 advice: format!("Encountered an unknown character: '{}'", c as char),
-                bad_char: (self.start, self.start).into(),
+                bad_char: (self.start, self.current - self.start).into(),
             }),
         }
     }
 
     /// creates the token and associates it with a span of the source code
     fn make_token(&self, token_type: TT) -> FerryResult<Token> {
-        let span = (self.start, self.current - self.start + 1).into();
+        let span = (self.start, self.current - self.start).into();
         Ok(Token::new(token_type, span))
     }
 
@@ -251,13 +251,13 @@ impl<'source> Lexer<'source> {
             return Err(FerryLexError::UnterminatedString {
                 advice: "Expected end of string, found end of file".into(),
                 start_quote: (self.start, self.start).into(),
-                current_pos: (self.start, self.current - self.start + 1).into(),
+                current_pos: (self.start, self.current - self.start).into(),
             });
         } else if self.peek() == b'\n' {
             return Err(FerryLexError::UnterminatedString {
                 advice: "Expected end of string, found newline".into(),
                 start_quote: (self.start, self.start).into(),
-                current_pos: (self.start, self.current - self.start + 1).into(),
+                current_pos: (self.start, self.current - self.start).into(),
             });
         }
 
@@ -274,7 +274,7 @@ impl<'source> Lexer<'source> {
         String::from_utf8(self.source[start..end].to_vec()).map_err(|_source| {
             FerryLexError::UnexpectedCharacter {
                 advice: "character unrecognized in this context".into(),
-                unexpected_character: (self.start, self.current - self.start + 1).into(),
+                unexpected_character: (self.start, self.current - self.start).into(),
             }
         })
     }
@@ -288,7 +288,7 @@ impl<'source> Lexer<'source> {
         if self.peek().is_ascii_alphabetic() {
             return Err(FerryLexError::InvalidNumeric {
                 advice: "Not a valid numeric value".into(),
-                bad_num: (self.start, self.current - self.start + 1).into(),
+                bad_num: (self.start, self.current - self.start).into(),
             });
         }
 
@@ -299,7 +299,7 @@ impl<'source> Lexer<'source> {
             }
             return Err(FerryLexError::InvalidInteger {
                 advice: "Integer values cannot be floats".into(),
-                float_num: (self.start, self.current - self.start + 1).into(),
+                float_num: (self.start, self.current - self.start).into(),
             });
         } else if self.peek() == b'.' && self.peek_next() == b'.' {
             // consume the .. token
