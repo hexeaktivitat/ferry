@@ -206,7 +206,7 @@ impl<'source> Lexer<'source> {
 
     /// creates the token and associates it with a span of the source code
     fn make_token(&self, token_type: TT) -> FerryResult<Token> {
-        let span = (self.start, self.current - self.start).into();
+        let span = (self.start, self.current - self.start + 1).into();
         Ok(Token::new(token_type, span))
     }
 
