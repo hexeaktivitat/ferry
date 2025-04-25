@@ -33,6 +33,15 @@ pub enum FerryTypeError {
         #[label]
         span: SourceSpan,
     },
+    #[error("unary type mismatch")]
+    UnaryOpTypeMismatch {
+        #[help]
+        advice: String,
+        #[label("operand")]
+        span: SourceSpan,
+        #[label("rhs")]
+        rhs_span: SourceSpan,
+    },
     #[error("mismatched types")]
     BinaryOpTypeMismatch {
         #[help]
@@ -57,6 +66,13 @@ pub enum FerryTypeError {
     },
     #[error("mistyped variable")]
     MistypedVariable {
+        #[help]
+        advice: String,
+        #[label]
+        span: SourceSpan,
+    },
+    #[error("arity error")]
+    ArityMismatch {
         #[help]
         advice: String,
         #[label]
@@ -683,10 +699,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 expr_type: FerryTyping::assign(&FerryType::Num),
             }))
         } else {
-            Err(FerryTypeError::BinaryOpTypeMismatch {
-                advice: "Expected Num, found".into(),
+            Err(FerryTypeError::UnaryOpTypeMismatch {
+                advice: format!("Expected Num, found {}", right.get_type()),
                 span: *unary.operator.get_span(),
-                lhs_span: *unary.operator.get_span(),
                 rhs_span: *right.get_token().get_span(),
             })
         }
@@ -723,7 +738,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 }))
             } else {
                 Err(FerryTypeError::MistypedVariable {
-                    advice: "Expected List, found".into(),
+                    advice: format!("Expected List, found {}", iterator.get_type()),
                     span: *for_expr.token.get_span(),
                 })
             }
@@ -743,7 +758,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 }))
             } else {
                 Err(FerryTypeError::MistypedVariable {
-                    advice: "Expected List, found".into(),
+                    advice: format!("Expected List, found {}", iterator.get_type()),
                     span: *for_expr.token.get_span(),
                 })
             }
@@ -832,19 +847,23 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             name,
             func_type: _,
             instructions: _,
-            arity: _,
+            arity,
         })) = &mut state.get_symbol_value(&call.name)
         {
             let Some(declaration) = decl else {
                 return Err(FerryTypeError::MistypedVariable {
-                    advice: "function call wasnt a function".into(),
+                    advice: format!("Expected function, found variable {name}"),
                     span: *call.token.get_span(),
                 });
             };
             if let Some(decl_args) = &mut declaration.args {
                 if call.args.len() != decl_args.len() {
-                    return Err(FerryTypeError::UnimplementedFeature {
-                        advice: "actually an arity error".into(),
+                    return Err(FerryTypeError::ArityMismatch {
+                        advice: format!(
+                            "Expected {} arguments, found {} args",
+                            arity,
+                            decl_args.len()
+                        ),
                         span: *call.token.get_span(),
                     });
                 }
@@ -867,7 +886,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                             checked_args.push(checked_arg);
                         } else {
                             return Err(FerryTypeError::MistypedVariable {
-                                advice: "types do not match".into(),
+                                advice: format!(
+                                    "Argument types do not match:\n expected {}\n found {}",
+                                    checked_decl_arg.get_type(),
+                                    decl_arg.get_type()
+                                ),
                                 span: *call.token.get_span(),
                             });
                         }
@@ -892,7 +915,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             }
         } else {
             Err(FerryTypeError::UnknownType {
-                advice: "function type unknown at compile time".into(),
+                advice: format!("Function type could not be determined at compile time.",),
                 span: *call.token.get_span(),
             })
         }
