@@ -246,7 +246,10 @@ impl Parser {
         self.consume(&TT::Keyword(Kwd::Fn), "expected 'fn' after 'def'")?;
         let Some(name) = self.advance().get_id() else {
             return Err(FerryParseError::UnexpectedToken {
-                msg: "expected identifier, found other".into(),
+                msg: format!(
+                    "Expected identifier, found {}",
+                    self.previous().get_token_type()
+                ),
                 span: *self.previous().get_span(),
             });
         };
@@ -263,7 +266,10 @@ impl Parser {
                     id.clone()
                 } else {
                     return Err(FerryParseError::UnexpectedToken {
-                        msg: "expected param id".into(),
+                        msg: format!(
+                            "Expected parameter ID, found {}",
+                            self.previous().get_token_type()
+                        ),
                         span: *self.previous().get_span(),
                     });
                 };
@@ -303,12 +309,15 @@ impl Parser {
                 match id.clone().as_str() {
                     "Int" => Some(FerryType::Num),
                     "String" => Some(FerryType::String),
-                    "Function:" => Some(FerryType::Function),
+                    "Function" => Some(FerryType::Function),
                     _ => None,
                 }
             } else {
                 return Err(FerryParseError::UnexpectedToken {
-                    msg: "expected ID token".into(),
+                    msg: format!(
+                        "Expected function return type identifier, found {}",
+                        self.previous().get_token_type()
+                    ),
                     span: *self.previous().get_span(),
                 });
             }
@@ -351,7 +360,10 @@ impl Parser {
 
         let Some(name) = self.advance().get_id() else {
             return Err(FerryParseError::UnexpectedToken {
-                msg: "expected identifier for module".into(),
+                msg: format!(
+                    "Expected module identifier, found {}",
+                    self.previous().get_token_type()
+                ),
                 span: *self.previous().get_span(),
             });
         };
@@ -378,7 +390,10 @@ impl Parser {
 
         let Some(name) = self.advance().get_id() else {
             return Err(FerryParseError::UnexpectedToken {
-                msg: "expected identifier for module to import".into(),
+                msg: format!(
+                    "Expected name of module to import, found {}",
+                    self.previous().get_token_type()
+                ),
                 span: *self.previous().get_span(),
             });
         };
@@ -408,7 +423,7 @@ impl Parser {
             }
         } else {
             return Err(FerryParseError::UnexpectedToken {
-                msg: "Provided module was not module".into(),
+                msg: format!("Could not find module {name} in scope"),
                 span: *self.previous().get_span(),
             });
         }
