@@ -915,7 +915,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             }
         } else {
             Err(FerryTypeError::UnknownType {
-                advice: format!("Function type could not be determined at compile time.",),
+                advice: format!("Function type could not be determined at compile time."),
                 span: *call.token.get_span(),
             })
         }
@@ -954,7 +954,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 checked_fns.push(checked_function);
             } else {
                 return Err(FerryTypeError::UnimplementedFeature {
-                    advice: "module import error - typecheck".into(),
+                    advice: format!("Typecheck issues in module {}", import.name),
                     span: *import.token.get_span(),
                 });
             }
