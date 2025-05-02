@@ -10,7 +10,7 @@ pub enum FerryLexError {
     UnknownCharacter {
         #[help]
         advice: String,
-        #[label]
+        #[label("unknown char")]
         bad_char: SourceSpan,
     },
     #[error("Syntax error: Unexpected character")]
@@ -18,7 +18,7 @@ pub enum FerryLexError {
     UnexpectedCharacter {
         #[help]
         advice: String,
-        #[label]
+        #[label("unexpected char")]
         unexpected_character: SourceSpan,
     },
     #[error("Syntax error: Unterminated string")]
@@ -26,9 +26,9 @@ pub enum FerryLexError {
     UnterminatedString {
         #[help]
         advice: String,
-        #[label]
+        #[label("starting quote")]
         start_quote: SourceSpan,
-        #[label]
+        #[label("end of line")]
         current_pos: SourceSpan,
     },
     #[error("Syntax error: Not a number")]
@@ -36,15 +36,15 @@ pub enum FerryLexError {
     InvalidNumeric {
         #[help]
         advice: String,
-        #[label]
+        #[label("not a numeric value")]
         bad_num: SourceSpan,
     },
-    #[error("Syntax error: Expected integer, found float")]
+    #[error("Syntax error: Expected integer, found float (Floats currently unsupported)")]
     #[diagnostic(code(syntax::invalid_integer))]
     InvalidInteger {
         #[help]
         advice: String,
-        #[label]
+        #[label("floating point")]
         float_num: SourceSpan,
     },
 }
@@ -250,22 +250,23 @@ impl<'source> Lexer<'source> {
         if self.end_of_code() {
             return Err(FerryLexError::UnterminatedString {
                 advice: "Expected end of string, found end of file".into(),
-                start_quote: (self.start, self.start).into(),
-                current_pos: (self.start, self.current - self.start).into(),
+                start_quote: (self.start, 1).into(),
+                current_pos: (self.current, 1).into(),
             });
         } else if self.peek() == b'\n' {
+            println!("{}, {}", self.start, self.current);
             return Err(FerryLexError::UnterminatedString {
                 advice: "Expected end of string, found newline".into(),
-                start_quote: (self.start, self.start).into(),
-                current_pos: (self.start, self.current - self.start).into(),
+                start_quote: (self.start, 1).into(),
+                current_pos: (self.current, 1).into(),
             });
+        } else {
+            self.advance();
+
+            Ok(TT::Value(Val::String(
+                self.substring(self.start + 1, self.current - 1)?,
+            )))
         }
-
-        self.advance();
-
-        Ok(TT::Value(Val::String(
-            self.substring(self.start + 1, self.current - 1)?,
-        )))
     }
 
     /// given a start and ending position, parses a given slice of the bytestream
@@ -288,18 +289,19 @@ impl<'source> Lexer<'source> {
         if self.peek().is_ascii_alphabetic() {
             return Err(FerryLexError::InvalidNumeric {
                 advice: "Not a valid numeric value".into(),
-                bad_num: (self.start, self.current - self.start).into(),
+                bad_num: (self.current, 1).into(),
             });
         }
 
         if self.peek() == b'.' && self.peek_next().is_ascii_digit() {
+            let current_pos = self.current;
             self.advance();
             while self.peek().is_ascii_digit() {
                 self.advance();
             }
             return Err(FerryLexError::InvalidInteger {
                 advice: "Integer values cannot be floats".into(),
-                float_num: (self.start, self.current - self.start).into(),
+                float_num: (current_pos, 1).into(),
             });
         } else if self.peek() == b'.' && self.peek_next() == b'.' {
             // consume the .. token
