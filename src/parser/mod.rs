@@ -12,6 +12,7 @@ use syntax::{
 
 pub(crate) mod syntax;
 
+#[allow(dead_code)]
 #[derive(Error, Diagnostic, Debug)]
 pub enum FerryParseError {
     #[error("Expected different token")]
@@ -26,6 +27,20 @@ pub enum FerryParseError {
         #[help]
         msg: String,
         #[label]
+        span: SourceSpan,
+    },
+    #[error("Unexpected end of line")]
+    UnexpectedEndOfLine {
+        #[help]
+        msg: String,
+        #[label("Found EOL")]
+        span: SourceSpan,
+    },
+    #[error("Unexpected end of file")]
+    UnexpectedEndOfFile {
+        #[help]
+        msg: String,
+        #[label("Found EOF")]
         span: SourceSpan,
     },
 }
@@ -48,9 +63,14 @@ impl Parser {
         let mut statements = Vec::new();
         let mut errors = Vec::new();
 
+        for token in self.tokens.clone() {
+            println!("{token}");
+        }
+
         while !self.end_of_program() {
             self.start(state)
                 .map_or_else(|e| errors.push(e), |s| statements.push(s));
+            println!("current token: {}", self.previous().get_token_type());
         }
 
         if errors.is_empty() {
@@ -61,6 +81,15 @@ impl Parser {
     }
 
     fn start(&mut self, state: &mut State) -> FerryResult<Expr> {
+        println!("next token: {}", self.peek().get_token_type());
+
+        if self.end_of_program() {
+            return Err(FerryParseError::UnexpectedEndOfFile {
+                msg: format!("encountered EOF when parsing"),
+                span: *self.previous().get_span(),
+            });
+        }
+
         let expr = self.keywords(state)?;
 
         Ok(expr)
@@ -90,9 +119,14 @@ impl Parser {
         };
 
         self.consume_newline()?;
+        // while self.peek().get_token_type() == &TT::Control(Ctrl::Newline) {
+        //     self.consume_newline()?;
+        // }
 
         if expr.is_err() {
+            println!("token before sync: {}", self.previous().get_token_type());
             self.synchronize();
+            println!("token after sync: {}", self.previous().get_token_type());
         }
 
         expr
@@ -107,13 +141,14 @@ impl Parser {
         )?;
         self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'then'")?;
         self.consume_newline()?;
+        println!("before then : {}", self.peek().get_token_type());
         let then_expr = Box::new(self.start(state)?);
         self.consume_newline()?;
-        let else_expr = if self.peek().get_token_type() == &TT::Keyword(Kwd::Else) {
+        println!("after then : {}", self.peek().get_token_type());
+        // let else_expr = if self.peek().get_token_type() == &TT::Keyword(Kwd::Else) {
+        let else_expr = if self.check(&TT::Keyword(Kwd::Else)) {
             self.consume(&TT::Keyword(Kwd::Else), "idk how you got this")?;
-            if self.peek().get_token_type() == &TT::Control(Ctrl::Colon) {
-                self.consume(&TT::Control(Ctrl::Colon), "colon not consumed")?;
-            }
+            self.consume(&TT::Control(Ctrl::Colon), "expected ':' after 'else'")?;
             self.consume_newline()?;
             Some(Box::new(self.start(state)?))
         } else {
@@ -655,6 +690,10 @@ impl Parser {
             TT::Control(Ctrl::Newline) => {
                 self.consume_newline()?;
                 self.start(state)
+                // Err(FerryParseError::UnexpectedEndOfLine {
+                //     msg: format!("Encountered unexpected end of line"),
+                //     span: *self.previous().get_span(),
+                // })
             }
             TT::Identifier(id) => {
                 if self.peek().get_token_type() == &TT::Control(Ctrl::LeftBracket) {
@@ -695,13 +734,14 @@ impl Parser {
             TT::Control(Ctrl::LeftBracket) => self.list(state),
 
             // TT::Comment(_) => {}
-            _ => {
-                println!("oops");
-                Err(FerryParseError::UnexpectedToken {
-                    msg: format!("Unexpected token: {}", self.previous().get_token_type()),
-                    span: *self.previous().get_span(),
-                })
-            }
+            // TT::Control(Ctrl::Newline) => Err(FerryParseError::UnexpectedEndOfLine {
+            //     msg: format!("Encountered unexpected end of line"),
+            //     span: *self.previous().get_span(),
+            // })
+            _ => Err(FerryParseError::UnexpectedToken {
+                msg: format!("Unexpected token: {}", self.previous().get_token_type()),
+                span: *self.previous().get_span(),
+            }),
         }
     }
 
@@ -759,13 +799,37 @@ impl Parser {
 
         while !self.end_of_program() {
             if self.previous().get_token_type() == &TT::Control(Ctrl::Newline) {
-                return;
+                // let _ = self.consume_newline();
+                break;
+            }
+            if self.end_of_program() {
+                break;
             }
             match self.peek().get_token_type() {
-                TT::Keyword(_) => return,
+                TT::Keyword(_) => break,
                 _ => self.advance(),
             };
+            match self.peek().get_token_type() {
+                TT::Keyword(kwd) => match kwd {
+                    Kwd::If
+                    | Kwd::Let
+                    | Kwd::Do
+                    | Kwd::While
+                    | Kwd::For
+                    | Kwd::Def
+                    | Kwd::Import
+                    | Kwd::Export => break,
+                    _ => self.advance(),
+                },
+                _ => self.advance(),
+            };
+            // match self.peek().get_token_type() {
+            //     TT::Keyword(_) => return,
+            //     _ => self.advance(),
+            // };
         }
+
+        println!("synchronize point: {}", self.previous().get_token_type());
     }
 
     fn end_of_program(&self) -> bool {

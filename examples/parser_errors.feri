@@ -1,0 +1,20 @@
+// parser error checking
+
+// if expressions
+
+// lack of colon after then
+if true then 1
+
+// lack of colon after else
+if false then: 1 else 2
+
+// lack of colon in assignment statement
+let a = 12
+
+// do loop (possibly deprecated)
+do "invalid"
+
+// while loop (possibly deprecated)
+while true do "still invalid"
+
+
