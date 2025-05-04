@@ -1,0 +1,42 @@
+// preliminary definers
+let x: Int = 1
+let y: String = "String"
+import std
+
+// binary operators
+1 + "2"
+"1" - 2
+1 * "2"
+"1" / 2
+x + y
+
+// Invalid variable type assignment at declaration
+let a: Int = "integer"
+
+// Invalid variable assignment after decl
+x = "1"
+
+// invalid if conditional
+if 1 then: "hello"
+
+// mismatched then/else
+if true then: "1" else: 1
+
+// invalid loop conditional
+while 1 do: "hello"
+
+// invalid unary negation (not working, not registered as a unary operation)
+-false
+
+// for loop w/o List
+for x: Int in 1: "hello"
+
+// bad arity
+square(2, 2)
+
+// not a function
+let not_a_func: Int = 1
+not_a_func(1)
+
+// mismatched arg types
+square("2")

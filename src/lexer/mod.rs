@@ -192,8 +192,8 @@ impl<'source> Lexer<'source> {
             }
 
             // SIGNIFICANT WHITESPACE
-            b'\n' => Ok(Some(TT::Control(Ctrl::Newline))),
-            // b'\n' => Ok(None),
+            // b'\n' => Ok(Some(TT::Control(Ctrl::Newline))),
+            b'\n' => Ok(None),
 
             // NON-SIGNIFICANT WHITESPACE
             b' ' | b'\r' | b'\t' => Ok(None),
@@ -254,7 +254,6 @@ impl<'source> Lexer<'source> {
                 current_pos: (self.current, 1).into(),
             });
         } else if self.peek() == b'\n' {
-            println!("{}, {}", self.start, self.current);
             return Err(FerryLexError::UnterminatedString {
                 advice: "Expected end of string, found newline".into(),
                 start_quote: (self.start, 1).into(),
