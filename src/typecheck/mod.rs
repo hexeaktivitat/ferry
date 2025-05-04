@@ -27,6 +27,7 @@ pub enum FerryTypeError {
         span: SourceSpan,
     },
     #[error("conditional statement was not boolean")]
+    #[diagnostic(code(typecheck::conditional_not_bool))]
     ConditionalNotBool {
         #[help]
         advice: String,
@@ -34,6 +35,7 @@ pub enum FerryTypeError {
         span: SourceSpan,
     },
     #[error("unary type mismatch")]
+    #[diagnostic(code(typecheck::unary_op_type_mismatch))]
     UnaryOpTypeMismatch {
         #[help]
         advice: String,
@@ -43,6 +45,7 @@ pub enum FerryTypeError {
         rhs_span: SourceSpan,
     },
     #[error("mismatched types")]
+    #[diagnostic(code(typecheck::binary_op_type_mismatch))]
     BinaryOpTypeMismatch {
         #[help]
         advice: String,
@@ -54,6 +57,7 @@ pub enum FerryTypeError {
         rhs_span: SourceSpan,
     },
     #[error("mismatched if-then and else types")]
+    #[diagnostic(code(typecheck::then_else_type_mismatch))]
     MismatchedThenElse {
         #[help]
         advice: String,
@@ -65,20 +69,31 @@ pub enum FerryTypeError {
         rhs_span: SourceSpan,
     },
     #[error("mistyped variable")]
+    #[diagnostic(code(typecheck::mistyped_variable))]
     MistypedVariable {
         #[help]
         advice: String,
-        #[label]
+        #[label("variable")]
         span: SourceSpan,
     },
     #[error("mistyped argument")]
+    #[diagnostic(code(typecheck::mistyped_argument))]
     MistypedArgument {
         #[help]
         advice: String,
         #[label("argument")]
         span: SourceSpan,
     },
+    #[error("not an iterator")]
+    #[diagnostic(code(typecheck::mistyped_iterator))]
+    MistypedIterator {
+        #[help]
+        advice: String,
+        #[label("iterator")]
+        span: SourceSpan,
+    },
     #[error("arity error")]
+    #[diagnostic(code(typecheck::arity_mismatch))]
     ArityMismatch {
         #[help]
         advice: String,
@@ -86,6 +101,7 @@ pub enum FerryTypeError {
         span: SourceSpan,
     },
     #[error("unknown type")]
+    #[diagnostic(code(typecheck::unknown_type))]
     UnknownType {
         #[help]
         advice: String,
@@ -93,6 +109,7 @@ pub enum FerryTypeError {
         span: SourceSpan,
     },
     #[error("invalid operand")]
+    #[diagnostic(code(typecheck::invalid_operand))]
     InvalidOperand {
         #[help]
         advice: String,
@@ -100,6 +117,7 @@ pub enum FerryTypeError {
         span: SourceSpan,
     },
     #[error("invalid assignment")]
+    #[diagnostic(code(typecheck::variable_assignment_mismatch))]
     InvalidAssignment {
         #[help]
         advice: String,
@@ -111,6 +129,7 @@ pub enum FerryTypeError {
         // binding_span: SourceSpan,
     },
     #[error("not a function")]
+    #[diagnostic(code(typecheck::not_a_function))]
     NotAFunction {
         #[help]
         advice: String,
@@ -804,7 +823,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     iterator_type: for_expr.iterator_type,
                 }))
             } else {
-                Err(FerryTypeError::MistypedVariable {
+                Err(FerryTypeError::MistypedIterator {
                     advice: format!("Expected List, found {}", iterator.get_type()),
                     span: *for_expr.iterator.get_token().get_span(),
                 })
@@ -824,7 +843,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     iterator_type: for_expr.iterator_type,
                 }))
             } else {
-                Err(FerryTypeError::MistypedVariable {
+                Err(FerryTypeError::MistypedIterator {
                     advice: format!("Expected List, found {}", iterator.get_type()),
                     span: *for_expr.iterator.get_token().get_span(),
                 })
