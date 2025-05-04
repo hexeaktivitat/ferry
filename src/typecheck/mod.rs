@@ -61,11 +61,11 @@ pub enum FerryTypeError {
     MismatchedThenElse {
         #[help]
         advice: String,
-        #[label("operand")]
+        #[label("if statement")]
         span: SourceSpan,
-        #[label("if-then")]
+        #[label("then clause")]
         lhs_span: SourceSpan,
-        #[label("else")]
+        #[label("else clause")]
         rhs_span: SourceSpan,
     },
     #[error("mistyped variable")]
