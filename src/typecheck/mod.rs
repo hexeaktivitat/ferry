@@ -128,6 +128,14 @@ pub enum FerryTypeError {
         // #[label("binding")]
         // binding_span: SourceSpan,
     },
+    #[error("type cannot be determined")]
+    #[diagnostic(code(typecheck::indeterminant_type))]
+    IndeterminantType {
+        #[help]
+        advice: String,
+        #[label("identifier")]
+        ident_span: SourceSpan,
+    },
     #[error("not a function")]
     #[diagnostic(code(typecheck::not_a_function))]
     NotAFunction {
@@ -269,8 +277,8 @@ impl Typechecker {
                     assigned_type: b.assigned_type,
                     value: b.value,
                     expr_type: set_type(b.expr_type, infer_type),
-                    assigned_type_token: b.assigned_type_token,
-                    value_token: b.value_token,
+                    // assigned_type_token: b.assigned_type_token,
+                    // value_token: b.value_token,
                     span: b.span,
                 })),
                 Expr::Loop(l) => Ok(Expr::Loop(Loop {
@@ -666,79 +674,78 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
     fn visit_binding(&mut self, binding: &Binding, state: &mut State) -> FerryResult<Expr> {
         // type inference first
         if let Some(value) = &binding.value {
-            if let Ok(value_check) = self.check_types(value, state) {
-                if let Some(assigned_type) = &binding.assigned_type {
-                    if assigned_type.check(value_check.get_type()) {
-                        let placeholder_value = set_placeholder(value_check.get_type());
-                        state.add_symbol(&binding.name, Some(placeholder_value));
-
-                        Ok(Expr::Binding(Binding {
-                            token: binding.token.clone(),
-                            name: binding.name.clone(),
-                            assigned_type: binding.assigned_type,
-                            assigned_type_token: binding.assigned_type_token.clone(),
-                            value: Some(Box::new(value_check.clone())),
-                            value_token: binding.value_token.clone(),
-                            expr_type: FerryTyping::assign(assigned_type),
-                            span: binding.span,
-                        }))
-                    } else {
-                        Err(FerryTypeError::InvalidAssignment {
-                            advice: format!(
-                                "Variable type and assignment mismatch:\n Expected: {}\n Found: {}",
-                                assigned_type, value_check
-                            ),
-                            typedef: *binding.assigned_type_token.get_span(),
-                            valuetype: *value_check.get_token().get_span(),
-                        })
-                    }
-                } else {
+            let value_check = self.check_types(value, state)?;
+            if let Some(assigned_type) = &binding.assigned_type {
+                if assigned_type.get_token_type().check(value_check.get_type()) {
                     let placeholder_value = set_placeholder(value_check.get_type());
                     state.add_symbol(&binding.name, Some(placeholder_value));
 
                     Ok(Expr::Binding(Binding {
                         token: binding.token.clone(),
                         name: binding.name.clone(),
-                        assigned_type: None,
-                        assigned_type_token: binding.assigned_type_token.clone(),
+                        assigned_type: binding.assigned_type.clone(),
+                        // assigned_type_token: binding.assigned_type_token.clone(),
                         value: Some(Box::new(value_check.clone())),
-                        value_token: binding.value_token.clone(),
-                        expr_type: FerryTyping::infer(value_check.get_type()),
+                        // value_token: binding.value_token.clone(),
+                        expr_type: FerryTyping::assign(assigned_type.get_token_type().get_type()),
                         span: binding.span,
                     }))
+                } else {
+                    Err(FerryTypeError::InvalidAssignment {
+                        advice: format!(
+                            "Variable type and assignment mismatch:\n Expected: {}\n Found: {}",
+                            assigned_type, value_check
+                        ),
+                        typedef: *assigned_type.get_span(),
+                        valuetype: *value_check.get_token().get_span(),
+                    })
                 }
             } else {
-                Err(FerryTypeError::InvalidAssignment {
-                    advice: format!(
-                        "Variable type and assignment mismatch:\n Expected: {:?}\n Found: {:?}",
-                        binding.assigned_type, binding.name
-                    ),
-                    typedef: *binding.assigned_type_token.get_span(),
-                    valuetype: *value.get_token().get_span(),
-                })
+                let placeholder_value = set_placeholder(value_check.get_type());
+                state.add_symbol(&binding.name, Some(placeholder_value));
+
+                Ok(Expr::Binding(Binding {
+                    token: binding.token.clone(),
+                    name: binding.name.clone(),
+                    assigned_type: None,
+                    // assigned_type_token: binding.assigned_type_token.clone(),
+                    value: Some(Box::new(value_check.clone())),
+                    // value_token: binding.value_token.clone(),
+                    expr_type: FerryTyping::infer(value_check.get_type()),
+                    span: binding.span,
+                }))
             }
+            // } else {
+            //     Err(FerryTypeError::InvalidAssignment {
+            //         advice: format!(
+            //             "Variable type and assignment mismatch:\n Expected: {:?}\n Found: {:?}",
+            //             binding.assigned_type, binding.name
+            //         ),
+            //         typedef: *binding.assigned_type_token.get_span(),
+            //         valuetype: *value.get_token().get_span(),
+            //     })
+            // }
         } else if let Some(assigned_type) = &binding.assigned_type {
-            let placeholder_value = set_placeholder(assigned_type);
+            let placeholder_value = set_placeholder(assigned_type.get_token_type().get_type());
             state.add_symbol(&binding.name, Some(placeholder_value));
 
             Ok(Expr::Binding(Binding {
                 token: binding.token.clone(),
                 name: binding.name.clone(),
-                assigned_type: binding.assigned_type,
-                assigned_type_token: binding.assigned_type_token.clone(),
+                assigned_type: binding.assigned_type.clone(),
+                // assigned_type_token: binding.assigned_type_token.clone(),
                 value: None,
-                value_token: binding.value_token.clone(),
-                expr_type: FerryTyping::assign(assigned_type),
+                // value_token: binding.value_token.clone(),
+                expr_type: FerryTyping::assign(assigned_type.get_token_type().get_type()),
                 span: binding.span,
             }))
         } else {
-            Err(FerryTypeError::InvalidAssignment {
+            Err(FerryTypeError::IndeterminantType {
                 advice: format!(
-                    "Variable type and assignment mismatch:\n Expected: {:?}\n Found: {:?}",
-                    binding.assigned_type, binding.name
+                    "Type of {} cannot be determined without an assigned value",
+                    binding.name
                 ),
-                typedef: *binding.assigned_type_token.get_span(),
-                valuetype: *binding.token.get_span(),
+                ident_span: *binding.token.get_span(),
             })
         }
     }

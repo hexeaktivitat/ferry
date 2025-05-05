@@ -7,6 +7,7 @@ use lexer::token::Token;
 use lexer::{FerryLexError, Lexer};
 use parser::syntax::Expr;
 use parser::{FerryParseError, Parser};
+use printerr::*;
 use state::{State, value::Value};
 use typecheck::{FerryTypeError, Typechecker};
 use vm::Vm;
@@ -15,6 +16,7 @@ mod interpreter;
 mod ir;
 mod lexer;
 mod parser;
+mod printerr;
 mod state;
 mod typecheck;
 mod vm;
@@ -143,47 +145,4 @@ impl Ferry {
         }
         println!();
     }
-}
-
-// error lists
-
-#[derive(Error, Debug, Diagnostic)]
-#[error("Encountered syntax errors")]
-#[diagnostic()]
-struct FerryLexErrors {
-    #[source_code]
-    source_code: String,
-    #[related]
-    related: Vec<FerryLexError>,
-}
-
-#[derive(Error, Debug, Diagnostic)]
-#[error("Encountered parsing errors")]
-#[diagnostic()]
-struct FerryParseErrors {
-    #[source_code]
-    source_code: String,
-    #[related]
-    related: Vec<FerryParseError>,
-}
-
-#[derive(Error, Debug, Diagnostic)]
-#[error("Encountered typecheck errors")]
-#[diagnostic()]
-struct FerryTypeErrors {
-    #[source_code]
-    source_code: String,
-    #[related]
-    related: Vec<FerryTypeError>,
-}
-
-#[expect(unused)]
-#[derive(Error, Debug, Diagnostic)]
-#[error("Encountered interpreter errors")]
-#[diagnostic()]
-struct FerryInterpreterErrors {
-    #[source_code]
-    source_code: String,
-    #[related]
-    related: Vec<FerryInterpreterError>,
 }

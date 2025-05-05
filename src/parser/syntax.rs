@@ -140,10 +140,11 @@ pub struct Group {
 pub struct Binding {
     pub token: Token,
     pub name: String,
-    pub assigned_type: Option<FerryType>,
-    pub assigned_type_token: Token,
+    // pub assigned_type: Option<FerryType>,
+    pub assigned_type: Option<Token>,
+    // pub assigned_type_token: Token,
     pub value: Option<Box<Expr>>,
-    pub value_token: Option<Token>,
+    // pub value_token: Option<Token>,
     pub expr_type: FerryTyping,
     pub span: SourceSpan,
 }

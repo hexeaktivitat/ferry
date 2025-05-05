@@ -1,5 +1,7 @@
 use miette::SourceSpan;
 
+use crate::state::types::{FerryType, Typing};
+
 /// `Token`
 ///
 /// Data for a lexed token.
@@ -41,6 +43,32 @@ pub enum TokenType {
     Identifier(String),
     Comment(String),
     End,
+}
+
+impl Typing for &TokenType {
+    fn get_type(&self) -> &FerryType {
+        match self {
+            TokenType::Value(val) => match val {
+                Val::Num(_) => &FerryType::Num,
+                Val::String(_) => &FerryType::String,
+                Val::Boolean(_) => &FerryType::Boolean,
+                Val::Range(_, _) => &FerryType::List,
+                Val::None => &FerryType::Undefined,
+            },
+            TokenType::Identifier(id) => match id.as_str() {
+                "Int" => &FerryType::Num,
+                "String" => &FerryType::String,
+                "List" => &FerryType::List,
+                "Bool" => &FerryType::Boolean,
+                _ => &FerryType::Undefined,
+            },
+            _ => &FerryType::Undefined,
+        }
+    }
+
+    fn check(&self, other: &FerryType) -> bool {
+        self.get_type() == other
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
