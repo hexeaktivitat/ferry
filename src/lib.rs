@@ -1,15 +1,13 @@
 use ir::{Ir, Opcode};
-use miette::{Diagnostic, Result};
-use thiserror::Error;
+use miette::Result;
 
-use interpreter::FerryInterpreterError;
+use lexer::Lexer;
 use lexer::token::Token;
-use lexer::{FerryLexError, Lexer};
+use parser::Parser;
 use parser::syntax::Expr;
-use parser::{FerryParseError, Parser};
 use printerr::*;
 use state::{State, value::Value};
-use typecheck::{FerryTypeError, Typechecker};
+use typecheck::Typechecker;
 use vm::Vm;
 
 mod interpreter;
