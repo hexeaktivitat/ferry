@@ -190,12 +190,12 @@ impl Typechecker {
                         token,
                         expr_type: set_type(expr_type, infer_type),
                     })),
-                    Lit::Number {
+                    Lit::Integer {
                         token,
                         value,
                         expr_type,
                         span,
-                    } => Ok(Expr::Literal(Lit::Number {
+                    } => Ok(Expr::Literal(Lit::Integer {
                         token,
                         value,
                         expr_type: set_type(expr_type, infer_type),
@@ -330,12 +330,12 @@ fn set_type(expr_type: FerryTyping, infer_type: &FerryType) -> FerryTyping {
 impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
     fn visit_literal(&mut self, literal: &Lit, state: &mut State) -> FerryResult<Expr> {
         match literal {
-            Lit::Number {
+            Lit::Integer {
                 value,
                 expr_type: _,
                 span,
                 token,
-            } => Ok(Expr::Literal(Lit::Number {
+            } => Ok(Expr::Literal(Lit::Integer {
                 value: *value,
                 expr_type: FerryTyping::assign(&FerryType::Num),
                 span: *span,

@@ -73,7 +73,7 @@ impl Interpreter {
 impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
     fn visit_literal(&mut self, literal: &SLit, state: &mut State) -> FerryResult<Value> {
         match literal {
-            SLit::Number {
+            SLit::Integer {
                 value,
                 expr_type: _,
                 span: _,

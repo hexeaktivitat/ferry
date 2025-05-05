@@ -1,4 +1,4 @@
-use miette::{Context, Diagnostic, IntoDiagnostic, Result, SourceSpan};
+use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 use crate::lexer::token::{Ctrl, Kwd};
@@ -665,7 +665,7 @@ impl Parser {
 
         match self.previous().get_token_type() {
             TT::Value(l) => Ok(match l {
-                TLit::Num(n) => Expr::Literal(SLit::Number {
+                TLit::Num(n) => Expr::Literal(SLit::Integer {
                     token: self.previous().clone(),
                     value: *n,
                     expr_type: FerryTyping::Untyped,
@@ -690,7 +690,7 @@ impl Parser {
                 TLit::Range(start, end) => {
                     let mut contents = Vec::new();
                     for i in *start..=*end {
-                        contents.push(Expr::Literal(SLit::Number {
+                        contents.push(Expr::Literal(SLit::Integer {
                             token: self.previous().clone(),
                             value: i,
                             expr_type: FerryTyping::Untyped,

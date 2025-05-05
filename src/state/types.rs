@@ -65,7 +65,7 @@ impl Typing for Expr {
     fn get_type(&self) -> &FerryType {
         match self {
             Expr::Literal(l) => match l {
-                Lit::Number {
+                Lit::Integer {
                     value: _,
                     expr_type,
                     span: _,
