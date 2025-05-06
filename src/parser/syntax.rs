@@ -53,6 +53,41 @@ pub enum Lit {
     },
 }
 
+impl Lit {
+    pub fn get_literal_span(&self) -> SourceSpan {
+        match self {
+            Lit::Undefined {
+                token,
+                expr_type: _,
+            } => *token.get_span(),
+            Lit::Number {
+                value: _,
+                token: _,
+                expr_type: _,
+                span,
+            } => *span,
+            Lit::Str {
+                token: _,
+                value: _,
+                expr_type: _,
+                span,
+            } => *span,
+            Lit::Bool {
+                token: _,
+                value: _,
+                expr_type: _,
+                span,
+            } => *span,
+            Lit::List {
+                token: _,
+                contents: _,
+                expr_type: _,
+                span,
+            } => *span,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Binary {
     pub lhs: Box<Expr>,
@@ -73,7 +108,7 @@ pub struct Assign {
     pub token: Token,
     pub var: Box<Expr>,
     pub name: String,
-    pub value: Option<Box<Expr>>,
+    pub value: Box<Expr>,
     pub expr_type: FerryTyping,
 }
 
@@ -105,9 +140,13 @@ pub struct Group {
 pub struct Binding {
     pub token: Token,
     pub name: String,
-    pub assigned_type: Option<FerryType>,
+    // pub assigned_type: Option<FerryType>,
+    pub assigned_type: Option<Token>,
+    // pub assigned_type_token: Token,
     pub value: Option<Box<Expr>>,
+    // pub value_token: Option<Token>,
     pub expr_type: FerryTyping,
+    pub span: SourceSpan,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -317,17 +356,7 @@ impl std::fmt::Display for Expr {
             },
             Expr::Variable(v) => write!(f, "{}: {}", v.name, v.expr_type),
             Expr::Assign(a) => {
-                if a.value.is_some() {
-                    write!(
-                        f,
-                        "{}: {} is {}",
-                        a.var,
-                        a.expr_type,
-                        a.value.clone().unwrap()
-                    )
-                } else {
-                    write!(f, "{}: {} is NULL", a.var, a.expr_type)
-                }
+                write!(f, "{}: {} is {}", a.var, a.expr_type, a.value.clone())
             }
             Expr::If(i) => {
                 if i.else_expr.is_some() {

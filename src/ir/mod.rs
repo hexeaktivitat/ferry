@@ -311,11 +311,7 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
 
         let id = assign.name.clone();
         // let mut var = self.assemble_opcode(&mut assign.var, state)?;
-        let mut value_instructions = if let Some(val) = assign.value.as_ref() {
-            self.assemble_opcode(val, state)?
-        } else {
-            vec![]
-        };
+        let mut value_instructions = self.assemble_opcode(&assign.value, state)?;
 
         // instructions.append(&mut var);
         instructions.append(&mut value_instructions);

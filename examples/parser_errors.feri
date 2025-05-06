@@ -1,0 +1,59 @@
+// parser error checking
+
+// if expressions
+
+// lack of colon after then
+if true then 1
+
+// lack of colon after else
+if false then: 1 else 2
+
+// lack of colon in assignment statement
+let a = 12
+
+// do loop (possibly deprecated)
+do "invalid"
+
+// while loop (possibly deprecated)
+while true do "still invalid"
+
+// for iterator value type
+for x in 1..10 do: x
+
+// for iterator missing type
+for x: Int in 1..10 do x
+
+// no fn after def
+def b() -> Int: 1
+
+// missing return type
+def fn c(): 1
+
+// missing arg types
+def fn d(e, f) -> Int: 1
+
+// no comma in arg list
+def fn j(k: Int l: Int) -> Int: 1
+
+// trailing comma in arg (no error currently)
+def fn g(h: Int, i: Int, ) -> Int: 1
+
+// no closing ']' for List (no error, invalid)
+[1,2,3 "error"
+
+[1,2,3]
+
+// invalid token in context (no error, invalid)
+else
+
+// missing 'as' after 'export'
+export mod
+
+// missing colon after export as
+export as mod
+def fn z() -> Int: 1
+
+// invalid import ident
+import "module"
+
+

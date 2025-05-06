@@ -248,13 +248,9 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
     }
 
     fn visit_assign(&mut self, assign: &Assign, state: &mut State) -> FerryResult<Value> {
-        if let Some(v) = &assign.value {
-            let value = self.evaluate(v, state).unwrap();
-            state.add_symbol(&assign.name, value.clone());
-            Ok(value)
-        } else {
-            Ok(Some(Value::Number(0)))
-        }
+        let value = self.evaluate(&assign.value, state).unwrap();
+        state.add_symbol(&assign.name, value.clone());
+        Ok(value)
     }
 
     fn visit_if_expr(&mut self, if_expr: &If, state: &mut State) -> FerryResult<Value> {

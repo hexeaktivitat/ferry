@@ -1,0 +1,13 @@
+// testing program for lexer error reporting and handling
+
+// Unknown character
+2 ` 10 
+
+// Unterminated string
+let a: String = "Hello, world!
+
+// Invalid number
+let b: Int = 10b
+
+// Float numeric (currently invalid)
+let c: Int = 12.5

@@ -27,14 +27,26 @@ pub enum FerryTypeError {
         span: SourceSpan,
     },
     #[error("conditional statement was not boolean")]
+    #[diagnostic(code(typecheck::conditional_not_bool))]
     ConditionalNotBool {
         #[help]
         advice: String,
-        #[label]
+        #[label("conditional")]
         span: SourceSpan,
     },
+    #[error("unary type mismatch")]
+    #[diagnostic(code(typecheck::unary_op_type_mismatch))]
+    UnaryOpTypeMismatch {
+        #[help]
+        advice: String,
+        #[label("operand")]
+        span: SourceSpan,
+        #[label("rhs")]
+        rhs_span: SourceSpan,
+    },
     #[error("mismatched types")]
-    TypeMismatch {
+    #[diagnostic(code(typecheck::binary_op_type_mismatch))]
+    BinaryOpTypeMismatch {
         #[help]
         advice: String,
         #[label("operand")]
@@ -45,24 +57,51 @@ pub enum FerryTypeError {
         rhs_span: SourceSpan,
     },
     #[error("mismatched if-then and else types")]
+    #[diagnostic(code(typecheck::then_else_type_mismatch))]
     MismatchedThenElse {
         #[help]
         advice: String,
-        #[label("operand")]
+        #[label("if statement")]
         span: SourceSpan,
-        #[label("if-then")]
+        #[label("then clause")]
         lhs_span: SourceSpan,
-        #[label("else")]
+        #[label("else clause")]
         rhs_span: SourceSpan,
     },
     #[error("mistyped variable")]
+    #[diagnostic(code(typecheck::mistyped_variable))]
     MistypedVariable {
         #[help]
         advice: String,
-        #[label]
+        #[label("variable")]
+        span: SourceSpan,
+    },
+    #[error("mistyped argument")]
+    #[diagnostic(code(typecheck::mistyped_argument))]
+    MistypedArgument {
+        #[help]
+        advice: String,
+        #[label("argument")]
+        span: SourceSpan,
+    },
+    #[error("not an iterator")]
+    #[diagnostic(code(typecheck::mistyped_iterator))]
+    MistypedIterator {
+        #[help]
+        advice: String,
+        #[label("iterator")]
+        span: SourceSpan,
+    },
+    #[error("arity error")]
+    #[diagnostic(code(typecheck::arity_mismatch))]
+    ArityMismatch {
+        #[help]
+        advice: String,
+        #[label("function")]
         span: SourceSpan,
     },
     #[error("unknown type")]
+    #[diagnostic(code(typecheck::unknown_type))]
     UnknownType {
         #[help]
         advice: String,
@@ -70,10 +109,39 @@ pub enum FerryTypeError {
         span: SourceSpan,
     },
     #[error("invalid operand")]
+    #[diagnostic(code(typecheck::invalid_operand))]
     InvalidOperand {
         #[help]
         advice: String,
         #[label]
+        span: SourceSpan,
+    },
+    #[error("invalid assignment")]
+    #[diagnostic(code(typecheck::variable_assignment_mismatch))]
+    InvalidAssignment {
+        #[help]
+        advice: String,
+        #[label("variable type")]
+        typedef: SourceSpan,
+        #[label("value type")]
+        valuetype: SourceSpan,
+        // #[label("binding")]
+        // binding_span: SourceSpan,
+    },
+    #[error("type cannot be determined")]
+    #[diagnostic(code(typecheck::indeterminant_type))]
+    IndeterminantType {
+        #[help]
+        advice: String,
+        #[label("identifier")]
+        ident_span: SourceSpan,
+    },
+    #[error("not a function")]
+    #[diagnostic(code(typecheck::not_a_function))]
+    NotAFunction {
+        #[help]
+        advice: String,
+        #[label("identifier")]
         span: SourceSpan,
     },
 }
@@ -209,6 +277,9 @@ impl Typechecker {
                     assigned_type: b.assigned_type,
                     value: b.value,
                     expr_type: set_type(b.expr_type, infer_type),
+                    // assigned_type_token: b.assigned_type_token,
+                    // value_token: b.value_token,
+                    span: b.span,
                 })),
                 Expr::Loop(l) => Ok(Expr::Loop(Loop {
                     token: l.token,
@@ -350,8 +421,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                             expr_type: expr_type.clone(),
                         }))
                     } else {
-                        Err(FerryTypeError::TypeMismatch {
-                            advice: "operands did not match types".into(),
+                        Err(FerryTypeError::BinaryOpTypeMismatch {
+                            advice: format!(
+                                "Operands do not match type:\n LH type: {} \n RH type: {}",
+                                left.get_type(),
+                                right.get_type()
+                            ),
                             span: *binary.operator.get_span(),
                             lhs_span: *left.get_token().get_span(),
                             rhs_span: *right.get_token().get_span(),
@@ -375,8 +450,12 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                             expr_type: FerryTyping::assign(&FerryType::Boolean),
                         }))
                     } else {
-                        Err(FerryTypeError::TypeMismatch {
-                            advice: "operands did not match types".into(),
+                        Err(FerryTypeError::BinaryOpTypeMismatch {
+                            advice: format!(
+                                "Operands do not match type:\n LH type: {} \n RH type: {}",
+                                left.get_type(),
+                                right.get_type()
+                            ),
                             span: *binary.operator.get_span(),
                             lhs_span: *left.get_token().get_span(),
                             rhs_span: *right.get_token().get_span(),
@@ -397,16 +476,24 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                                 expr_type: FerryTyping::assign(&FerryType::List),
                             }))
                         } else {
-                            Err(FerryTypeError::TypeMismatch {
-                                advice: "invalid attempt at list indexing".into(),
+                            Err(FerryTypeError::BinaryOpTypeMismatch {
+                                advice: format!(
+                                    "Cannot index List with non-Int type:\n LHS type: {}\n RHS type: {}",
+                                    left.get_type(),
+                                    right.get_type()
+                                ),
                                 span: *binary.operator.get_span(),
                                 lhs_span: *left.get_token().get_span(),
                                 rhs_span: *right.get_token().get_span(),
                             })
                         }
                     } else {
-                        Err(FerryTypeError::TypeMismatch {
-                            advice: "invalid attempt at list indexing".into(),
+                        Err(FerryTypeError::BinaryOpTypeMismatch {
+                            advice: format!(
+                                "Cannot index into non-List type:\n LH type: {} \n RH type: {}",
+                                left.get_type(),
+                                right.get_type()
+                            ),
                             span: *binary.operator.get_span(),
                             lhs_span: *left.get_token().get_span(),
                             rhs_span: *right.get_token().get_span(),
@@ -427,16 +514,24 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                                 expr_type: FerryTyping::infer(&FerryType::List),
                             }))
                         } else {
-                            Err(FerryTypeError::TypeMismatch {
-                                advice: "invalid attempt at list cons".into(),
+                            Err(FerryTypeError::BinaryOpTypeMismatch {
+                                advice: format!(
+                                    "Cannot cons a non-List object into a List:\n LHS type: {}\n RHS type: {}",
+                                    left.get_type(),
+                                    right.get_type()
+                                ),
                                 span: *binary.operator.get_span(),
                                 lhs_span: *left.get_token().get_span(),
                                 rhs_span: *right.get_token().get_span(),
                             })
                         }
                     } else {
-                        Err(FerryTypeError::TypeMismatch {
-                            advice: "invalid attempt at list cons".into(),
+                        Err(FerryTypeError::BinaryOpTypeMismatch {
+                            advice: format!(
+                                "Cannot cons a non-List object:\n LHS type: {}\n RHS type: {}",
+                                left.get_type(),
+                                right.get_type()
+                            ),
                             span: *binary.operator.get_span(),
                             lhs_span: *left.get_token().get_span(),
                             rhs_span: *right.get_token().get_span(),
@@ -487,32 +582,34 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
     fn visit_assign(&mut self, assign: &Assign, state: &mut State) -> FerryResult<Expr> {
         // type inference first
-        if let Some(value) = &assign.value {
-            if let Ok(value_check) = self.infer(value, state, &FerryType::Undefined) {
-                Ok(Expr::Assign(Assign {
-                    var: assign.var.clone(),
-                    name: assign.name.clone(),
-                    value: Some(Box::new(value_check.clone())),
-                    expr_type: FerryTyping::infer(value_check.get_type()),
-                    token: assign.token.clone(),
-                }))
-            } else {
-                Ok(Expr::Assign(Assign {
-                    token: assign.token.clone(),
-                    var: assign.var.clone(),
-                    name: assign.name.clone(),
-                    value: None,
-                    expr_type: FerryTyping::Undefined,
-                }))
-            }
-        } else {
+        let Ok(value_check) = self.infer(assign.value.as_ref(), state, &FerryType::Undefined)
+        else {
+            return Err(FerryTypeError::UnknownType {
+                advice: format!("Value type could not be defined at compile time"),
+                span: *assign.token.get_span(),
+            });
+        };
+
+        let typed_var = self.check_types(&assign.var, state)?;
+
+        if typed_var.check(value_check.get_type()) {
             Ok(Expr::Assign(Assign {
-                token: assign.token.clone(),
                 var: assign.var.clone(),
                 name: assign.name.clone(),
-                value: None,
-                expr_type: FerryTyping::Undefined,
+                value: Box::new(value_check.clone()),
+                expr_type: FerryTyping::infer(value_check.get_type()),
+                token: assign.token.clone(),
             }))
+        } else {
+            Err(FerryTypeError::InvalidAssignment {
+                advice: format!(
+                    "Cannot assign value of this type to this variable:\n Variable type: {}\n Value type: {}",
+                    typed_var.get_type(),
+                    value_check.get_type()
+                ),
+                typedef: *assign.var.get_token().get_span(),
+                valuetype: *assign.value.get_token().get_span(),
+            })
         }
     }
 
@@ -521,8 +618,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
         if !condition.check(&FerryType::Boolean) {
             return Err(FerryTypeError::ConditionalNotBool {
-                advice: "expected conditional to if statement to be of type 'bool'".into(),
-                span: *if_expr.token.get_span(),
+                advice: format!(
+                    "expected 'Bool' conditional, found {}",
+                    condition.get_type()
+                ),
+                span: *if_expr.condition.get_token().get_span(),
             });
         }
 
@@ -535,7 +635,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 Some(Box::new(else_expr_inner))
             } else {
                 return Err(FerryTypeError::MismatchedThenElse {
-                    advice: "type mismatch between two values".into(),
+                    advice: format!(
+                        "'then' and 'else' clause types do not match:\n then: {}\n else: {}",
+                        then_expr.get_type(),
+                        else_expr_inner.get_type()
+                    ),
                     span: *if_expr.token.get_span(),
                     lhs_span: *then_expr.get_token().get_span(),
                     rhs_span: *else_expr_inner.get_token().get_span(),
@@ -570,50 +674,80 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
     fn visit_binding(&mut self, binding: &Binding, state: &mut State) -> FerryResult<Expr> {
         // type inference first
         if let Some(value) = &binding.value {
-            if let Ok(value_check) = self.check_types(value, state) {
-                if let Some(assigned_type) = &binding.assigned_type {
-                    if assigned_type.check(value_check.get_type()) {
-                        let placeholder_value = set_placeholder(value_check.get_type());
-                        state.add_symbol(&binding.name, Some(placeholder_value));
-
-                        return Ok(Expr::Binding(Binding {
-                            token: binding.token.clone(),
-                            name: binding.name.clone(),
-                            assigned_type: binding.assigned_type,
-                            value: Some(Box::new(value_check.clone())),
-                            expr_type: FerryTyping::assign(assigned_type),
-                        }));
-                    }
-                } else {
+            let value_check = self.check_types(value, state)?;
+            if let Some(assigned_type) = &binding.assigned_type {
+                if assigned_type.get_token_type().check(value_check.get_type()) {
                     let placeholder_value = set_placeholder(value_check.get_type());
                     state.add_symbol(&binding.name, Some(placeholder_value));
 
-                    return Ok(Expr::Binding(Binding {
+                    Ok(Expr::Binding(Binding {
                         token: binding.token.clone(),
                         name: binding.name.clone(),
-                        assigned_type: None,
+                        assigned_type: binding.assigned_type.clone(),
+                        // assigned_type_token: binding.assigned_type_token.clone(),
                         value: Some(Box::new(value_check.clone())),
-                        expr_type: FerryTyping::infer(value_check.get_type()),
-                    }));
+                        // value_token: binding.value_token.clone(),
+                        expr_type: FerryTyping::assign(assigned_type.get_token_type().get_type()),
+                        span: binding.span,
+                    }))
+                } else {
+                    Err(FerryTypeError::InvalidAssignment {
+                        advice: format!(
+                            "Variable type and assignment mismatch:\n Expected: {}\n Found: {}",
+                            assigned_type, value_check
+                        ),
+                        typedef: *assigned_type.get_span(),
+                        valuetype: *value_check.get_token().get_span(),
+                    })
                 }
+            } else {
+                let placeholder_value = set_placeholder(value_check.get_type());
+                state.add_symbol(&binding.name, Some(placeholder_value));
+
+                Ok(Expr::Binding(Binding {
+                    token: binding.token.clone(),
+                    name: binding.name.clone(),
+                    assigned_type: None,
+                    // assigned_type_token: binding.assigned_type_token.clone(),
+                    value: Some(Box::new(value_check.clone())),
+                    // value_token: binding.value_token.clone(),
+                    expr_type: FerryTyping::infer(value_check.get_type()),
+                    span: binding.span,
+                }))
             }
+            // } else {
+            //     Err(FerryTypeError::InvalidAssignment {
+            //         advice: format!(
+            //             "Variable type and assignment mismatch:\n Expected: {:?}\n Found: {:?}",
+            //             binding.assigned_type, binding.name
+            //         ),
+            //         typedef: *binding.assigned_type_token.get_span(),
+            //         valuetype: *value.get_token().get_span(),
+            //     })
+            // }
         } else if let Some(assigned_type) = &binding.assigned_type {
-            let placeholder_value = set_placeholder(assigned_type);
+            let placeholder_value = set_placeholder(assigned_type.get_token_type().get_type());
             state.add_symbol(&binding.name, Some(placeholder_value));
 
-            return Ok(Expr::Binding(Binding {
+            Ok(Expr::Binding(Binding {
                 token: binding.token.clone(),
                 name: binding.name.clone(),
-                assigned_type: binding.assigned_type,
+                assigned_type: binding.assigned_type.clone(),
+                // assigned_type_token: binding.assigned_type_token.clone(),
                 value: None,
-                expr_type: FerryTyping::assign(assigned_type),
-            }));
+                // value_token: binding.value_token.clone(),
+                expr_type: FerryTyping::assign(assigned_type.get_token_type().get_type()),
+                span: binding.span,
+            }))
+        } else {
+            Err(FerryTypeError::IndeterminantType {
+                advice: format!(
+                    "Type of {} cannot be determined without an assigned value",
+                    binding.name
+                ),
+                ident_span: *binding.token.get_span(),
+            })
         }
-
-        Err(FerryTypeError::UnknownType {
-            advice: "unknown type for variable".into(),
-            span: *binding.token.get_span(),
-        })
     }
 
     fn visit_loop(&mut self, loop_expr: &Loop, state: &mut State) -> FerryResult<Expr> {
@@ -633,7 +767,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             } else {
                 Err(FerryTypeError::ConditionalNotBool {
                     advice: "loop condition was not boolean".into(),
-                    span: *loop_expr.token.get_span(),
+                    span: *condition.get_token().get_span(),
                 })
             }
         } else {
@@ -651,7 +785,6 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
     fn visit_unary(&mut self, unary: &Unary, state: &mut State) -> FerryResult<Expr> {
         let right = self.check_types(&unary.rhs, state)?;
-
         if right.get_type() == &FerryType::Num {
             Ok(Expr::Unary(Unary {
                 operator: unary.operator.clone(),
@@ -659,10 +792,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 expr_type: FerryTyping::assign(&FerryType::Num),
             }))
         } else {
-            Err(FerryTypeError::TypeMismatch {
-                advice: "Expected Num, found".into(),
+            Err(FerryTypeError::UnaryOpTypeMismatch {
+                advice: format!("Expected Num, found {}", right.get_type()),
                 span: *unary.operator.get_span(),
-                lhs_span: *unary.operator.get_span(),
                 rhs_span: *right.get_token().get_span(),
             })
         }
@@ -698,9 +830,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     iterator_type: for_expr.iterator_type,
                 }))
             } else {
-                Err(FerryTypeError::MistypedVariable {
-                    advice: "Expected List, found".into(),
-                    span: *for_expr.token.get_span(),
+                Err(FerryTypeError::MistypedIterator {
+                    advice: format!("Expected List, found {}", iterator.get_type()),
+                    span: *for_expr.iterator.get_token().get_span(),
                 })
             }
         } else {
@@ -718,9 +850,9 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     iterator_type: for_expr.iterator_type,
                 }))
             } else {
-                Err(FerryTypeError::MistypedVariable {
-                    advice: "Expected List, found".into(),
-                    span: *for_expr.token.get_span(),
+                Err(FerryTypeError::MistypedIterator {
+                    advice: format!("Expected List, found {}", iterator.get_type()),
+                    span: *for_expr.iterator.get_token().get_span(),
                 })
             }
         }
@@ -808,19 +940,23 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             name,
             func_type: _,
             instructions: _,
-            arity: _,
+            arity,
         })) = &mut state.get_symbol_value(&call.name)
         {
             let Some(declaration) = decl else {
                 return Err(FerryTypeError::MistypedVariable {
-                    advice: "function call wasnt a function".into(),
+                    advice: format!("Expected function, found variable {name}"),
                     span: *call.token.get_span(),
                 });
             };
             if let Some(decl_args) = &mut declaration.args {
                 if call.args.len() != decl_args.len() {
-                    return Err(FerryTypeError::UnimplementedFeature {
-                        advice: "actually an arity error".into(),
+                    return Err(FerryTypeError::ArityMismatch {
+                        advice: format!(
+                            "Expected {} arguments, found {} args",
+                            arity,
+                            decl_args.len() + 1
+                        ),
                         span: *call.token.get_span(),
                     });
                 }
@@ -842,9 +978,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                         if checked_arg.check(checked_decl_arg.get_type()) {
                             checked_args.push(checked_arg);
                         } else {
-                            return Err(FerryTypeError::MistypedVariable {
-                                advice: "types do not match".into(),
-                                span: *call.token.get_span(),
+                            return Err(FerryTypeError::MistypedArgument {
+                                advice: format!(
+                                    "Argument types do not match:\n expected {}\n found {}",
+                                    checked_decl_arg.get_type(),
+                                    checked_arg.get_type()
+                                ),
+                                span: *checked_arg.get_token().get_span(),
                             });
                         }
                     }
@@ -867,8 +1007,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 }))
             }
         } else {
-            Err(FerryTypeError::UnknownType {
-                advice: "function type unknown at compile time".into(),
+            Err(FerryTypeError::NotAFunction {
+                advice: format!(
+                    "Expected function call, found unknown identifier {}",
+                    call.name
+                ),
                 span: *call.token.get_span(),
             })
         }
@@ -907,7 +1050,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 checked_fns.push(checked_function);
             } else {
                 return Err(FerryTypeError::UnimplementedFeature {
-                    advice: "module import error - typecheck".into(),
+                    advice: format!("Typecheck issues in module {}", import.name),
                     span: *import.token.get_span(),
                 });
             }
