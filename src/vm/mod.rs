@@ -292,7 +292,7 @@ impl Vm {
                     let tail_len = tail.len() as i64;
                     self.frames[self.fp].stack.push(Value::List(tail.into()));
                     // push len onto stack
-                    self.frames[self.fp].stack.push(Value::Number(tail_len));
+                    self.frames[self.fp].stack.push(Value::Integer(tail_len));
                     // push value of variable assignment
                     self.frames[self.fp].stack.push(head.clone());
                 }
@@ -352,7 +352,7 @@ mod tests {
         let mut vm = Vm::new();
         let instructions = vec![Opcode::LoadI(1), Opcode::LoadI(2), Opcode::Halt];
         vm.interpret(instructions, &mut State::new()).unwrap();
-        assert!(vm.frames[vm.fp].stack == vec![Value::Number(1), Value::Number(2)]);
+        assert!(vm.frames[vm.fp].stack == vec![Value::Integer(1), Value::Integer(2)]);
     }
 
     #[test]
@@ -365,6 +365,6 @@ mod tests {
             Opcode::Return,
             Opcode::Halt,
         ];
-        assert!(vm.interpret(instructions, &mut State::new()).unwrap() == Value::Number(3));
+        assert!(vm.interpret(instructions, &mut State::new()).unwrap() == Value::Integer(3));
     }
 }

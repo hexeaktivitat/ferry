@@ -78,7 +78,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                 expr_type: _,
                 span: _,
                 token: _,
-            } => Ok(Some(Value::Number(*value))),
+            } => Ok(Some(Value::Integer(*value))),
             SLit::Str {
                 value,
                 expr_type: _,
@@ -123,8 +123,8 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
         match &op.get_token_type() {
             TT::Operator(o) => match o {
                 Op::Add => match (left, right) {
-                    (Some(Value::Number(l)), Some(Value::Number(r))) => {
-                        Ok(Some(Value::Number(l + r)))
+                    (Some(Value::Integer(l)), Some(Value::Integer(r))) => {
+                        Ok(Some(Value::Integer(l + r)))
                     }
                     _ => Err(FerryInterpreterError::InvalidOperation {
                         help: "Operator only takes values of type Num".into(),
@@ -132,8 +132,8 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                     }),
                 },
                 Op::Subtract => match (left, right) {
-                    (Some(Value::Number(l)), Some(Value::Number(r))) => {
-                        Ok(Some(Value::Number(l - r)))
+                    (Some(Value::Integer(l)), Some(Value::Integer(r))) => {
+                        Ok(Some(Value::Integer(l - r)))
                     }
                     _ => Err(FerryInterpreterError::InvalidOperation {
                         help: "Operator only takes values of type Num".into(),
@@ -142,8 +142,8 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                 },
 
                 Op::Multiply => match (left, right) {
-                    (Some(Value::Number(l)), Some(Value::Number(r))) => {
-                        Ok(Some(Value::Number(l * r)))
+                    (Some(Value::Integer(l)), Some(Value::Integer(r))) => {
+                        Ok(Some(Value::Integer(l * r)))
                     }
                     _ => Err(FerryInterpreterError::InvalidOperation {
                         help: "Operator only takes values of type Num".into(),
@@ -151,8 +151,8 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                     }),
                 },
                 Op::Divide => match (left, right) {
-                    (Some(Value::Number(l)), Some(Value::Number(r))) => {
-                        Ok(Some(Value::Number(l / r)))
+                    (Some(Value::Integer(l)), Some(Value::Integer(r))) => {
+                        Ok(Some(Value::Integer(l / r)))
                     }
                     _ => Err(FerryInterpreterError::InvalidOperation {
                         help: "Operator only takes values of type Num".into(),
@@ -162,7 +162,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                 // Op::RightArrow => todo!(),
                 Op::Equals => Ok(None),
                 Op::LessThan => match (left, right) {
-                    (Some(Value::Number(l)), Some(Value::Number(r))) => {
+                    (Some(Value::Integer(l)), Some(Value::Integer(r))) => {
                         Ok(Some(Value::Boolean(l < r)))
                     }
                     _ => Err(FerryInterpreterError::InvalidOperation {
@@ -171,7 +171,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                     }),
                 },
                 Op::GreaterThan => match (left, right) {
-                    (Some(Value::Number(l)), Some(Value::Number(r))) => {
+                    (Some(Value::Integer(l)), Some(Value::Integer(r))) => {
                         Ok(Some(Value::Boolean(l > r)))
                     }
                     _ => Err(FerryInterpreterError::InvalidOperation {
@@ -180,7 +180,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                     }),
                 },
                 Op::Equality => match (left, right) {
-                    (Some(Value::Number(l)), Some(Value::Number(r))) => {
+                    (Some(Value::Integer(l)), Some(Value::Integer(r))) => {
                         Ok(Some(Value::Boolean(l == r)))
                     }
                     _ => Err(FerryInterpreterError::InvalidOperation {
@@ -189,7 +189,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                     }),
                 },
                 Op::LessEqual => match (left, right) {
-                    (Some(Value::Number(l)), Some(Value::Number(r))) => {
+                    (Some(Value::Integer(l)), Some(Value::Integer(r))) => {
                         Ok(Some(Value::Boolean(l <= r)))
                     }
                     _ => Err(FerryInterpreterError::InvalidOperation {
@@ -198,7 +198,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                     }),
                 },
                 Op::GreaterEqual => match (left, right) {
-                    (Some(Value::Number(l)), Some(Value::Number(r))) => {
+                    (Some(Value::Integer(l)), Some(Value::Integer(r))) => {
                         Ok(Some(Value::Boolean(l >= r)))
                     }
                     _ => Err(FerryInterpreterError::InvalidOperation {
@@ -207,7 +207,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                     }),
                 },
                 Op::GetI => match (left, right) {
-                    (Some(Value::List(l)), Some(Value::Number(n))) => {
+                    (Some(Value::List(l)), Some(Value::Integer(n))) => {
                         let value = l.get(n as usize);
                         match value {
                             Some(v) => Ok(Some(v.clone())),
@@ -278,7 +278,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
             state.add_symbol(&binding.name, value.clone());
             Ok(value)
         } else {
-            Ok(Some(Value::Number(0)))
+            Ok(Some(Value::Integer(0)))
         }
     }
 

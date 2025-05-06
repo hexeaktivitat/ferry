@@ -16,7 +16,7 @@ pub struct FuncVal {
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum Value {
-    Number(i64),
+    Integer(i64),
     Str(String),
     Boolean(bool),
     List(Vec<Value>),
@@ -28,14 +28,14 @@ pub enum Value {
 
 impl From<i64> for Value {
     fn from(value: i64) -> Self {
-        Value::Number(value)
+        Value::Integer(value)
     }
 }
 
 // Coerces all non-Number values to 0
 impl From<Value> for i64 {
     fn from(value: Value) -> Self {
-        if let Value::Number(v) = value { v } else { 0 }
+        if let Value::Integer(v) = value { v } else { 0 }
     }
 }
 

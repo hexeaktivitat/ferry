@@ -337,7 +337,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 token,
             } => Ok(Expr::Literal(Lit::Integer {
                 value: *value,
-                expr_type: FerryTyping::assign(&FerryType::Num),
+                expr_type: FerryTyping::assign(&FerryType::Int),
                 span: *span,
                 token: token.clone(),
             })),
@@ -396,8 +396,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             TokenType::Operator(o) => match o {
                 // mathematical operations
                 Op::Add | Op::Subtract | Op::Multiply | Op::Divide | Op::Equals => {
-                    let left = self.infer(&binary.lhs, state, &FerryType::Num)?;
-                    let right = self.infer(&binary.rhs, state, &FerryType::Num)?;
+                    let left = self.infer(&binary.lhs, state, &FerryType::Int)?;
+                    let right = self.infer(&binary.rhs, state, &FerryType::Int)?;
 
                     if left.check(right.get_type()) {
                         let expr_type = FerryTyping::infer(left.get_type());
@@ -408,8 +408,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                             rhs: Box::new(right),
                             expr_type: expr_type.clone(),
                         }))
-                    } else if (left.check(&FerryType::Untyped) && right.check(&FerryType::Num))
-                        || (left.check(&FerryType::Num) && right.check(&FerryType::Untyped))
+                    } else if (left.check(&FerryType::Untyped) && right.check(&FerryType::Int))
+                        || (left.check(&FerryType::Int) && right.check(&FerryType::Untyped))
                     {
                         let expr_type = FerryTyping::infer(right.get_type());
 
@@ -439,8 +439,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 | Op::Equality
                 | Op::LessEqual
                 | Op::GreaterEqual => {
-                    let left = self.infer(&binary.lhs, state, &FerryType::Num)?;
-                    let right = self.infer(&binary.rhs, state, &FerryType::Num)?;
+                    let left = self.infer(&binary.lhs, state, &FerryType::Int)?;
+                    let right = self.infer(&binary.rhs, state, &FerryType::Int)?;
 
                     if left.check(right.get_type()) {
                         Ok(Expr::Binary(Binary {
@@ -465,10 +465,10 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
                 Op::GetI => {
                     let left = self.infer(&binary.lhs, state, &FerryType::List)?;
-                    let right = self.infer(&binary.rhs, state, &FerryType::Num)?;
+                    let right = self.infer(&binary.rhs, state, &FerryType::Int)?;
 
                     if left.check(&FerryType::List) {
-                        if right.check(&FerryType::Num) {
+                        if right.check(&FerryType::Int) {
                             Ok(Expr::Binary(Binary {
                                 lhs: Box::new(left.clone()),
                                 operator: binary.operator.clone(),
@@ -785,11 +785,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
     fn visit_unary(&mut self, unary: &Unary, state: &mut State) -> FerryResult<Expr> {
         let right = self.check_types(&unary.rhs, state)?;
-        if right.get_type() == &FerryType::Num {
+        if right.get_type() == &FerryType::Int {
             Ok(Expr::Unary(Unary {
                 operator: unary.operator.clone(),
                 rhs: Box::new(right),
-                expr_type: FerryTyping::assign(&FerryType::Num),
+                expr_type: FerryTyping::assign(&FerryType::Int),
             }))
         } else {
             Err(FerryTypeError::UnaryOpTypeMismatch {
@@ -808,7 +808,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 state.add_symbol(&v.name, None);
             }
 
-            let variable_checked = self.infer(variable, state, &FerryType::Num)?;
+            let variable_checked = self.infer(variable, state, &FerryType::Int)?;
 
             if let Expr::Variable(var) = &variable_checked {
                 let placeholder_value = set_placeholder(variable_checked.get_type());
@@ -1066,7 +1066,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
 fn set_placeholder(ty: &FerryType) -> Value {
     match ty {
-        FerryType::Num | FerryType::Untyped => Value::Number(0),
+        FerryType::Int | FerryType::Untyped => Value::Integer(0),
         FerryType::String => Value::Str(String::new()),
         FerryType::Boolean => Value::Boolean(false),
         FerryType::List => Value::List(vec![]),

@@ -236,9 +236,9 @@ impl Parser {
         let iterator_type = if let TT::Identifier(id) = self.peek().get_token_type() {
             self.advance();
             match id.clone().as_str() {
-                "Int" => Some(FerryType::Num),
+                "Int" => Some(FerryType::Int),
                 "String" => Some(FerryType::String),
-                _ => Some(FerryType::Num), // coerce all types to Num
+                _ => Some(FerryType::Int), // coerce all types to Num
             }
         } else {
             None
@@ -337,7 +337,7 @@ impl Parser {
             )?;
             if let TT::Identifier(id) = self.advance().get_token_type() {
                 match id.clone().as_str() {
-                    "Int" => Some(FerryType::Num),
+                    "Int" => Some(FerryType::Int),
                     "String" => Some(FerryType::String),
                     "Function" => Some(FerryType::Function),
                     _ => None,
