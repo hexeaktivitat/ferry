@@ -27,7 +27,7 @@ pub enum Lit {
         token: Token,
         expr_type: FerryTyping,
     },
-    Number {
+    Integer {
         token: Token,
         value: i64,
         expr_type: FerryTyping,
@@ -60,7 +60,7 @@ impl Lit {
                 token,
                 expr_type: _,
             } => *token.get_span(),
-            Lit::Number {
+            Lit::Integer {
                 value: _,
                 token: _,
                 expr_type: _,
@@ -244,7 +244,7 @@ impl Expr {
                     token,
                     expr_type: _,
                 }
-                | Lit::Number {
+                | Lit::Integer {
                     token,
                     value: _,
                     expr_type: _,
@@ -290,7 +290,7 @@ impl std::fmt::Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Expr::Literal(l) => match l {
-                Lit::Number {
+                Lit::Integer {
                     value,
                     expr_type,
                     span: _,

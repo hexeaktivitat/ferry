@@ -23,7 +23,7 @@ impl FerryTyping {
 pub enum FerryType {
     Untyped,
     Undefined,
-    Num,
+    Int,
     String,
     Boolean,
     List,
@@ -65,7 +65,7 @@ impl Typing for Expr {
     fn get_type(&self) -> &FerryType {
         match self {
             Expr::Literal(l) => match l {
-                Lit::Number {
+                Lit::Integer {
                     value: _,
                     expr_type,
                     span: _,
@@ -131,7 +131,7 @@ impl std::fmt::Display for FerryType {
         match self {
             FerryType::Untyped => write!(f, "Untyped"),
             FerryType::Undefined => write!(f, "Undefined"),
-            FerryType::Num => write!(f, "Num"),
+            FerryType::Int => write!(f, "Num"),
             FerryType::String => write!(f, "String"),
             FerryType::Boolean => write!(f, "Boolean"),
             FerryType::List => write!(f, "List"),

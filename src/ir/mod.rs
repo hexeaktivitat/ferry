@@ -90,7 +90,7 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
         match literal {
             // treat undefined as a 0 for now
             Lit::Undefined { token, expr_type } => Ok(vec![Opcode::LoadI(0)]),
-            Lit::Number {
+            Lit::Integer {
                 token,
                 value,
                 expr_type,

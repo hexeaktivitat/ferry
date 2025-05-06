@@ -49,14 +49,14 @@ impl Typing for &TokenType {
     fn get_type(&self) -> &FerryType {
         match self {
             TokenType::Value(val) => match val {
-                Val::Num(_) => &FerryType::Num,
+                Val::Num(_) => &FerryType::Int,
                 Val::String(_) => &FerryType::String,
                 Val::Boolean(_) => &FerryType::Boolean,
                 Val::Range(_, _) => &FerryType::List,
                 Val::None => &FerryType::Undefined,
             },
             TokenType::Identifier(id) => match id.as_str() {
-                "Int" => &FerryType::Num,
+                "Int" => &FerryType::Int,
                 "String" => &FerryType::String,
                 "List" => &FerryType::List,
                 "Bool" => &FerryType::Boolean,

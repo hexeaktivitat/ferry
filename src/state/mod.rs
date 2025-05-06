@@ -78,7 +78,7 @@ impl std::fmt::Display for State {
 impl Typing for Value {
     fn get_type(&self) -> &FerryType {
         match self {
-            Value::Number(_) => &FerryType::Num,
+            Value::Integer(_) => &FerryType::Int,
             Value::Str(_) => &FerryType::String,
             Value::Boolean(_) => &FerryType::Boolean,
             Value::Unit => &FerryType::Undefined,
@@ -96,7 +96,7 @@ impl Typing for Value {
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Number(n) => write!(f, "{}", n),
+            Value::Integer(n) => write!(f, "{}", n),
             Value::Str(s) => write!(f, "\"{s}\""),
             Value::Boolean(b) => write!(f, "{b}"),
             Value::Unit => write!(f, "[unit]"),
@@ -144,7 +144,7 @@ impl std::fmt::Display for Value {
 impl Value {
     pub fn truthiness(&self) -> bool {
         match self {
-            Value::Number(n) => n > &0,
+            Value::Integer(n) => n > &0,
             Value::Str(s) => !s.is_empty(),
             Value::Boolean(b) => *b,
             Value::List(l) => !l.is_empty(),
