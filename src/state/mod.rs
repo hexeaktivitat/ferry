@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use types::{FerryType, Typing};
 use value::Value;
 
+pub(crate) mod symbol;
 pub(crate) mod types;
 pub(crate) mod value;
 
