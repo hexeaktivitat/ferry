@@ -2,7 +2,7 @@ use ir::{Ir, Opcode};
 use miette::{Diagnostic, Result};
 use thiserror::Error;
 
-use interpreter::FerryInterpreterError;
+// use interpreter::FerryInterpreterError;
 use lexer::token::Token;
 use lexer::{FerryLexError, Lexer};
 use parser::syntax::Expr;
@@ -12,7 +12,7 @@ use state::{State, value::Value};
 use typecheck::{FerryTypeError, Typechecker};
 use vm::Vm;
 
-mod interpreter;
+// mod interpreter;
 mod ir;
 mod lexer;
 mod parser;
