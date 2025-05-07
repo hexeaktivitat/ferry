@@ -71,7 +71,8 @@ impl State {
 
     pub fn add_symbol(&mut self, symbol: Symbol) -> Result<(), Error> {
         if self.var_symbols.contains_key(&symbol.identifier) {
-            Err(miette!("ident already tied to a symbol in scope"))
+            // Err(miette!("ident already tied to a symbol in scope"))
+            self.add_use_count(&symbol.identifier)
         } else {
             self.var_symbols.insert(symbol.identifier.clone(), symbol);
             Ok(())

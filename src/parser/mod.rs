@@ -5,6 +5,7 @@ use crate::lexer::token::{Ctrl, Kwd};
 use crate::lexer::token::{Op, Token, TokenType as TT, Val as TLit};
 use crate::printerr::{FerryLexErrors, FerryParseErrors};
 use crate::state::State;
+use crate::state::symbol::{Symbol, SymbolType};
 use crate::state::types::{FerryType, FerryTyping};
 use syntax::{
     Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Import, Lit as SLit, Loop,
@@ -156,11 +157,16 @@ impl Parser {
         let token = self.previous();
         let span_start = token.get_span().offset();
         let mut span_end: usize = span_start + token.get_span().len();
-        if let TT::Identifier(name) = self.advance().get_token_type() {
+        let id_token = self.advance();
+        if let TT::Identifier(name) = &id_token.get_token_type() {
             self.consume(&TT::Control(Ctrl::Colon), "expected ':' after identifier")?;
             // let assigned_type_token = self.peek();
-            let assigned_type = if let TT::Identifier(_) = self.peek().get_token_type() {
+            let assigned_type = if let TT::Identifier(id) = self.peek().get_token_type() {
                 span_end = self.peek().get_span().offset() + self.peek().get_span().len();
+                state
+                    .get_symbol(&id)
+                    .unwrap()
+                    .set_symbol_type(SymbolType::Type);
                 Some(self.advance())
             } else {
                 None
@@ -173,6 +179,10 @@ impl Parser {
             } else {
                 None
             };
+
+            let symbol = state.get_symbol(name).unwrap();
+            symbol.set_symbol_type(SymbolType::Variable);
+            symbol.declare().ok();
 
             state.add_variable(name, None);
 
@@ -293,6 +303,11 @@ impl Parser {
                         span: *self.previous().get_span(),
                     });
                 };
+
+                let symbol_param = state.get_symbol(&param_id).unwrap();
+                symbol_param.set_symbol_type(SymbolType::Variable);
+                symbol_param.declare().ok();
+
                 self.consume(&TT::Control(Ctrl::Colon), "expected ':' after variable id")?;
                 let param_type = self.advance();
                 // let param_type = if let TT::Identifier(id) = param_type_token.get_token_type() {
@@ -310,6 +325,10 @@ impl Parser {
                 //         span: *param_type_token.get_span(),
                 //     });
                 // };
+
+                let symbol_param_type = state.get_symbol(&param_type.get_id().unwrap()).unwrap();
+                symbol_param_type.set_symbol_type(SymbolType::Type);
+                symbol_param_type.declare().ok();
 
                 ret.push(Expr::Binding(Binding {
                     token: self.previous(),
@@ -362,6 +381,10 @@ impl Parser {
 
         let contents = Box::new(self.start(state)?);
 
+        let symbol = state.get_symbol(&name).unwrap();
+        symbol.set_symbol_type(SymbolType::Function);
+        symbol.declare().ok();
+
         Ok(Expr::Function(Function {
             token,
             name,
@@ -405,6 +428,10 @@ impl Parser {
                 break;
             }
         }
+
+        let symbol = state.get_symbol(&name).unwrap();
+        symbol.set_symbol_type(SymbolType::Module);
+        symbol.declare().ok();
 
         Ok(Expr::Module(Module {
             name,
@@ -480,6 +507,10 @@ impl Parser {
                 span: *self.previous().get_span(),
             });
         }
+
+        let symbol = state.get_symbol(&name).unwrap();
+        symbol.set_symbol_type(SymbolType::Module);
+        symbol.declare().ok();
 
         Ok(Expr::Import(Import {
             name,
@@ -726,6 +757,7 @@ impl Parser {
                     self.consume(&TT::Control(Ctrl::LeftBracket), "expected '[' for index ")?;
                     let rhs = Box::new(self.start(state)?);
                     self.consume(&TT::Control(Ctrl::RightBracket), "expected ']' after '['")?;
+
                     Ok(Expr::Binary(Binary {
                         lhs,
                         operator,
@@ -733,6 +765,11 @@ impl Parser {
                         expr_type: FerryTyping::Untyped,
                     }))
                 } else {
+                    state
+                        .get_symbol(&id)
+                        .unwrap()
+                        .set_symbol_type(SymbolType::Variable);
+
                     Ok(Expr::Variable(Variable {
                         token: self.previous().clone(),
                         name: id.clone(),
@@ -910,6 +947,11 @@ impl Parser {
             &TT::Control(Ctrl::RightParen),
             "expected ')' after '(' in function call",
         )?;
+
+        state
+            .get_symbol(&name)
+            .unwrap()
+            .set_symbol_type(SymbolType::Function);
 
         Ok(Expr::Call(Call {
             invoker: Box::new(expr.clone()),

@@ -150,7 +150,7 @@ impl Ferry {
                 let symbols = self.state.get_symbol_table();
 
                 for (_, symbol) in symbols {
-                    println!("{symbol:#?}");
+                    println!("{symbol}");
                 }
             }
         }
