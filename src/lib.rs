@@ -36,6 +36,7 @@ pub enum PrintReq {
     Ast,
     TypedAst,
     Ir,
+    Symbols,
 }
 
 impl Ferry {
@@ -60,10 +61,12 @@ impl Ferry {
         let source_code =
             String::from_utf8(self.source_code.as_bytes().to_vec()).unwrap_or_default();
 
-        let tokens = ferry_lexer.lex().map_err(|err_list| FerryLexErrors {
-            source_code: source_code.clone(),
-            related: err_list,
-        })?;
+        let tokens = ferry_lexer
+            .lex(&mut self.state)
+            .map_err(|err_list| FerryLexErrors {
+                source_code: source_code.clone(),
+                related: err_list,
+            })?;
 
         self.tokens.clone_from(&tokens);
 
@@ -138,6 +141,16 @@ impl Ferry {
 
                 for i in &self.ferry_ir {
                     println!("{i}");
+                }
+            }
+            PrintReq::Symbols => {
+                println!("\nSYMBOLS");
+                println!("=======\n");
+
+                let symbols = self.state.get_symbol_table();
+
+                for (_, symbol) in symbols {
+                    println!("{symbol:#?}");
                 }
             }
         }

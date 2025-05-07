@@ -441,7 +441,7 @@ impl Parser {
 
         let mut lexer = crate::lexer::Lexer::new(module.as_bytes());
         let lexed_module = lexer
-            .lex()
+            .lex(state)
             .map_err(|err_list| FerryLexErrors {
                 source_code: module.clone(),
                 related: err_list,

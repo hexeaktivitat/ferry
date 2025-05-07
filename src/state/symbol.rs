@@ -11,37 +11,43 @@ pub(crate) struct Symbol {
     pub(crate) identifier: String,
     pub(crate) source_file: PathBuf,
     pub(crate) span: SourceSpan,
+    pub(crate) declared: bool,
     pub(crate) initialized: bool,
     pub(crate) use_count: u32,
-    pub(crate) symbol_type: Option<FerryType>,
+    pub(crate) symbol_type: Option<SymbolType>,
+    pub(crate) expr_type: Option<FerryType>,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub(crate) enum SymbolType {
+    Variable,
+    Function,
+    Type,
 }
 
 impl Symbol {
-    pub(crate) fn new(
-        identifier: String,
-        symbol_type: Option<FerryType>,
-        source_file: PathBuf,
-        span: SourceSpan,
-    ) -> Self {
+    pub(crate) fn new(identifier: String, source_file: PathBuf, span: SourceSpan) -> Self {
         Self {
             identifier,
             source_file,
             span,
+            declared: false,
             initialized: false,
             use_count: 0,
-            symbol_type,
+            symbol_type: None,
+            expr_type: None,
         }
     }
 
-    pub(crate) fn initialize(&mut self) -> Result<(), Error> {
-        if self.initialized {
+    pub(crate) fn declare(&mut self) -> Result<(), Error> {
+        if self.declared {
             return Err(miette!(format!(
-                "re-initialization of already initialized symbol {}",
+                "symbol {} has already been declared",
                 self.identifier
             )));
         }
 
-        self.initialized = true;
+        self.declared = true;
 
         Ok(())
     }

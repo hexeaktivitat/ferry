@@ -1,4 +1,4 @@
-use miette::{Diagnostic, Result, SourceSpan};
+use miette::{Context, Diagnostic, Result, SourceSpan, miette};
 use thiserror::Error;
 
 pub(crate) mod token;
@@ -51,6 +51,8 @@ pub enum FerryLexError {
 
 use token::{Ctrl, Kwd, Op, Token, TokenType as TT, Val};
 
+use crate::state::{State, symbol::Symbol};
+
 type FerryResult<T> = Result<T, FerryLexError>;
 type FerryLexResult<T> = Result<Vec<T>, Vec<FerryLexError>>;
 
@@ -70,14 +72,14 @@ impl<'source> Lexer<'source> {
         }
     }
 
-    pub fn lex(&mut self) -> FerryLexResult<Token> {
+    pub fn lex(&mut self, state: &mut State) -> FerryLexResult<Token> {
         let mut tokens = Vec::new();
         let mut errors = Vec::new();
 
         while !self.end_of_code() {
             match self
                 .scan_token()
-                .and_then(|ot| ot.map(|t| self.make_token(t)).transpose())
+                .and_then(|ot| ot.map(|t| self.make_token(t, state)).transpose())
             {
                 Ok(Some(token)) => tokens.push(token),
                 Ok(None) => {}
@@ -85,7 +87,7 @@ impl<'source> Lexer<'source> {
             }
         }
 
-        let token = self.make_token(TT::End).unwrap();
+        let token = self.make_token(TT::End, state).unwrap();
         tokens.push(token);
 
         if errors.is_empty() {
@@ -205,9 +207,19 @@ impl<'source> Lexer<'source> {
     }
 
     /// creates the token and associates it with a span of the source code
-    fn make_token(&self, token_type: TT) -> FerryResult<Token> {
+    fn make_token(&self, token_type: TT, state: &mut State) -> FerryResult<Token> {
         let span = (self.start, self.current - self.start).into();
-        Ok(Token::new(token_type, span))
+        let current_dir = std::env::current_dir().unwrap();
+
+        if let TT::Identifier(id) = token_type.clone() {
+            let token = Token::new(token_type, span);
+            let symbol = Symbol::new(id.clone(), current_dir, span);
+            state.add_symbol(symbol).ok();
+
+            Ok(token)
+        } else {
+            Ok(Token::new(token_type, span))
+        }
     }
 
     /// returns the next byte of source code and advances the internal counter

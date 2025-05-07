@@ -79,6 +79,7 @@ fn repl() -> Result<ExitCode, Report> {
                 }
                 FerryRepl::Tokens => program.print_data(PrintReq::Tokens),
                 FerryRepl::State => program.print_data(PrintReq::State),
+                FerryRepl::Symbols => program.print_data(PrintReq::Symbols),
                 FerryRepl::Ast => program.print_data(PrintReq::Ast),
                 FerryRepl::Type => program.print_data(PrintReq::TypedAst),
                 FerryRepl::Ir => program.print_data(PrintReq::Ir),
@@ -96,6 +97,7 @@ enum FerryRepl {
     Exit,
     Tokens,
     State,
+    Symbols,
     Ast,
     Type,
     Ir,
@@ -114,6 +116,7 @@ fn repl_input_process(input: &str) -> Option<FerryRepl> {
             "type" => Some(FerryRepl::Type),
             "ir" => Some(FerryRepl::Ir),
             "help" => Some(FerryRepl::Help),
+            "symbols" => Some(FerryRepl::Symbols),
             _ => None,
         }
     } else {

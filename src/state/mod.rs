@@ -65,6 +65,10 @@ impl State {
         }
     }
 
+    pub fn get_symbol_table(&self) -> &HashMap<String, Symbol> {
+        &self.var_symbols
+    }
+
     pub fn add_symbol(&mut self, symbol: Symbol) -> Result<(), Error> {
         if self.var_symbols.contains_key(&symbol.identifier) {
             Err(miette!("ident already tied to a symbol in scope"))
@@ -87,7 +91,16 @@ impl State {
             return Err(miette!("variable symbol does not exist for initialization"));
         };
 
-        symbol.initialize()
+        symbol.initialized = true;
+        Ok(())
+    }
+
+    pub fn declare_symbol(&mut self, id: &str) -> Result<(), Error> {
+        let Some(symbol) = self.var_symbols.get_mut(id) else {
+            return Err(miette!("variable symbol does not exist for declaration"));
+        };
+
+        symbol.declare()
     }
 
     pub fn add_use_count(&mut self, id: &str) -> Result<(), Error> {
