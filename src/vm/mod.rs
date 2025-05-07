@@ -302,7 +302,7 @@ impl Vm {
                 }
                 Opcode::Call(label) => {
                     self.ret.push(self.frames[self.fp].pc);
-                    if let Some(Value::Function(f)) = state.get_symbol_value(&label) {
+                    if let Some(Value::Function(f)) = state.get_variable_value(&label) {
                         let stack_len = self.frames[self.fp].stack.len();
                         let mut frame_stack = vec![];
                         for _ in (stack_len - f.arity)..stack_len {

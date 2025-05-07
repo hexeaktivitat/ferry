@@ -549,9 +549,10 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
     fn visit_variable(&mut self, variable: &Variable, state: &mut State) -> FerryResult<Expr> {
         // we expect that the variable has been declared in some scope prior to being referenced
-        if let (Some(derived_type), assigned_type) =
-            (state.get_symbol_value(&variable.name), &variable.expr_type)
-        {
+        if let (Some(derived_type), assigned_type) = (
+            state.get_variable_value(&variable.name),
+            &variable.expr_type,
+        ) {
             if derived_type.check(assigned_type.get_type()) {
                 Ok(Expr::Variable(variable.clone()))
             } else if assigned_type.check(&FerryType::Untyped) {
@@ -568,7 +569,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     span: *variable.token.get_span(),
                 })
             }
-        } else if state.get_symbol_value(&variable.name).is_none() {
+        } else if state.get_variable_value(&variable.name).is_none() {
             // we do not have enough information to type this variable
             // this variable will be inferred
             Ok(Expr::Variable(variable.clone()))
@@ -941,7 +942,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             func_type: _,
             instructions: _,
             arity,
-        })) = &mut state.get_symbol_value(&call.name)
+        })) = &mut state.get_variable_value(&call.name)
         {
             let Some(declaration) = decl else {
                 return Err(FerryTypeError::MistypedVariable {

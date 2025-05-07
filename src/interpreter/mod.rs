@@ -244,7 +244,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
     }
 
     fn visit_variable(&mut self, variable: &Variable, state: &mut State) -> FerryResult<Value> {
-        Ok(state.get_symbol_value(&variable.name))
+        Ok(state.get_variable_value(&variable.name))
     }
 
     fn visit_assign(&mut self, assign: &Assign, state: &mut State) -> FerryResult<Value> {
@@ -386,7 +386,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
             func_type: _,
             instructions: _,
             arity: _,
-        })) = &state.get_symbol_value(&call.name)
+        })) = &state.get_variable_value(&call.name)
         {
             if let Some(params) = &function.args {
                 if call.args.is_empty() {

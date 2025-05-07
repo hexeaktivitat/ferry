@@ -27,19 +27,19 @@ impl State {
 
     pub fn add_variable(&mut self, id: &str, value: Option<Value>) {
         if self.variables.contains_key(id) {
-            self.update_symbol(id, value);
+            self.update_variable(id, value);
         } else {
             self.variables.insert(id.into(), value);
         }
     }
 
-    fn update_symbol(&mut self, id: &str, value: Option<Value>) {
+    fn update_variable(&mut self, id: &str, value: Option<Value>) {
         if self.variables.contains_key(id) {
             self.variables.get_mut(id).unwrap().clone_from(&value);
         }
     }
 
-    pub fn get_symbol_value(&self, id: &str) -> Option<Value> {
+    pub fn get_variable_value(&self, id: &str) -> Option<Value> {
         if self.variables.contains_key(id) {
             self.variables.get(id).unwrap().clone()
         } else {
