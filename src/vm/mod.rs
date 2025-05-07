@@ -100,7 +100,7 @@ impl Vm {
             self.frames[self.fp].stack = vec![];
         }
         for (key, value) in self.frames[self.fp].locals.drain() {
-            state.add_symbol(&key, Some(value));
+            state.add_variable(&key, Some(value));
         }
 
         result

@@ -174,7 +174,7 @@ impl Parser {
                 None
             };
 
-            state.add_symbol(name, None);
+            state.add_variable(name, None);
 
             Ok(Expr::Binding(Binding {
                 token,

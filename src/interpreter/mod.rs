@@ -249,7 +249,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
 
     fn visit_assign(&mut self, assign: &Assign, state: &mut State) -> FerryResult<Value> {
         let value = self.evaluate(&assign.value, state).unwrap();
-        state.add_symbol(&assign.name, value.clone());
+        state.add_variable(&assign.name, value.clone());
         Ok(value)
     }
 
@@ -275,7 +275,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
     fn visit_binding(&mut self, binding: &Binding, state: &mut State) -> FerryResult<Value> {
         if let Some(v) = &binding.value {
             let value = self.evaluate(v, state)?;
-            state.add_symbol(&binding.name, value.clone());
+            state.add_variable(&binding.name, value.clone());
             Ok(value)
         } else {
             Ok(Some(Value::Integer(0)))
@@ -334,7 +334,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                 match value {
                     Value::List(list) => {
                         for l in list {
-                            state.add_symbol(&name, Some(l));
+                            state.add_variable(&name, Some(l));
                             self.evaluate(&for_expr.contents, state)?;
                         }
                         Ok(None)
@@ -365,7 +365,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
         } else {
             0
         };
-        state.add_symbol(
+        state.add_variable(
             &name,
             Some(Value::Function(FuncVal {
                 declaration: Some(function.clone()),
@@ -394,7 +394,7 @@ impl ExprVisitor<FerryResult<Value>, &mut State> for &mut Interpreter {
                     for (arg, param_var) in call.args.iter().zip(params.iter()) {
                         if let Expr::Binding(var) = param_var {
                             let arg_val = self.evaluate(arg, state)?;
-                            param_state.add_symbol(&var.name, arg_val);
+                            param_state.add_variable(&var.name, arg_val);
                         }
                     }
                     self.evaluate(&function.contents, &mut param_state)

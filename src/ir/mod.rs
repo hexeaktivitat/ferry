@@ -436,7 +436,7 @@ impl ExprVisitor<FerryResult<Vec<Opcode>>, &mut State> for &mut Ir {
         instructions.append(&mut function_inst);
         instructions.push(Opcode::Return);
 
-        state.add_symbol(
+        state.add_variable(
             &function.name,
             Some(Value::Function(FuncVal {
                 declaration: Some(function.clone()),

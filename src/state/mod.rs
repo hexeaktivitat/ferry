@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use symbol::Symbol;
 use types::{FerryType, Typing};
 use value::Value;
 
@@ -12,6 +13,7 @@ pub(crate) mod value;
 pub struct State {
     variables: HashMap<String, Option<Value>>,
     labels: HashMap<String, usize>,
+    variable_symbols: HashMap<String, Symbol>,
 }
 
 impl State {
@@ -19,10 +21,11 @@ impl State {
         Self {
             variables: HashMap::new(),
             labels: HashMap::new(),
+            variable_symbols: HashMap::new(),
         }
     }
 
-    pub fn add_symbol(&mut self, id: &str, value: Option<Value>) {
+    pub fn add_variable(&mut self, id: &str, value: Option<Value>) {
         if self.variables.contains_key(id) {
             self.update_symbol(id, value);
         } else {
