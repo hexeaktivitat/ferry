@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use miette::SourceSpan;
+use miette::{Error, SourceSpan, miette};
 
 use crate::lexer::token::Token;
 
@@ -31,5 +31,18 @@ impl Symbol {
             use_count: 0,
             symbol_type,
         }
+    }
+
+    pub(crate) fn initialize(&mut self) -> Result<(), Error> {
+        if self.initialized {
+            return Err(miette!(format!(
+                "re-initialization of already initialized symbol {}",
+                self.identifier
+            )));
+        }
+
+        self.initialized = true;
+
+        Ok(())
     }
 }

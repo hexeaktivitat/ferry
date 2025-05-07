@@ -12,37 +12,37 @@ pub(crate) mod value;
 // placeholder for program state
 #[derive(Debug, Clone)]
 pub struct State {
-    variables: HashMap<String, Option<Value>>,
+    var_values: HashMap<String, Option<Value>>,
     labels: HashMap<String, usize>,
-    variable_symbols: HashMap<String, Symbol>,
+    var_symbols: HashMap<String, Symbol>,
 }
 
 impl State {
     pub fn new() -> Self {
         Self {
-            variables: HashMap::new(),
+            var_values: HashMap::new(),
+            var_symbols: HashMap::new(),
             labels: HashMap::new(),
-            variable_symbols: HashMap::new(),
         }
     }
 
     pub fn add_variable(&mut self, id: &str, value: Option<Value>) {
-        if self.variables.contains_key(id) {
+        if self.var_values.contains_key(id) {
             self.update_variable(id, value);
         } else {
-            self.variables.insert(id.into(), value);
+            self.var_values.insert(id.into(), value);
         }
     }
 
     fn update_variable(&mut self, id: &str, value: Option<Value>) {
-        if self.variables.contains_key(id) {
-            self.variables.get_mut(id).unwrap().clone_from(&value);
+        if self.var_values.contains_key(id) {
+            self.var_values.get_mut(id).unwrap().clone_from(&value);
         }
     }
 
     pub fn get_variable_value(&self, id: &str) -> Option<Value> {
-        if self.variables.contains_key(id) {
-            self.variables.get(id).unwrap().clone()
+        if self.var_values.contains_key(id) {
+            self.var_values.get(id).unwrap().clone()
         } else {
             None
         }
@@ -54,7 +54,7 @@ impl State {
 
     // currently simply clones the variables instance for consumption via drain()
     pub fn load_memory(&self) -> HashMap<String, Option<Value>> {
-        self.variables.clone()
+        self.var_values.clone()
     }
 
     pub fn _get_label(&self, id: &str) -> Option<usize> {
@@ -66,20 +66,44 @@ impl State {
     }
 
     pub fn add_symbol(&mut self, symbol: Symbol) -> Result<(), Error> {
-        if self.variable_symbols.contains_key(&symbol.identifier) {
+        if self.var_symbols.contains_key(&symbol.identifier) {
             Err(miette!("ident already tied to a symbol in scope"))
         } else {
-            self.variable_symbols
-                .insert(symbol.identifier.clone(), symbol);
+            self.var_symbols.insert(symbol.identifier.clone(), symbol);
             Ok(())
         }
+    }
+
+    pub fn get_symbol(&mut self, id: &str) -> Result<&mut Symbol, Error> {
+        self.var_symbols
+            .get_mut(id)
+            .ok_or_else(|| miette!("variable symbol does not exist"))
+
+        // .ok_or(Err(miette!("variable symbol does not exist")))
+    }
+
+    pub fn initialize_symbol(&mut self, id: &str) -> Result<(), Error> {
+        let Some(symbol) = self.var_symbols.get_mut(id) else {
+            return Err(miette!("variable symbol does not exist for initialization"));
+        };
+
+        symbol.initialize()
+    }
+
+    pub fn add_use_count(&mut self, id: &str) -> Result<(), Error> {
+        let Some(symbol) = self.var_symbols.get_mut(id) else {
+            return Err(miette!("variable symbol does not exist for initialization"));
+        };
+
+        symbol.use_count += 1;
+        Ok(())
     }
 }
 
 impl std::fmt::Display for State {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for k in self.variables.keys() {
-            if let Some(v) = self.variables.get(k).unwrap() {
+        for k in self.var_values.keys() {
+            if let Some(v) = self.var_values.get(k).unwrap() {
                 writeln!(f, "{k}: {v}")?;
             } else {
                 writeln!(f, "{k}: undefined")?;
