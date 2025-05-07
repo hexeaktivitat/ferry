@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use miette::{Error, miette};
 use symbol::Symbol;
 use types::{FerryType, Typing};
 use value::Value;
@@ -61,6 +62,16 @@ impl State {
             Some(*self.labels.get(id).unwrap())
         } else {
             None
+        }
+    }
+
+    pub fn add_symbol(&mut self, symbol: Symbol) -> Result<(), Error> {
+        if self.variable_symbols.contains_key(&symbol.identifier) {
+            Err(miette!("ident already tied to a symbol in scope"))
+        } else {
+            self.variable_symbols
+                .insert(symbol.identifier.clone(), symbol);
+            Ok(())
         }
     }
 }
