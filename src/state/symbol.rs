@@ -62,7 +62,7 @@ impl std::fmt::Display for Symbol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Symbol '{}':\n Symbol type: {:?}\n Expression type: {:?}\n Declared: {}\n Initialized: {}\n Use count: {}\n\n",
+            "Symbol '{}':\n  Symbol type: {:?}\n  Expression type: {:?}\n  Declared: {}\n  Initialized: {}\n  Use count: {}\n\n",
             self.identifier,
             self.symbol_type,
             self.expr_type,
