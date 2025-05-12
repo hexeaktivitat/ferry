@@ -47,9 +47,18 @@ impl Symbol {
                 self.identifier
             )));
         }
-
         self.declared = true;
+        Ok(())
+    }
 
+    pub(crate) fn initialize(&mut self) -> Result<(), Error> {
+        if self.initialized {
+            return Err(miette!(format!(
+                "symbol {} has already been initialized",
+                self.identifier
+            )));
+        }
+        self.initialized = true;
         Ok(())
     }
 

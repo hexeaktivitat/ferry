@@ -171,6 +171,7 @@ impl Parser {
             } else {
                 None
             };
+
             let value = if self.peek().get_token_type() == &TT::Operator(Op::Equals) {
                 let equals_token = self.advance();
                 span_end = equals_token.get_span().offset() + equals_token.get_span().len();
@@ -183,6 +184,9 @@ impl Parser {
             let symbol = state.get_symbol(name).unwrap();
             symbol.set_symbol_type(SymbolType::Variable);
             symbol.declare().ok();
+            if value.is_some() {
+                symbol.initialize().ok();
+            }
 
             state.add_variable(name, None);
 
@@ -307,6 +311,7 @@ impl Parser {
                 let symbol_param = state.get_symbol(&param_id).unwrap();
                 symbol_param.set_symbol_type(SymbolType::Variable);
                 symbol_param.declare().ok();
+                symbol_param.initialize().ok();
 
                 self.consume(&TT::Control(Ctrl::Colon), "expected ':' after variable id")?;
                 let param_type = self.advance();
