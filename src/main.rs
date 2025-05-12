@@ -127,12 +127,13 @@ fn repl_input_process(input: &str) -> Option<FerryRepl> {
 fn print_help() {
     println!("\nList of Ferry commands:");
     println!("=======================\n");
-    println!("!token: Print list of source code tokens for last command");
-    println!("!ast:   Print a representation of the AST for the last comand");
-    println!("!type:  Print a representation of the AST after the typechecker");
-    println!("!state: Print the current global state (variables, etc)");
-    println!("!asm:   Print the generated RISC-V assembly (alpha)");
+    println!("!token:   Print list of source code tokens for last command");
+    println!("!ast:     Print a representation of the AST for the last comand");
+    println!("!type:    Print a representation of the AST after the typechecker");
+    println!("!state:   Print the current global state (variables, etc)");
+    println!("!ir:      Print the intermediate representation being passed to the VM");
+    println!("!symbols: Print the currently symbol table");
     println!("!exit:");
-    println!("!quit:  Quit the REPL");
+    println!("!quit:    Quit the REPL");
     println!();
 }
