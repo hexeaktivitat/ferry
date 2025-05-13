@@ -336,7 +336,7 @@ impl Parser {
                 symbol_param_type.declare().ok();
 
                 ret.push(Expr::Binding(Binding {
-                    token: self.previous(),
+                    token: param_id_token,
                     name: param_id,
                     assigned_type: Some(param_type),
                     // assigned_type_token: param_id_token,

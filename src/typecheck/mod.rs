@@ -554,14 +554,23 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             &variable.expr_type,
         ) {
             if derived_type.check(assigned_type.get_type()) {
+                state
+                    .get_symbol(&variable.name)
+                    .unwrap()
+                    .set_expr_type(assigned_type.get_type());
                 Ok(Expr::Variable(variable.clone()))
             } else if assigned_type.check(&FerryType::Untyped) {
                 // type inference: if derived_type is valid, update the type
+                let expr_type = FerryTyping::infer(derived_type.get_type());
+                state
+                    .get_symbol(&variable.name)
+                    .unwrap()
+                    .set_expr_type(expr_type.get_type());
                 Ok(Expr::Variable(Variable {
                     token: variable.token.clone(),
                     name: variable.name.clone(),
                     assigned_type: variable.assigned_type.clone(),
-                    expr_type: FerryTyping::infer(derived_type.get_type()),
+                    expr_type,
                 }))
             } else {
                 Err(FerryTypeError::MistypedVariable {
@@ -594,6 +603,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
         let typed_var = self.check_types(&assign.var, state)?;
 
         if typed_var.check(value_check.get_type()) {
+            state
+                .get_symbol(&assign.name)
+                .unwrap()
+                .set_expr_type(value_check.get_type());
+
             Ok(Expr::Assign(Assign {
                 var: assign.var.clone(),
                 name: assign.name.clone(),
@@ -680,6 +694,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 if assigned_type.get_token_type().check(value_check.get_type()) {
                     let placeholder_value = set_placeholder(value_check.get_type());
                     state.add_variable(&binding.name, Some(placeholder_value));
+
+                    state
+                        .get_symbol(&binding.name)
+                        .unwrap()
+                        .set_expr_type(value_check.get_type());
 
                     Ok(Expr::Binding(Binding {
                         token: binding.token.clone(),
@@ -894,6 +913,10 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             let mut rets = Vec::new();
             for a in arguments {
                 let arg = self.check_types(a, &mut fn_state)?;
+                state
+                    .get_symbol(&arg.get_token().get_id().unwrap())
+                    .unwrap()
+                    .set_expr_type(arg.get_type());
                 rets.push(arg);
             }
             arity = rets.len();
@@ -930,6 +953,11 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                 arity,
             })),
         );
+
+        state
+            .get_symbol(&function.name)
+            .unwrap()
+            .set_expr_type(function_checked.expr_type.get_type());
 
         Ok(Expr::Function(function_checked))
     }

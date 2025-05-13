@@ -65,6 +65,10 @@ impl Symbol {
     pub(crate) fn set_symbol_type(&mut self, symbol_type: SymbolType) {
         self.symbol_type = Some(symbol_type);
     }
+
+    pub(crate) fn set_expr_type(&mut self, expr_type: &FerryType) {
+        self.expr_type = Some(*expr_type);
+    }
 }
 
 impl std::fmt::Display for Symbol {
