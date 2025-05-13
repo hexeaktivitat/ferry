@@ -36,7 +36,7 @@ fn main() -> Result<ExitCode, Report> {
                 let mut program = Ferry::new(source_code.clone());
                 let res = program.run()?;
                 println!("{res}");
-                // program.print_data(PrintReq::TypedAst);
+                // program.print_data(PrintReq::Symbols);
                 Ok(ExitCode::SUCCESS)
             }
         },

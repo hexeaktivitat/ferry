@@ -1,8 +1,6 @@
-use std::{fmt::Write, path::PathBuf};
+use std::path::PathBuf;
 
 use miette::{Error, SourceSpan, miette};
-
-use crate::lexer::token::Token;
 
 use super::types::FerryType;
 
@@ -26,6 +24,7 @@ pub(crate) enum SymbolType {
     Module,
 }
 
+#[expect(dead_code)]
 impl Symbol {
     pub(crate) fn new(identifier: String, source_file: PathBuf, span: SourceSpan) -> Self {
         Self {
@@ -68,6 +67,14 @@ impl Symbol {
 
     pub(crate) fn set_expr_type(&mut self, expr_type: &FerryType) {
         self.expr_type = Some(*expr_type);
+    }
+
+    pub(crate) fn get_source(&self) -> String {
+        std::fs::read_to_string(&self.source_file).expect("source file exists")
+    }
+
+    pub(crate) fn get_span(&self) -> SourceSpan {
+        self.span
     }
 }
 
