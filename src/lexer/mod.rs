@@ -1,4 +1,4 @@
-use miette::{Context, Diagnostic, Result, SourceSpan, miette};
+use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
 pub(crate) mod token;

@@ -87,22 +87,22 @@ impl State {
         // .ok_or(Err(miette!("variable symbol does not exist")))
     }
 
-    pub fn initialize_symbol(&mut self, id: &str) -> Result<(), Error> {
-        let Some(symbol) = self.var_symbols.get_mut(id) else {
-            return Err(miette!("variable symbol does not exist for initialization"));
-        };
+    // pub fn initialize_symbol(&mut self, id: &str) -> Result<(), Error> {
+    //     let Some(symbol) = self.var_symbols.get_mut(id) else {
+    //         return Err(miette!("variable symbol does not exist for initialization"));
+    //     };
 
-        symbol.initialized = true;
-        Ok(())
-    }
+    //     symbol.initialized = true;
+    //     Ok(())
+    // }
 
-    pub fn declare_symbol(&mut self, id: &str) -> Result<(), Error> {
-        let Some(symbol) = self.var_symbols.get_mut(id) else {
-            return Err(miette!("variable symbol does not exist for declaration"));
-        };
+    // pub fn declare_symbol(&mut self, id: &str) -> Result<(), Error> {
+    //     let Some(symbol) = self.var_symbols.get_mut(id) else {
+    //         return Err(miette!("variable symbol does not exist for declaration"));
+    //     };
 
-        symbol.declare()
-    }
+    //     symbol.declare()
+    // }
 
     pub fn add_use_count(&mut self, id: &str) -> Result<(), Error> {
         let Some(symbol) = self.var_symbols.get_mut(id) else {

@@ -5,7 +5,7 @@ use crate::lexer::token::{Ctrl, Kwd};
 use crate::lexer::token::{Op, Token, TokenType as TT, Val as TLit};
 use crate::printerr::{FerryLexErrors, FerryParseErrors};
 use crate::state::State;
-use crate::state::symbol::{Symbol, SymbolType};
+use crate::state::symbol::SymbolType;
 use crate::state::types::{FerryType, FerryTyping};
 use syntax::{
     Assign, Binary, Binding, Call, Expr, For, Function, Group, If, Import, Lit as SLit, Loop,
@@ -163,10 +163,12 @@ impl Parser {
             // let assigned_type_token = self.peek();
             let assigned_type = if let TT::Identifier(id) = self.peek().get_token_type() {
                 span_end = self.peek().get_span().offset() + self.peek().get_span().len();
+
                 state
                     .get_symbol(&id)
                     .unwrap()
                     .set_symbol_type(SymbolType::Type);
+
                 Some(self.advance())
             } else {
                 None
