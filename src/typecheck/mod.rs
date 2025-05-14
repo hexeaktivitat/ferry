@@ -11,6 +11,7 @@ use crate::{
     },
     state::{
         State,
+        symbol::Symbol,
         types::{FerryType, FerryTyping, Typing},
         value::{FuncVal, Value},
     },
@@ -692,8 +693,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             let value_check = self.check_types(value, state)?;
             if let Some(assigned_type) = &binding.assigned_type {
                 if assigned_type.get_token_type().check(value_check.get_type()) {
-                    let placeholder_value = set_placeholder(value_check.get_type());
-                    state.add_variable(&binding.name, Some(placeholder_value));
+                    // let placeholder_value = set_placeholder(value_check.get_type());
+                    // state.add_variable(&binding.name, Some(placeholder_value));
 
                     state
                         .get_symbol(&binding.name)
@@ -721,8 +722,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     })
                 }
             } else {
-                let placeholder_value = set_placeholder(value_check.get_type());
-                state.add_variable(&binding.name, Some(placeholder_value));
+                // let placeholder_value = set_placeholder(value_check.get_type());
+                // state.add_variable(&binding.name, Some(placeholder_value));
 
                 Ok(Expr::Binding(Binding {
                     token: binding.token.clone(),
@@ -746,8 +747,8 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             //     })
             // }
         } else if let Some(assigned_type) = &binding.assigned_type {
-            let placeholder_value = set_placeholder(assigned_type.get_token_type().get_type());
-            state.add_variable(&binding.name, Some(placeholder_value));
+            // let placeholder_value = set_placeholder(assigned_type.get_token_type().get_type());
+            // state.add_variable(&binding.name, Some(placeholder_value));
 
             Ok(Expr::Binding(Binding {
                 token: binding.token.clone(),
@@ -825,14 +826,18 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
         if let Some(variable) = &for_expr.variable {
             if let Expr::Variable(v) = variable.as_ref() {
-                state.add_variable(&v.name, None);
+                // state.add_variable(&v.name, None);
+                let symbol = Symbol::new(v.name.clone(), "".into(), *v.token.get_span());
+                state.add_symbol(symbol).ok();
             }
 
             let variable_checked = self.infer(variable, state, &FerryType::Int)?;
 
             if let Expr::Variable(var) = &variable_checked {
-                let placeholder_value = set_placeholder(variable_checked.get_type());
-                state.add_variable(&var.name, Some(placeholder_value));
+                // let placeholder_value = set_placeholder(variable_checked.get_type());
+                // state.add_variable(&var.name, Some(placeholder_value));
+                let symbol = Symbol::new(var.name.clone(), "".into(), *var.token.get_span());
+                state.add_symbol(symbol).ok();
             }
 
             let contents = self.check_types(&for_expr.contents, state)?;
