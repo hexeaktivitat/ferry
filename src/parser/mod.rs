@@ -60,12 +60,17 @@ type FerryParseResult<T> = Result<Vec<T>, Vec<FerryParseError>>;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parser {
     tokens: Vec<Token>,
+    source_code: String,
     current: usize,
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
+    pub fn new(tokens: Vec<Token>, source_code: &str) -> Self {
+        Self {
+            tokens,
+            source_code: source_code.to_string(),
+            current: 0,
+        }
     }
 
     pub fn parse(&mut self, state: &mut State) -> FerryParseResult<Expr> {
@@ -487,7 +492,7 @@ impl Parser {
                     span: *token.get_span(),
                 });
             })?;
-        let mut parser = Parser::new(lexed_module);
+        let mut parser = Parser::new(lexed_module, &module);
         let module_parse = parser
             .parse(state)
             .map_err(|err_list| FerryParseErrors {

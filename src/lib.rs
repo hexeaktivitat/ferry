@@ -70,7 +70,7 @@ impl Ferry {
 
         self.tokens.clone_from(&tokens);
 
-        let mut ferry_parser = Parser::new(tokens);
+        let mut ferry_parser = Parser::new(tokens, &source_code);
 
         let ast = ferry_parser
             .parse(&mut self.state)

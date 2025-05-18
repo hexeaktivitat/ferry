@@ -7,7 +7,7 @@ use super::types::FerryType;
 #[derive(Debug, Clone)]
 pub(crate) struct Symbol {
     pub(crate) identifier: String,
-    pub(crate) source_file: PathBuf,
+    pub(crate) source: String,
     pub(crate) span: SourceSpan,
     pub(crate) declared: bool,
     pub(crate) initialized: bool,
@@ -26,10 +26,10 @@ pub(crate) enum SymbolType {
 
 #[expect(dead_code)]
 impl Symbol {
-    pub(crate) fn new(identifier: String, source_file: PathBuf, span: SourceSpan) -> Self {
+    pub(crate) fn new(identifier: String, source: String, span: SourceSpan) -> Self {
         Self {
             identifier,
-            source_file,
+            source,
             span,
             declared: false,
             initialized: false,
@@ -70,7 +70,7 @@ impl Symbol {
     }
 
     pub(crate) fn get_source(&self) -> String {
-        std::fs::read_to_string(&self.source_file).expect("source file exists")
+        self.source.clone()
     }
 
     pub(crate) fn get_span(&self) -> SourceSpan {

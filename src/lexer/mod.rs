@@ -1,3 +1,5 @@
+use std::str::from_utf8;
+
 use miette::{Diagnostic, Result, SourceSpan};
 use thiserror::Error;
 
@@ -209,11 +211,15 @@ impl<'source> Lexer<'source> {
     /// creates the token and associates it with a span of the source code
     fn make_token(&self, token_type: TT, state: &mut State) -> FerryResult<Token> {
         let span = (self.start, self.current - self.start).into();
-        let current_dir = std::env::current_dir().unwrap();
+        // let current_dir = std::env::current_dir().unwrap();
 
         if let TT::Identifier(id) = token_type.clone() {
             let token = Token::new(token_type, span);
-            let symbol = Symbol::new(id.clone(), current_dir, span);
+            let symbol = Symbol::new(
+                id.clone(),
+                from_utf8(self.source).unwrap().to_string(),
+                span,
+            );
             state.add_symbol(symbol).ok();
 
             Ok(token)
