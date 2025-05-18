@@ -247,12 +247,20 @@ impl Typechecker {
                     rhs: u.rhs,
                     expr_type: set_type(u.expr_type, infer_type),
                 })),
-                Expr::Variable(v) => Ok(Expr::Variable(Variable {
-                    token: v.token,
-                    name: v.name,
-                    assigned_type: v.assigned_type,
-                    expr_type: set_type(v.expr_type, infer_type),
-                })),
+                Expr::Variable(v) => {
+                    state
+                        .get_symbol(&v.name)
+                        .ok()
+                        .unwrap()
+                        .set_expr_type(infer_type);
+
+                    Ok(Expr::Variable(Variable {
+                        token: v.token,
+                        name: v.name,
+                        assigned_type: v.assigned_type,
+                        expr_type: set_type(v.expr_type, infer_type),
+                    }))
+                }
                 Expr::Assign(a) => Ok(Expr::Assign(Assign {
                     token: a.token,
                     var: a.var,
@@ -550,23 +558,18 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
     fn visit_variable(&mut self, variable: &Variable, state: &mut State) -> FerryResult<Expr> {
         // we expect that the variable has been declared in some scope prior to being referenced
-        if let (Some(derived_type), assigned_type) = (
-            state.get_variable_value(&variable.name),
-            &variable.expr_type,
-        ) {
+        let symbol = state.get_symbol(&variable.name).ok().unwrap();
+        if let (Some(derived_type), assigned_type) = (symbol.expr_type, &variable.expr_type) {
             if derived_type.check(assigned_type.get_type()) {
-                state
-                    .get_symbol(&variable.name)
-                    .unwrap()
-                    .set_expr_type(assigned_type.get_type());
+                symbol.set_expr_type(assigned_type.get_type());
+
                 Ok(Expr::Variable(variable.clone()))
             } else if assigned_type.check(&FerryType::Untyped) {
                 // type inference: if derived_type is valid, update the type
                 let expr_type = FerryTyping::infer(derived_type.get_type());
-                state
-                    .get_symbol(&variable.name)
-                    .unwrap()
-                    .set_expr_type(expr_type.get_type());
+
+                symbol.set_expr_type(expr_type.get_type());
+
                 Ok(Expr::Variable(Variable {
                     token: variable.token.clone(),
                     name: variable.name.clone(),
@@ -689,12 +692,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
     fn visit_binding(&mut self, binding: &Binding, state: &mut State) -> FerryResult<Expr> {
         // type inference first
+        // let symbol = state.get_symbol(&binding.name).unwrap();
         if let Some(value) = &binding.value {
             let value_check = self.check_types(value, state)?;
             if let Some(assigned_type) = &binding.assigned_type {
                 if assigned_type.get_token_type().check(value_check.get_type()) {
-                    // let placeholder_value = set_placeholder(value_check.get_type());
-                    // state.add_variable(&binding.name, Some(placeholder_value));
+                    let placeholder_value = set_placeholder(value_check.get_type());
+                    state.add_variable(&binding.name, Some(placeholder_value));
 
                     state
                         .get_symbol(&binding.name)
@@ -722,8 +726,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
                     })
                 }
             } else {
-                // let placeholder_value = set_placeholder(value_check.get_type());
-                // state.add_variable(&binding.name, Some(placeholder_value));
+                let placeholder_value = set_placeholder(value_check.get_type());
+                state.add_variable(&binding.name, Some(placeholder_value));
+
+                state
+                    .get_symbol(&binding.name)
+                    .unwrap()
+                    .set_expr_type(value_check.get_type());
 
                 Ok(Expr::Binding(Binding {
                     token: binding.token.clone(),
@@ -747,8 +756,13 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
             //     })
             // }
         } else if let Some(assigned_type) = &binding.assigned_type {
-            // let placeholder_value = set_placeholder(assigned_type.get_token_type().get_type());
-            // state.add_variable(&binding.name, Some(placeholder_value));
+            let placeholder_value = set_placeholder(assigned_type.get_token_type().get_type());
+            state.add_variable(&binding.name, Some(placeholder_value));
+
+            state
+                .get_symbol(&binding.name)
+                .unwrap()
+                .set_expr_type(assigned_type.get_token_type().get_type());
 
             Ok(Expr::Binding(Binding {
                 token: binding.token.clone(),
@@ -969,6 +983,7 @@ impl ExprVisitor<FerryResult<Expr>, &mut State> for &mut Typechecker {
 
     fn visit_call(&mut self, call: &Call, state: &mut State) -> FerryResult<Expr> {
         // println!("state: {:?}", state);
+        // let symbol = state.get_symbol(&call.name).ok().unwrap();
         if let Some(Value::Function(FuncVal {
             declaration: decl,
             name,

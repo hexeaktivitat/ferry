@@ -22,7 +22,10 @@ fn hello() {
     let start_time = Instant::now();
     let output = program.run();
     let elapsed_time = start_time.elapsed().as_secs_f64();
-    println!("hello.feri: {} in: {elapsed_time}s", output.unwrap());
+    match output {
+        Ok(o) => println!("hello.feri: {o} in: {elapsed_time}s"),
+        Err(e) => eprintln!("Errors encountered: {e:?}"),
+    }
 }
 
 fn euler_1() {
@@ -31,7 +34,10 @@ fn euler_1() {
     let start_time = Instant::now();
     let output = program.run();
     let elapsed_time = start_time.elapsed().as_secs_f64();
-    println!("euler1.feri: {} in: {elapsed_time}s", output.unwrap());
+    match output {
+        Ok(o) => println!("euler1.feri: {o} in: {elapsed_time}s"),
+        Err(e) => eprintln!("Errors encountered: {e:?}"),
+    }
 }
 
 fn fib() {
@@ -40,5 +46,8 @@ fn fib() {
     let start_time = Instant::now();
     let output = program.run();
     let elapsed_time = start_time.elapsed().as_secs_f64();
-    println!("fib.feri: {} in: {elapsed_time}s", output.unwrap());
+    match output {
+        Ok(o) => println!("fib.feri: {o} in: {elapsed_time}s"),
+        Err(e) => eprintln!("Errors encountered: {e:?}"),
+    }
 }
